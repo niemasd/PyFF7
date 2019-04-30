@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 '''
-Read the information of an LGP file
+Read the information of an LGP archive
 Niema Moshiri 2019
 '''
 from ff7toolkit import NULL_STR
