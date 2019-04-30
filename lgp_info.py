@@ -14,9 +14,10 @@ if __name__ == "__main__":
     header,toc,crc = read_lgp_info(argv[1])
     if header['num_files'] != len(toc):
         raise ValueError("Number of files in header doesn't match Table of Contents length")
-    print("Header")
+    print("Information")
     print("* File Creator: %s" % header['file_creator'].strip(NULL_STR))
     print("* Number of Files: %d" % header['num_files'])
+    print("* Length of CRC: %d bytes" % len(crc))
     print()
     print("Table of Contents")
     print("* FILENAME\tSTART\tCHECK\tDUPLICATE IDENTIFIER")

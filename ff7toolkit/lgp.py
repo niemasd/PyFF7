@@ -67,7 +67,7 @@ class LGP:
                     'check': ord(tmp[START['TOC-ENTRY_CHECK']:START['TOC-ENTRY_CHECK']+SIZE['TOC-ENTRY_CHECK']]),
                     'dup-ident': unpack('h', tmp[START['TOC-ENTRY_DUP-IDENT']:START['TOC-ENTRY_DUP-IDENT']+SIZE['TOC-ENTRY_DUP-IDENT']])[0],
                 })
-        self.crc = None
+            self.crc = f.read(self.toc[0]['data_start'] - SIZE['HEADER'] - len(self.toc)*SIZE['TOC-ENTRY'])
         self.data = None
 
 def read_lgp_info(filename):
