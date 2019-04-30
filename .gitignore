@@ -1,3 +1,6 @@
+# FF7 files
+*.lgp
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
