@@ -3,6 +3,8 @@
 Global functions and classes
 Niema Moshiri 2019
 '''
+NULL_BYTE = b'\x00'
+NULL_STR = NULL_BYTE.decode()
 
 def read_bytes(filename, chunksize=None):
     '''Stream the bytes from a given file one-by-one

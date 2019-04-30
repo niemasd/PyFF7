@@ -13,7 +13,7 @@ SIZE = {
     'HEADER_NUM-FILES':     4, # Number of Files in Archive
 
     # Table of Contents Entries
-    'TOC-ENTRY_FILE-NAME':  20, # ToC Entry: Filename
+    'TOC-ENTRY_FILENAME':  20, # ToC Entry: Filename
     'TOC-ENTRY_DATA-START':  4, # ToC Entry: Data Start Position
     'TOC-ENTRY_CHECK':       1, # ToC Entry: Check Code
     'TOC-ENTRY_DUP-IDENT':   2, # ToC Entry: Duplicate Filename Identifier
@@ -33,6 +33,11 @@ START = {
     # Table of Contents
     'TOC': SIZE['HEADER'],
 }
+# ToC entries (0 = start of entry)
+START['TOC-ENTRY_FILENAME'] = 0
+START['TOC-ENTRY_DATA-START'] = START['TOC-ENTRY_FILENAME'] + SIZE['TOC-ENTRY_FILENAME']
+START['TOC-ENTRY_CHECK'] = START['TOC-ENTRY_DATA-START'] + SIZE['TOC-ENTRY_DATA-START']
+START['TOC-ENTRY_DUP-IDENT'] = START['TOC-ENTRY_CHECK'] + SIZE['TOC-ENTRY_CHECK']
 
 class LGP:
     '''LGP Archive class'''
@@ -48,11 +53,20 @@ class LGP:
             tmp = f.read(SIZE['HEADER'])
             self.header = {
                 'file_creator': tmp[START['HEADER_FILE-CREATOR']:START['HEADER_FILE-CREATOR']+SIZE['HEADER_FILE-CREATOR']].decode(),
-                'num_files': unpack('i', tmp[START['HEADER_NUM-FILES']:START['HEADER_NUM-FILES']+SIZE['HEADER_NUM-FILES']]),
+                'num_files': unpack('i', tmp[START['HEADER_NUM-FILES']:START['HEADER_NUM-FILES']+SIZE['HEADER_NUM-FILES']])[0],
             }
 
             # read table of contents
             self.toc = list()
+            for i in range(self.header['num_files']):
+                tmp = f.read(SIZE['TOC-ENTRY'])
+                start = START['TOC'] + (i * SIZE['TOC-ENTRY'])
+                self.toc.append({
+                    'filename': tmp[START['TOC-ENTRY_FILENAME']:START['TOC-ENTRY_FILENAME']+SIZE['TOC-ENTRY_FILENAME']].decode(),
+                    'data_start': unpack('i', tmp[START['TOC-ENTRY_DATA-START']:START['TOC-ENTRY_DATA-START']+SIZE['TOC-ENTRY_DATA-START']])[0],
+                    'check': ord(tmp[START['TOC-ENTRY_CHECK']:START['TOC-ENTRY_CHECK']+SIZE['TOC-ENTRY_CHECK']]),
+                    'dup-ident': unpack('h', tmp[START['TOC-ENTRY_DUP-IDENT']:START['TOC-ENTRY_DUP-IDENT']+SIZE['TOC-ENTRY_DUP-IDENT']])[0],
+                })
         self.crc = None
         self.data = None
 
