@@ -11,7 +11,7 @@ USAGE = "USAGE: %s <lgp_file>" % argv[0]
 if __name__ == "__main__":
     if len(argv) != 2:
         print(USAGE); exit(1)
-    lgp = LGP(argv[1], load_data=False)
+    lgp = LGP(argv[1])
     if lgp.header['num_files'] != len(lgp.toc):
         raise ValueError("Number of files in header doesn't match Table of Contents length")
     print("Information")

@@ -49,13 +49,11 @@ START['DATA-ENTRY_FILESIZE'] = START['DATA-ENTRY_FILENAME'] + SIZE['DATA-ENTRY_F
 
 class LGP:
     '''LGP Archive class'''
-    def __init__(self, filename, load_data=True):
+    def __init__(self, filename):
         '''``LGP`` constructor
 
         Args:
             ``filename`` (``str``): The filename of the LGP archive
-
-            ``load_data`` (``bool``): Load the actual data (not recommended for large files)
         '''
         self.filename = filename
         self.data = None
@@ -78,13 +76,3 @@ class LGP:
                     'dup-ident': unpack('h', tmp[START['TOC-ENTRY_DUP-IDENT']:START['TOC-ENTRY_DUP-IDENT']+SIZE['TOC-ENTRY_DUP-IDENT']])[0],
                 })
             self.crc = f.read(self.toc[0]['data_start'] - SIZE['HEADER'] - len(self.toc)*SIZE['TOC-ENTRY'])
-            if load_data:
-                self.data = list()
-                for i in range(self.header['num_files']):
-                    tmp = f.read(SIZE['DATA-ENTRY_HEADER'])
-                    tmp = {
-                        'filename': tmp[START['DATA-ENTRY_FILENAME']:START['DATA-ENTRY_FILENAME']+SIZE['DATA-ENTRY_FILENAME']].decode(),
-                        'filesize': unpack('i', tmp[START['DATA-ENTRY_FILESIZE']:START['DATA-ENTRY_FILESIZE']+SIZE['DATA-ENTRY_FILESIZE']])[0],
-                    }
-                    tmp['data'] = f.read(tmp['filesize'])
-                    self.data.append(tmp)
