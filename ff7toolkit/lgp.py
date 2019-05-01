@@ -55,29 +55,52 @@ class LGP:
         Args:
             ``filename`` (``str``): The filename of the LGP archive
         '''
-        self.filename = filename
-        self.data = None
-        with open(filename, 'rb') as f:
-            # read header
-            tmp = f.read(SIZE['HEADER'])
-            self.header = {
-                'file_creator': tmp[START['HEADER_FILE-CREATOR']:START['HEADER_FILE-CREATOR']+SIZE['HEADER_FILE-CREATOR']].decode().strip(NULL_STR),
-                'num_files': unpack('i', tmp[START['HEADER_NUM-FILES']:START['HEADER_NUM-FILES']+SIZE['HEADER_NUM-FILES']])[0],
-            }
+        self.filename = filename; self.file = open(filename, 'rb')
 
-            # read table of contents
-            self.toc = list()
-            for i in range(self.header['num_files']):
-                tmp = f.read(SIZE['TOC-ENTRY'])
-                self.toc.append({
-                    'filename': tmp[START['TOC-ENTRY_FILENAME']:START['TOC-ENTRY_FILENAME']+SIZE['TOC-ENTRY_FILENAME']].decode().strip(NULL_STR),
-                    'data_start': unpack('i', tmp[START['TOC-ENTRY_DATA-START']:START['TOC-ENTRY_DATA-START']+SIZE['TOC-ENTRY_DATA-START']])[0],
-                    'check': ord(tmp[START['TOC-ENTRY_CHECK']:START['TOC-ENTRY_CHECK']+SIZE['TOC-ENTRY_CHECK']]),
-                    'dup-ident': unpack('h', tmp[START['TOC-ENTRY_DUP-IDENT']:START['TOC-ENTRY_DUP-IDENT']+SIZE['TOC-ENTRY_DUP-IDENT']])[0],
-                })
-            self.crc = f.read(self.toc[0]['data_start'] - SIZE['HEADER'] - len(self.toc)*SIZE['TOC-ENTRY'])
+        # read header
+        tmp = self.file.read(SIZE['HEADER'])
+        self.header = {
+            'file_creator': tmp[START['HEADER_FILE-CREATOR']:START['HEADER_FILE-CREATOR']+SIZE['HEADER_FILE-CREATOR']].decode().strip(NULL_STR),
+            'num_files': unpack('i', tmp[START['HEADER_NUM-FILES']:START['HEADER_NUM-FILES']+SIZE['HEADER_NUM-FILES']])[0],
+        }
 
-            # read terminator
-            f.seek(self.toc[-1]['data_start']+SIZE['DATA-ENTRY_FILENAME'], 0) # move to filesize of last file
-            f.seek(unpack('i', f.read(SIZE['DATA-ENTRY_FILESIZE']))[0], 1)    # move forward to end of last file's data
-            self.terminator = f.read().decode().strip(NULL_STR)
+        # read table of contents
+        self.toc = list()
+        for i in range(self.header['num_files']):
+            tmp = self.file.read(SIZE['TOC-ENTRY'])
+            self.toc.append({
+                'filename': tmp[START['TOC-ENTRY_FILENAME']:START['TOC-ENTRY_FILENAME']+SIZE['TOC-ENTRY_FILENAME']].decode().strip(NULL_STR),
+                'data_start': unpack('i', tmp[START['TOC-ENTRY_DATA-START']:START['TOC-ENTRY_DATA-START']+SIZE['TOC-ENTRY_DATA-START']])[0],
+                'check': ord(tmp[START['TOC-ENTRY_CHECK']:START['TOC-ENTRY_CHECK']+SIZE['TOC-ENTRY_CHECK']]),
+                'dup_ident': unpack('h', tmp[START['TOC-ENTRY_DUP-IDENT']:START['TOC-ENTRY_DUP-IDENT']+SIZE['TOC-ENTRY_DUP-IDENT']])[0],
+            })
+        self.crc = self.file.read(self.toc[0]['data_start'] - SIZE['HEADER'] - len(self.toc)*SIZE['TOC-ENTRY'])
+
+        # read file sizes
+        for entry in self.toc:
+            self.file.seek(entry['data_start']+SIZE['DATA-ENTRY_FILENAME'], 0); entry['filesize'] = unpack('i', self.file.read(SIZE['DATA-ENTRY_FILESIZE']))[0]
+
+        # read terminator
+        self.file.seek(self.toc[-1]['data_start']+SIZE['DATA-ENTRY_FILENAME'], 0) # move to filesize of last file
+        self.file.seek(unpack('i', self.file.read(SIZE['DATA-ENTRY_FILESIZE']))[0], 1)    # move forward to end of last file's data
+        self.terminator = self.file.read().decode().strip(NULL_STR)
+        
+    def __del__(self):
+        '''``LGP`` destructor'''
+        self.file.close()
+
+    def load_bytes(self, start, size):
+        '''Load the first ``size`` bytes starting with position ``start``
+
+        Args:
+            ``size`` (``int``): The start position
+
+            ``size`` (``int``): The number of bytes to read
+        '''
+        self.file.seek(start, 0)
+        return self.file.read(size)
+
+    def load_files(self):
+        '''Load each file contained in the LGP archive, yielding (filename, data) tuples'''
+        for entry in self.toc:
+            yield (entry['filename'], self.load_bytes(entry['data_start']+SIZE['DATA-ENTRY_HEADER'], entry['filesize']))

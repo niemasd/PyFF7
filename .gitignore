@@ -1,5 +1,14 @@
 # FF7 files
+*.a
+*.hrc
+*.ini
 *.lgp
+*.p
+*.rsd
+*.tex
+
+# Swap files
+*.swp
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
