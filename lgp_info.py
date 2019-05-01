@@ -16,6 +16,7 @@ if __name__ == "__main__":
         raise ValueError("Number of files in header doesn't match Table of Contents length")
     print("Information")
     print("* File Creator: %s" % lgp.header['file_creator'].strip(NULL_STR))
+    print("* File Terminator: %s" % lgp.terminator.strip(NULL_STR))
     print("* Number of Files: %d" % lgp.header['num_files'])
     print("* Length of CRC: %d bytes" % len(lgp.crc))
     print()
