@@ -108,7 +108,7 @@ class LGP:
 
         # read lookup and conflict tables TODO
         tmp = self.file.read(self.toc[0]['data_start'] - SIZE['HEADER'] - len(self.toc)*SIZE['TOC-ENTRY'])
-        #self.num_conflicting_filenames = unpack('h', tmp[SIZE['
+        self.num_conflicting_filenames = unpack('h', tmp[SIZE['LOOKTAB']:SIZE['LOOKTAB']+SIZE['CONTAB_NUM-CONFLICTS']])[0]
 
         # read conflict table
         #tmp = self.file.read(self.toc[0]['data_start'] - SIZE['HEADER'] - len(self.toc)*SIZE['TOC-ENTRY'])

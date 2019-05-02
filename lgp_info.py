@@ -13,12 +13,14 @@ if __name__ == "__main__":
     lgp = LGP(argv[1])
     if lgp.header['num_files'] != len(lgp.toc):
         raise ValueError("Number of files in header doesn't match Table of Contents length")
+    if lgp.num_conflicting_filenames != len(lgp.conflicting_filenames):
+        raise ValueError("Number of conflicting files in Conflict Table doesn't match Table of Contents")
     print("Information")
     print("* File Name: %s" % argv[1])
     print("* File Creator: %s" % lgp.header['file_creator'])
     print("* File Terminator: %s" % lgp.terminator)
     print("* Number of Files: %d" % lgp.header['num_files'])
-    print("* Number of Filenames with Conflicts: %d" % len(lgp.conflicting_filenames))
+    print("* Number of Filenames with Conflicts: %d" % lgp.num_conflicting_filenames)
     #print("* Length of Conflict Table: %d" % len(lgp.conflict_table))
     print()
     print("Table of Contents")
