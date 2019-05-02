@@ -3,27 +3,24 @@
 Functions and classes for handling LGP archives
 Niema Moshiri 2019
 '''
-from . import NULL_STR,read_bytes
-from struct import unpack
+from . import NULL_BYTE,NULL_STR,read_bytes
+from struct import pack,unpack
 
 # size of various items in an LGP archive (in bytes)
 SIZE = {
     # Header
-    'HEADER_FILE-CREATOR':  12, # File Creator
-    'HEADER_NUM-FILES':      4, # Number of Files in Archive
+    'HEADER_FILE-CREATOR':     12, # File Creator
+    'HEADER_NUM-FILES':         4, # Number of Files in Archive
 
     # Table of Contents Entries
-    'TOC-ENTRY_FILENAME':   20, # ToC Entry: Filename
-    'TOC-ENTRY_DATA-START':  4, # ToC Entry: Data Start Position
-    'TOC-ENTRY_CHECK':       1, # ToC Entry: Check Code
-    'TOC-ENTRY_DUP-IDENT':   2, # ToC Entry: Duplicate Filename Identifier
-
-    # CRC
-    'CRC-DEFAULT':        3602, # CRCs are usually 3602, but not necessarily
+    'TOC-ENTRY_FILENAME':      20, # ToC Entry: Filename
+    'TOC-ENTRY_DATA-START':     4, # ToC Entry: Data Start Position
+    'TOC-ENTRY_CHECK':          1, # ToC Entry: Check Code
+    'TOC-ENTRY_CONFLICT-INDEX': 2, # ToC Entry: Conflict Table Index
 
     # Data Entries
-    'DATA-ENTRY_FILENAME':  20, # Data Entry: Filename
-    'DATA-ENTRY_FILESIZE':   4, # Data Entry: File Size
+    'DATA-ENTRY_FILENAME':     20, # Data Entry: Filename
+    'DATA-ENTRY_FILESIZE':      4, # Data Entry: File Size
 }
 SIZE['HEADER'] = sum(SIZE[k] for k in SIZE if k.startswith('HEADER_'))
 SIZE['TOC-ENTRY'] = sum(SIZE[k] for k in SIZE if k.startswith('TOC-ENTRY_'))
@@ -42,10 +39,31 @@ START = {
 START['TOC-ENTRY_FILENAME'] = 0
 START['TOC-ENTRY_DATA-START'] = START['TOC-ENTRY_FILENAME'] + SIZE['TOC-ENTRY_FILENAME']
 START['TOC-ENTRY_CHECK'] = START['TOC-ENTRY_DATA-START'] + SIZE['TOC-ENTRY_DATA-START']
-START['TOC-ENTRY_DUP-IDENT'] = START['TOC-ENTRY_CHECK'] + SIZE['TOC-ENTRY_CHECK']
+START['TOC-ENTRY_CONFLICT-INDEX'] = START['TOC-ENTRY_CHECK'] + SIZE['TOC-ENTRY_CHECK']
 # Data entries (0 = start of entry)
 START['DATA-ENTRY_FILENAME'] = 0
 START['DATA-ENTRY_FILESIZE'] = START['DATA-ENTRY_FILENAME'] + SIZE['DATA-ENTRY_FILENAME']
+
+# other defaults
+DEFAULT_CREATOR = "SQUARESOFT"
+
+def pack_lgp(num_files, files, lgp_filename, creator=DEFAULT_CREATOR):
+    '''Pack the files in ``files`` into an LGP archive ``lgp_filename``. Note that we specify the number of files just in case ``files`` streams data for memory purposes.
+
+    Args:
+        ``num_files`` (``int``): Number of files to pack
+
+        ``files`` (iterable of (``str``,``bytes``) tuples): The data to pack in the form of (filename, data) tuples
+
+        ``lgp_filename`` (``str``): The filename to write the packed LGP archive
+    '''
+    exit(1) # TODO IMPLEMENT
+    with open(lgp_filename, 'wb') as outfile:
+        # write header
+        outfile.write((12-len(DEFAULT_CREATOR))*NULL_BYTE); f.write(DEFAULT_CREATOR.encode())
+        outfile.write(pack('i', num_files))
+
+        # write 
 
 class LGP:
     '''LGP Archive class'''
@@ -72,8 +90,10 @@ class LGP:
                 'filename': tmp[START['TOC-ENTRY_FILENAME']:START['TOC-ENTRY_FILENAME']+SIZE['TOC-ENTRY_FILENAME']].decode().strip(NULL_STR),
                 'data_start': unpack('i', tmp[START['TOC-ENTRY_DATA-START']:START['TOC-ENTRY_DATA-START']+SIZE['TOC-ENTRY_DATA-START']])[0],
                 'check': ord(tmp[START['TOC-ENTRY_CHECK']:START['TOC-ENTRY_CHECK']+SIZE['TOC-ENTRY_CHECK']]),
-                'dup_ident': unpack('h', tmp[START['TOC-ENTRY_DUP-IDENT']:START['TOC-ENTRY_DUP-IDENT']+SIZE['TOC-ENTRY_DUP-IDENT']])[0],
+                'conflict_index': unpack('h', tmp[START['TOC-ENTRY_CONFLICT-INDEX']:START['TOC-ENTRY_CONFLICT-INDEX']+SIZE['TOC-ENTRY_CONFLICT-INDEX']])[0],
             })
+
+        # read conflict table
         self.crc = self.file.read(self.toc[0]['data_start'] - SIZE['HEADER'] - len(self.toc)*SIZE['TOC-ENTRY'])
 
         # read file sizes
