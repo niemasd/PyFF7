@@ -18,6 +18,7 @@ if __name__ == "__main__":
     print("* File Creator: %s" % lgp.header['file_creator'])
     print("* File Terminator: %s" % lgp.terminator)
     print("* Number of Files: %d" % lgp.header['num_files'])
+    print("* Number of Filenames with Conflicts: %d" % len(lgp.conflicting_filenames))
     #print("* Length of Conflict Table: %d" % len(lgp.conflict_table))
     print()
     print("Table of Contents")

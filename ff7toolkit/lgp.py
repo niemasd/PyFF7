@@ -6,6 +6,9 @@ Niema Moshiri 2019
 from . import NULL_BYTE,NULL_STR,read_bytes
 from struct import pack,unpack
 
+# important numbers
+NUM_LOOKTAB_ENTRIES = 900 # Lookup Table has 900 entries
+
 # size of various items in an LGP archive (in bytes)
 SIZE = {
     # Header
@@ -18,12 +21,21 @@ SIZE = {
     'TOC-ENTRY_CHECK':          1, # ToC Entry: Check Code
     'TOC-ENTRY_CONFLICT-INDEX': 2, # ToC Entry: Conflict Table Index
 
+    # Lookup Table
+    'LOOKTAB-ENTRY_INDEX':      2, # Lookup Table Entry: Index
+    'LOOKTAB-ENTRY_COUNT':      2, # Lookup Table Entry: Count
+
+    # Conflict Table
+    'CONTAB_NUM-CONFLICTS':     2, # Conflict Table: Number of Filenames with Conflicts
+
     # Data Entries
     'DATA-ENTRY_FILENAME':     20, # Data Entry: Filename
     'DATA-ENTRY_FILESIZE':      4, # Data Entry: File Size
 }
 SIZE['HEADER'] = sum(SIZE[k] for k in SIZE if k.startswith('HEADER_'))
 SIZE['TOC-ENTRY'] = sum(SIZE[k] for k in SIZE if k.startswith('TOC-ENTRY_'))
+SIZE['LOOKTAB-ENTRY'] = sum(SIZE[k] for k in SIZE if k.startswith('LOOKTAB-ENTRY_'))
+SIZE['LOOKTAB'] = NUM_LOOKTAB_ENTRIES*SIZE['LOOKTAB-ENTRY']
 SIZE['DATA-ENTRY_HEADER'] = sum(SIZE[k] for k in SIZE if k.startswith('DATA-ENTRY_'))
 
 # start positions of various items in an LGP archive (in bytes)
@@ -83,18 +95,23 @@ class LGP:
         }
 
         # read table of contents
-        self.toc = list()
+        self.toc = list(); self.conflicting_filenames = set()
         for i in range(self.header['num_files']):
             tmp = self.file.read(SIZE['TOC-ENTRY'])
-            self.toc.append({
-                'filename': tmp[START['TOC-ENTRY_FILENAME']:START['TOC-ENTRY_FILENAME']+SIZE['TOC-ENTRY_FILENAME']].decode().strip(NULL_STR),
-                'data_start': unpack('i', tmp[START['TOC-ENTRY_DATA-START']:START['TOC-ENTRY_DATA-START']+SIZE['TOC-ENTRY_DATA-START']])[0],
-                'check': ord(tmp[START['TOC-ENTRY_CHECK']:START['TOC-ENTRY_CHECK']+SIZE['TOC-ENTRY_CHECK']]),
-                'conflict_index': unpack('h', tmp[START['TOC-ENTRY_CONFLICT-INDEX']:START['TOC-ENTRY_CONFLICT-INDEX']+SIZE['TOC-ENTRY_CONFLICT-INDEX']])[0],
-            })
+            tmp_filename = tmp[START['TOC-ENTRY_FILENAME']:START['TOC-ENTRY_FILENAME']+SIZE['TOC-ENTRY_FILENAME']].decode().strip(NULL_STR)
+            tmp_data_start = unpack('i', tmp[START['TOC-ENTRY_DATA-START']:START['TOC-ENTRY_DATA-START']+SIZE['TOC-ENTRY_DATA-START']])[0]
+            tmp_check = ord(tmp[START['TOC-ENTRY_CHECK']:START['TOC-ENTRY_CHECK']+SIZE['TOC-ENTRY_CHECK']])
+            tmp_conflict_index = unpack('h', tmp[START['TOC-ENTRY_CONFLICT-INDEX']:START['TOC-ENTRY_CONFLICT-INDEX']+SIZE['TOC-ENTRY_CONFLICT-INDEX']])[0]
+            self.toc.append({'filename':tmp_filename, 'data_start':tmp_data_start, 'check':tmp_check, 'conflict_index':tmp_conflict_index})
+            if tmp_conflict_index != 0:
+                self.conflicting_filenames.add(tmp_filename)
+
+        # read lookup and conflict tables TODO
+        tmp = self.file.read(self.toc[0]['data_start'] - SIZE['HEADER'] - len(self.toc)*SIZE['TOC-ENTRY'])
+        #self.num_conflicting_filenames = unpack('h', tmp[SIZE['
 
         # read conflict table
-        self.crc = self.file.read(self.toc[0]['data_start'] - SIZE['HEADER'] - len(self.toc)*SIZE['TOC-ENTRY'])
+        #tmp = self.file.read(self.toc[0]['data_start'] - SIZE['HEADER'] - len(self.toc)*SIZE['TOC-ENTRY'])
 
         # read file sizes
         for entry in self.toc:
