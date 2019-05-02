@@ -3,7 +3,7 @@
 Unpack an LGP archive
 Niema Moshiri 2019
 '''
-from ff7toolkit.lgp import LGP
+from PyFF7.lgp import LGP
 from os import mkdir
 from os.path import isdir,isfile
 from sys import argv

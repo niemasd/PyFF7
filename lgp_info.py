@@ -3,7 +3,7 @@
 Read the information of an LGP archive
 Niema Moshiri 2019
 '''
-from ff7toolkit.lgp import LGP
+from PyFF7.lgp import LGP
 from sys import argv
 USAGE = "USAGE: %s <lgp_file>" % argv[0]
 
