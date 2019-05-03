@@ -10,10 +10,6 @@ from struct import pack,unpack
 LOOKUP_VALUE_MAX = 30
 NUM_LOOKTAB_ENTRIES = LOOKUP_VALUE_MAX*LOOKUP_VALUE_MAX # Lookup Table has 900 entries
 MAX_CONFLICTS = 4096
-ERROR_INVALID_TOC_ENTRY = "Invalid Table of Contents entry"
-ERROR_CHAR_INPUT = "Input must be a single character"
-ERROR_NOT_STR = "Input is not a string"
-ERROR_LOOKUP_TOC_MISMATCH = "Lookup Table and Table of Contents do not match"
 
 # size of various items in an LGP archive (in bytes)
 SIZE = {
@@ -67,7 +63,14 @@ START['DATA-ENTRY_FILESIZE'] = START['DATA-ENTRY_FILENAME'] + SIZE['DATA-ENTRY_F
 # other defaults
 DEFAULT_CREATOR = "SQUARESOFT"
 
-def char_to_lookup_value(c): # TODO FIX HANDLING PERIODS
+# error messages
+ERROR_CHAR_INPUT = "Input must be a single character"
+ERROR_FILENAME_START_PERIOD = "Filename cannot begin with '.'"
+ERROR_INVALID_TOC_ENTRY = "Invalid Table of Contents entry"
+ERROR_LOOKUP_TOC_MISMATCH = "Lookup Table and Table of Contents do not match"
+ERROR_NOT_STR = "Input is not a string"
+
+def char_to_lookup_value(c):
     '''Convert a character ``c`` to a value for the Lookup Table index (this is done to the first and second characters of a filename)
 
     Args:
@@ -78,14 +81,18 @@ def char_to_lookup_value(c): # TODO FIX HANDLING PERIODS
     '''
     if not isinstance(c,str) or len(c) != 1: # must be a single character
         raise ValueError(ERROR_CHAR_INPUT)
-    if str.isdigit(c):
-        return ord(c) - ord('0')
+    if c == '.':
+        return -1 # this is actually correct: period returns -1
     elif c == '_':
-        return ord('k') - ord('a')
+        return 10 # 'k' - 'a'
     elif c == '-':
-        return ord('l') - ord('a')
-    else:
+        return 11 # 'l' - 'a'
+    elif str.isdigit(c):
+        return ord(c) - ord('0')
+    elif str.isalpha(c):
         return ord(c.lower()) - ord('a')
+    else:
+       raise ValueError("Invalid character: %s" % c)
 
 def filename_to_lookup_index(filename):
     '''Convert ``filename`` to a Lookup Table index
@@ -98,8 +105,11 @@ def filename_to_lookup_index(filename):
     Returns:
         ``int``: The converted Lookup Table index
     '''
+    filename = filename.split('/')[-1]
     if not isinstance(filename,str):
         raise TypeError(ERROR_NOT_STR)
+    if filename[0] == '.':
+        raise ValueError(ERROR_FILENAME_START_PERIOD)
     lv1 = char_to_lookup_value(filename[0])
     lv2 = char_to_lookup_value(filename[1])
     return lv1*LOOKUP_VALUE_MAX + lv2 + 1
@@ -144,11 +154,13 @@ def pack_lgp(num_files, files, lgp_filename, creator=DEFAULT_CREATOR):
 
 class LGP:
     '''LGP Archive class'''
-    def __init__(self, filename):
+    def __init__(self, filename, check=False):
         '''``LGP`` constructor
 
         Args:
             ``filename`` (``str``): The filename of the LGP archive
+
+            ``check`` (``bool``): ``True`` to check the Lookup Table vs. Table of Contents for validity, otherwise ``False``
         '''
         self.filename = filename; self.file = open(filename, 'rb')
 
@@ -199,10 +211,8 @@ class LGP:
         self.terminator = self.file.read().decode().strip(NULL_STR)
 
         # check lookup table for validity
-        if self.lookup_table != toc_to_lookup_table(self.toc):
-            #print(self.lookup_table)
-            #print(toc_to_lookup_table(self.toc))
-            pass #raise ValueError(ERROR_LOOKUP_TOC_MISMATCH)
+        if check and self.lookup_table != toc_to_lookup_table(self.toc):
+            raise ValueError(ERROR_LOOKUP_TOC_MISMATCH)
         
     def __del__(self):
         '''``LGP`` destructor'''
