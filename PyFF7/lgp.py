@@ -6,8 +6,9 @@ Niema Moshiri 2019
 from . import NULL_BYTE,NULL_STR,read_bytes
 from struct import pack,unpack
 
-# important numbers
+# variables
 NUM_LOOKTAB_ENTRIES = 900 # Lookup Table has 900 entries
+ERROR_INVALID_TOC_ENTRY = "Invalid Table of Contents entry"
 
 # size of various items in an LGP archive (in bytes)
 SIZE = {
@@ -144,7 +145,17 @@ class LGP:
         self.file.seek(start, 0)
         return self.file.read(size)
 
+    def load_toc_entry(self, entry):
+        '''Load the data for a given Table of Contents entry
+
+        Args:
+            ``entry`` (``dict``): The Table of Contents entry to load
+        '''
+        if 'data_start' not in entry or 'filesize' not in entry:
+            raise TypeError(ERROR_INVALID_TOC_ENTRY)
+        return self.load_bytes(entry['data_start']+SIZE['DATA-ENTRY_HEADER'], entry['filesize'])
+
     def load_files(self):
         '''Load each file contained in the LGP archive, yielding (filename, data) tuples'''
         for entry in self.toc:
-            yield (entry['filename'], self.load_bytes(entry['data_start']+SIZE['DATA-ENTRY_HEADER'], entry['filesize']))
+            yield (entry['filename'], self.load_toc_entry(entry))
