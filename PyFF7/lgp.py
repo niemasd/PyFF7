@@ -7,8 +7,13 @@ from . import NULL_BYTE,NULL_STR,read_bytes
 from struct import pack,unpack
 
 # variables
-NUM_LOOKTAB_ENTRIES = 900 # Lookup Table has 900 entries
+LOOKUP_VALUE_MAX = 30
+NUM_LOOKTAB_ENTRIES = LOOKUP_VALUE_MAX*LOOKUP_VALUE_MAX # Lookup Table has 900 entries
+MAX_CONFLICTS = 4096
 ERROR_INVALID_TOC_ENTRY = "Invalid Table of Contents entry"
+ERROR_CHAR_INPUT = "Input must be a single character"
+ERROR_NOT_STR = "Input is not a string"
+ERROR_LOOKUP_TOC_MISMATCH = "Lookup Table and Table of Contents do not match"
 
 # size of various items in an LGP archive (in bytes)
 SIZE = {
@@ -62,6 +67,63 @@ START['DATA-ENTRY_FILESIZE'] = START['DATA-ENTRY_FILENAME'] + SIZE['DATA-ENTRY_F
 # other defaults
 DEFAULT_CREATOR = "SQUARESOFT"
 
+def char_to_lookup_value(c): # TODO FIX HANDLING PERIODS
+    '''Convert a character ``c`` to a value for the Lookup Table index (this is done to the first and second characters of a filename)
+
+    Args:
+        ``c`` (``str``): The character to convert
+
+    Returns:
+        ``int``: The converted value for the Lookup Table index
+    '''
+    if not isinstance(c,str) or len(c) != 1: # must be a single character
+        raise ValueError(ERROR_CHAR_INPUT)
+    if str.isdigit(c):
+        return ord(c) - ord('0')
+    elif c == '_':
+        return ord('k') - ord('a')
+    elif c == '-':
+        return ord('l') - ord('a')
+    else:
+        return ord(c.lower()) - ord('a')
+
+def filename_to_lookup_index(filename):
+    '''Convert ``filename`` to a Lookup Table index
+
+    I got the algorithm from here: https://github.com/Vgr255/LGP/blob/467c31e6c600ac33b701cc7f7baa7242b7b1ec7e/legacy/lgp.c#L111
+
+    Args:
+        ``filename`` (``str``): The filename to convert to a Lookup Table index
+
+    Returns:
+        ``int``: The converted Lookup Table index
+    '''
+    if not isinstance(filename,str):
+        raise TypeError(ERROR_NOT_STR)
+    lv1 = char_to_lookup_value(filename[0])
+    lv2 = char_to_lookup_value(filename[1])
+    return lv1*LOOKUP_VALUE_MAX + lv2 + 1
+
+def toc_to_lookup_table(toc):
+    '''Convert a Table of Contents ``toc`` to a Lookup Table
+
+    Args:
+        ``toc`` (iterable of ``dict``): The Table of Contents to convert
+
+    Returns:
+        ``list`` of ``tuple``: The Lookup Table as a list of 900 (toc_index, file_count) tuples
+    '''
+    file_count = [0]*NUM_LOOKTAB_ENTRIES; toc_index = [0]*NUM_LOOKTAB_ENTRIES
+    for i,entry in enumerate(toc):
+        if 'filename' not in entry:
+            raise TypeError(ERROR_INVALID_TOC_ENTRY)
+        lookup_index = filename_to_lookup_index(entry['filename'].split('/')[-1])
+        file_count[lookup_index] += 1
+        if toc_index[lookup_index] == 0:
+            toc_index[lookup_index] = i+1
+    return [(toc_index[i], file_count[i]) for i in range(NUM_LOOKTAB_ENTRIES)]
+
+
 def pack_lgp(num_files, files, lgp_filename, creator=DEFAULT_CREATOR):
     '''Pack the files in ``files`` into an LGP archive ``lgp_filename``. Note that we specify the number of files just in case ``files`` streams data for memory purposes.
 
@@ -110,7 +172,13 @@ class LGP:
                 self.conflicting_filenames.add(tmp_filename)
 
         # read lookup table (3600 bytes)
-        self.looktab_bytes = self.file.read(SIZE['LOOKTAB']) # ignore this for now becuase it's not clear how to use it
+        tmp = self.file.read(SIZE['LOOKTAB'])
+        self.lookup_table = list()
+        for i in range(NUM_LOOKTAB_ENTRIES):
+            start = i*SIZE['LOOKTAB-ENTRY']
+            tmp_toc_index = unpack('h', tmp[start : start + SIZE['LOOKTAB-ENTRY_INDEX']])[0]
+            tmp_file_count = unpack('h', tmp[start + SIZE['LOOKTAB-ENTRY_INDEX'] : start + SIZE['LOOKTAB-ENTRY']])[0]
+            self.lookup_table.append((tmp_toc_index,tmp_file_count))
 
         # read conflict table (2 bytes for number of conflicts, and for files with num_conflicts != 0, the actual table)
         self.num_conflicting_filenames = unpack('h', self.file.read(SIZE['CONTAB_NUM-CONFLICTS']))[0] # the first 2 bytes of the conflict table are the number of conflicts
@@ -119,7 +187,7 @@ class LGP:
             for j in range(curr_num_conflicts):
                 curr_folder_name = self.file.read(SIZE['CONTAB-ENTRY_FOLDER-NAME']).decode().strip(NULL_STR)
                 curr_toc_index = unpack('h', self.file.read(SIZE['CONTAB-ENTRY_TOC-INDEX']))[0] #- 1 # it's 1-based, so subtract 1 to get indexing into self.toc
-                self.toc[curr_toc_index]['filename'] = "%s/%s" % (curr_folder_name, self.toc[curr_toc_index]['filename'])
+                self.toc[curr_toc_index]['filename'] = "%s/%s" % (curr_folder_name, self.toc[curr_toc_index]['filename']) # update filename in Table of Contents
 
         # read file sizes
         for entry in self.toc:
@@ -129,10 +197,17 @@ class LGP:
         self.file.seek(self.toc[-1]['data_start']+SIZE['DATA-ENTRY_FILENAME'], 0) # move to filesize of last file
         self.file.seek(unpack('i', self.file.read(SIZE['DATA-ENTRY_FILESIZE']))[0], 1)    # move forward to end of last file's data
         self.terminator = self.file.read().decode().strip(NULL_STR)
+
+        # check lookup table for validity
+        if self.lookup_table != toc_to_lookup_table(self.toc):
+            #print(self.lookup_table)
+            #print(toc_to_lookup_table(self.toc))
+            pass #raise ValueError(ERROR_LOOKUP_TOC_MISMATCH)
         
     def __del__(self):
         '''``LGP`` destructor'''
-        self.file.close()
+        if hasattr(self, 'file'):
+            self.file.close()
 
     def load_bytes(self, start, size):
         '''Load the first ``size`` bytes starting with position ``start``
