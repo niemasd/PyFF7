@@ -12,25 +12,27 @@ NUM_LOOKTAB_ENTRIES = 900 # Lookup Table has 900 entries
 # size of various items in an LGP archive (in bytes)
 SIZE = {
     # Header
-    'HEADER_FILE-CREATOR':     12, # File Creator
-    'HEADER_NUM-FILES':         4, # Number of Files in Archive
+    'HEADER_FILE-CREATOR':        12, # File Creator
+    'HEADER_NUM-FILES':            4, # Number of Files in Archive
 
     # Table of Contents Entries
-    'TOC-ENTRY_FILENAME':      20, # ToC Entry: Filename
-    'TOC-ENTRY_DATA-START':     4, # ToC Entry: Data Start Position
-    'TOC-ENTRY_CHECK':          1, # ToC Entry: Check Code
-    'TOC-ENTRY_CONFLICT-INDEX': 2, # ToC Entry: Conflict Table Index
+    'TOC-ENTRY_FILENAME':         20, # ToC Entry: Filename
+    'TOC-ENTRY_DATA-START':        4, # ToC Entry: Data Start Position
+    'TOC-ENTRY_CHECK':             1, # ToC Entry: Check Code
+    'TOC-ENTRY_CONFLICT-INDEX':    2, # ToC Entry: Conflict Table Index
 
     # Lookup Table
-    'LOOKTAB-ENTRY_INDEX':      2, # Lookup Table Entry: Index
-    'LOOKTAB-ENTRY_COUNT':      2, # Lookup Table Entry: Count
+    'LOOKTAB-ENTRY_INDEX':         2, # Lookup Table Entry: Index
+    'LOOKTAB-ENTRY_COUNT':         2, # Lookup Table Entry: Count
 
     # Conflict Table
-    'CONTAB_NUM-CONFLICTS':     2, # Conflict Table: Number of Filenames with Conflicts
+    'CONTAB_NUM-CONFLICTS':        2, # Conflict Table: Number of Filenames with Conflicts
+    'CONTAB-ENTRY_FOLDER-NAME': 128, # Conflict Table Entry: Folder Name
+    'CONTAB-ENTRY_TOC-INDEX':      2, # Conflict Table Entry: ToC Index
 
     # Data Entries
-    'DATA-ENTRY_FILENAME':     20, # Data Entry: Filename
-    'DATA-ENTRY_FILESIZE':      4, # Data Entry: File Size
+    'DATA-ENTRY_FILENAME':        20, # Data Entry: Filename
+    'DATA-ENTRY_FILESIZE':         4, # Data Entry: File Size
 }
 SIZE['HEADER'] = sum(SIZE[k] for k in SIZE if k.startswith('HEADER_'))
 SIZE['TOC-ENTRY'] = sum(SIZE[k] for k in SIZE if k.startswith('TOC-ENTRY_'))
@@ -106,12 +108,17 @@ class LGP:
             if tmp_conflict_index != 0:
                 self.conflicting_filenames.add(tmp_filename)
 
-        # read lookup and conflict tables TODO
-        tmp = self.file.read(self.toc[0]['data_start'] - SIZE['HEADER'] - len(self.toc)*SIZE['TOC-ENTRY'])
-        self.num_conflicting_filenames = unpack('h', tmp[SIZE['LOOKTAB']:SIZE['LOOKTAB']+SIZE['CONTAB_NUM-CONFLICTS']])[0]
+        # read lookup table (3600 bytes)
+        self.looktab_bytes = self.file.read(SIZE['LOOKTAB']) # ignore this for now becuase it's not clear how to use it
 
-        # read conflict table
-        #tmp = self.file.read(self.toc[0]['data_start'] - SIZE['HEADER'] - len(self.toc)*SIZE['TOC-ENTRY'])
+        # read conflict table (2 bytes for number of conflicts, and for files with num_conflicts != 0, the actual table)
+        self.num_conflicting_filenames = unpack('h', self.file.read(SIZE['CONTAB_NUM-CONFLICTS']))[0] # the first 2 bytes of the conflict table are the number of conflicts
+        for i in range(self.num_conflicting_filenames): # if there were conflicts, handle them (e.g. magic.lgp); other files work properly (num_conflicting = 0)
+            curr_num_conflicts = unpack('h', self.file.read(SIZE['CONTAB_NUM-CONFLICTS']))[0]
+            for j in range(curr_num_conflicts):
+                curr_folder_name = self.file.read(SIZE['CONTAB-ENTRY_FOLDER-NAME']).decode().strip(NULL_STR)
+                curr_toc_index = unpack('h', self.file.read(SIZE['CONTAB-ENTRY_TOC-INDEX']))[0] #- 1 # it's 1-based, so subtract 1 to get indexing into self.toc
+                self.toc[curr_toc_index]['filename'] = "%s/%s" % (curr_folder_name, self.toc[curr_toc_index]['filename'])
 
         # read file sizes
         for entry in self.toc:
