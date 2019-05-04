@@ -211,9 +211,9 @@ class LGP:
         self.terminator = self.file.read().decode().strip(NULL_STR)
 
         # check lookup table for validity
-        if check and self.lookup_table != toc_to_lookup_table(self.toc):
+        if check and not self.valid_lookup():
             raise ValueError(ERROR_LOOKUP_TOC_MISMATCH)
-        
+
     def __del__(self):
         '''``LGP`` destructor'''
         if hasattr(self, 'file'):
@@ -244,3 +244,11 @@ class LGP:
         '''Load each file contained in the LGP archive, yielding (filename, data) tuples'''
         for entry in self.toc:
             yield (entry['filename'], self.load_toc_entry(entry))
+
+    def valid_lookup(self):
+        '''Check if this LGP file's Lookup Table is valid with respect to its Table of Contents
+
+        Returns:
+            ``bool``: ``True`` if Lookup Table is valid with respect to Table of Contents, otherwise ``False``
+        '''
+        return self.lookup_table == toc_to_lookup_table(self.toc)

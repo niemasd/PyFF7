@@ -3,32 +3,28 @@
 Read the information of an LGP archive
 Niema Moshiri 2019
 '''
-from PyFF7.lgp import LGP,ERROR_LOOKUP_TOC_MISMATCH
+from PyFF7.lgp import LGP
 from sys import argv,stderr
 USAGE = "USAGE: %s <lgp_file>" % argv[0]
+
+# error messages
+ERROR_HEADER_TOC_LENGTH_MISMATCH = "Number of files in header doesn't match Table of Contents length"
+ERROR_TOC_CONTAB_NUM_CONFLICTS_MISMATCH = "Number of conflicting files in Conflict Table doesn't match Table of Contents"
 
 if __name__ == "__main__":
     if len(argv) != 2:
         print(USAGE); exit(1)
-    try:
-        lgp = LGP(argv[1], check=True)
-        lookup_toc_match = True
-    except ValueError as e:
-        if str(e).strip() == ERROR_LOOKUP_TOC_MISMATCH:
-            lgp = LGP(argv[1], check=False)
-            lookup_toc_match = False
-        else:
-            raise e
+    lgp = LGP(argv[1], check=False)
     if lgp.header['num_files'] != len(lgp.toc):
-        raise ValueError("Number of files in header doesn't match Table of Contents length")
+        raise ValueError(ERROR_HEADER_TOC_LENGTH_MISMATCH)
     if lgp.num_conflicting_filenames != len(lgp.conflicting_filenames):
-        raise ValueError("Number of conflicting files in Conflict Table doesn't match Table of Contents")
+        raise ValueError(ERROR_TOC_CONTAB_NUM_CONFLICTS_MISMATCH)
     try:
         print("Information")
         print("* File Name: %s" % argv[1])
         print("* File Creator: %s" % lgp.header['file_creator'])
         print("* File Terminator: %s" % lgp.terminator)
-        print("* File ToC and Lookup Match: %s" % lookup_toc_match)
+        print("* File ToC and Lookup Match: %s" % lgp.valid_lookup())
         print("* Number of Files: %d" % lgp.header['num_files'])
         print("* Number of Filenames with Conflicts: %d" % lgp.num_conflicting_filenames)
         #print("* Length of Conflict Table: %d" % len(lgp.conflict_table))
