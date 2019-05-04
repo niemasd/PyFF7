@@ -223,9 +223,12 @@ class LGP:
         '''Load the first ``size`` bytes starting with position ``start``
 
         Args:
-            ``size`` (``int``): The start position
+            ``start`` (``int``): The start position
 
             ``size`` (``int``): The number of bytes to read
+
+        Returns:
+            ``bytes``: The first ``size`` bytes starting with position ``start``
         '''
         self.file.seek(start, 0)
         return self.file.read(size)
@@ -235,6 +238,9 @@ class LGP:
 
         Args:
             ``entry`` (``dict``): The Table of Contents entry to load
+
+        Returns:
+            ``bytes``: The data corresponding to the given Table of Contents entry
         '''
         if 'data_start' not in entry or 'filesize' not in entry:
             raise TypeError(ERROR_INVALID_TOC_ENTRY)
