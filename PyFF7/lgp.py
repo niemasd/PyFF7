@@ -296,6 +296,14 @@ class LGP:
         if hasattr(self, 'file'):
             self.file.close()
 
+    def __len__(self):
+        '''Return the number of files in this archive
+
+        Returns:
+            ``int``: The number of files in this archive
+        '''
+        return self.header['num_files']
+
     def load_bytes(self, start, size):
         '''Load the first ``size`` bytes starting with position ``start``
 
