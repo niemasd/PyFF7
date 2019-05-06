@@ -3,21 +3,8 @@
 Global functions and classes
 Niema Moshiri 2019
 '''
+BITS_PER_BYTE = 8
+MAX_UNSIGNED_SHORT = 65535
+MAX_UNSIGNED_INT = 4294967295
 NULL_BYTE = b'\x00'
 NULL_STR = NULL_BYTE.decode()
-
-def read_bytes(filename, chunksize=None):
-    '''Stream the bytes from a given file one-by-one
-
-    Args:
-        ``filename`` (``str``): The name of the file to open
-
-        ``chunksize`` (``int``): The size of the buffer (``None`` = entire file)
-    '''
-    with open(filename, 'rb') as f:
-        while True:
-            buf = f.read(chunksize)
-            if not buf:
-                break
-            for b in buf:
-                yield b

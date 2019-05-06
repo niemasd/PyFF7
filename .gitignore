@@ -3,6 +3,7 @@
 *.hrc
 *.ini
 *.lgp
+*.out
 *.p
 *.rsd
 *.tex

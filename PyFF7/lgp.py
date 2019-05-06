@@ -3,16 +3,14 @@
 Functions and classes for handling LGP archives
 Niema Moshiri 2019
 '''
-from . import NULL_BYTE,NULL_STR,read_bytes
+from . import MAX_UNSIGNED_INT,MAX_UNSIGNED_SHORT,NULL_BYTE,NULL_STR
 from os.path import getsize
 from struct import pack,unpack
 
-# variables
+# constants
 LOOKUP_VALUE_MAX = 30
 NUM_LOOKTAB_ENTRIES = LOOKUP_VALUE_MAX*LOOKUP_VALUE_MAX # Lookup Table has 900 entries
 MAX_CONFLICTS = 4096
-MAX_UNSIGNED_SHORT = 65535
-MAX_UNSIGNED_INT = 4294967295
 
 # size of various items in an LGP archive (in bytes)
 SIZE = {
