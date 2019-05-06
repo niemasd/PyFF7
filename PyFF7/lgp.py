@@ -4,12 +4,15 @@ Functions and classes for handling LGP archives
 Niema Moshiri 2019
 '''
 from . import NULL_BYTE,NULL_STR,read_bytes
+from os.path import getsize
 from struct import pack,unpack
 
 # variables
 LOOKUP_VALUE_MAX = 30
 NUM_LOOKTAB_ENTRIES = LOOKUP_VALUE_MAX*LOOKUP_VALUE_MAX # Lookup Table has 900 entries
 MAX_CONFLICTS = 4096
+MAX_UNSIGNED_SHORT = 65535
+MAX_UNSIGNED_INT = 4294967295
 
 # size of various items in an LGP archive (in bytes)
 SIZE = {
@@ -63,6 +66,7 @@ START['DATA-ENTRY_FILESIZE'] = START['DATA-ENTRY_FILENAME'] + SIZE['DATA-ENTRY_F
 
 # other defaults
 DEFAULT_CREATOR = "SQUARESOFT"
+DEFAULT_TERMINATOR = "FINAL FANTASY7"
 
 # error messages
 ERROR_CHAR_INPUT = "Input must be a single character"
@@ -135,7 +139,7 @@ def toc_to_lookup_table(toc):
     return [(toc_index[i], file_count[i]) for i in range(NUM_LOOKTAB_ENTRIES)]
 
 
-def pack_lgp(files, lgp_filename, creator=DEFAULT_CREATOR):
+def pack_lgp(files, lgp_filename, creator=DEFAULT_CREATOR, terminator=DEFAULT_TERMINATOR):
     '''Pack the files in ``files`` into an LGP archive ``lgp_filename``. Note that we specify the number of files just in case ``files`` streams data for memory purposes.
 
     Args:
@@ -158,20 +162,26 @@ def pack_lgp(files, lgp_filename, creator=DEFAULT_CREATOR):
             raise ValueError("Path name longer than %d characters: %s" % (SIZE['CONTAB-ENTRY_FOLDER-NAME'],path))
         if f not in file2path:
             file2path[f] = list()
-        file2path[f].append(path)
-        entry = {'filename':f, 'path':path, 'diskpath':disk_path, 'filesize': -1} # TODO HERE FILESIZE
-        entry['check'] = 14 # TODO FIGURE THIS OUT
+        file2path[f].append((path,i)) # (location, ToC index) tuple
+        entry = {'filename':f, 'path':path, 'diskpath':disk_path, 'filesize': getsize(disk_path)}
+        entry['check'] = 14 # It seems like most programs just give 14 (the most common value) and FF7 doesn't care. Hopefully somebody can figure out a correct way some day. I thought it might be User+Group file permissions (7+7=14)
         toc.append(entry)
+    if len(toc) > MAX_UNSIGNED_INT:
+        raise ValueError("Number of files (%d) exceeds maximum allowed (%d)" % (len(toc),MAX_UNSIGNED_INT))
 
     # get information for conflict table
-    num_conflicts = 0; file2conflict = dict()
+    conflict2file = list(); file2conflict = dict()
     for e in toc:
+        if len(file2path[e['filename']]) > MAX_UNSIGNED_SHORT:
+            raise ValueError("Number of duplicate locations for filename '%s' (%d) exceeds maximum allowed (%d)" % (e['filename'],len(file2path[e['filename']]),MAX_UNSIGNED_SHORT))
         if len(file2path[e['filename']]) > 1:
             if e['filename'] not in file2conflict:
-                num_conflicts += 1; file2conflict[e['filename']] = num_conflicts
+                conflict2file.append(e['filename']); file2conflict[e['filename']] = len(conflict2file)
         else:
             file2conflict[e['filename']] = 0
         e['conflict_index'] = file2conflict[e['filename']]
+    if len(conflict2file) > MAX_UNSIGNED_SHORT:
+        raise ValueError("Number of conflicting filenames (%d) exceeds maximum allowed (%d)" % (len(conflict2file),MAX_UNSIGNED_SHORT))
 
     # compute data start positions
     toc_size = len(toc) * SIZE['TOC-ENTRY']
@@ -179,7 +189,7 @@ def pack_lgp(files, lgp_filename, creator=DEFAULT_CREATOR):
     data_start = SIZE['HEADER'] + toc_size + SIZE['LOOKTAB'] + contab_size
     curr_start = data_start
     for e in toc:
-        toc['data_start'] = curr_start; curr_start += (SIZE['DATA-ENTRY_FILENAME'] + SIZE['DATA-ENTRY_FILESIZE'] + e['filesize'])
+        e['data_start'] = curr_start; curr_start += (SIZE['DATA-ENTRY_FILENAME'] + SIZE['DATA-ENTRY_FILESIZE'] + e['filesize'])
 
     # build LGP file
     with open(lgp_filename, 'wb') as outfile:
@@ -190,17 +200,34 @@ def pack_lgp(files, lgp_filename, creator=DEFAULT_CREATOR):
         # write table of contents
         for e in toc:
             outfile.write(e['filename'].encode()); outfile.write((SIZE['TOC-ENTRY_FILENAME']-len(e['filename']))*NULL_BYTE) # filename (20 bytes)
+            outfile.write(pack('I', e['data_start'])) # data start position (4 bytes)
+            outfile.write(bytes([e['check']])) # check code (1 byte)
+            outfile.write(pack('H', e['conflict_index'])) # conflict table index (2 bytes)
+        
+        # write lookup table
+        for pair in toc_to_lookup_table(toc):
+            for e in pair:
+                outfile.write(pack('H', e)) # lookup table index and count (2 bytes each)
 
+        # write conflict table
+        outfile.write(pack('H', len(conflict2file)))
+        for f in conflict2file:
+            outfile.write(pack('H', len(file2path[f]))) # number of locations (2 bytes)
+            for p,i in file2path[f]:
+                outfile.write(p.encode()); outfile.write((SIZE['CONTAB-ENTRY_FOLDER-NAME']-len(p))*NULL_BYTE) # location path (128 bytes)
+                outfile.write(pack('H', i)) # ToC index (2 bytes)
 
-    
-    print('\n'.join(str(e) for e in toc))
-    exit(1) # TODO IMPLEMENT
-    with open(lgp_filename, 'wb') as outfile:
-        # write header
-        outfile.write((12-len(DEFAULT_CREATOR))*NULL_BYTE); f.write(DEFAULT_CREATOR.encode())
-        outfile.write(pack('I', num_files))
+        # write file data
+        for e in toc:
+            if outfile.tell() != e['data_start']:
+                raise RuntimeError("File %s should be written at offset %d, but file is currently at offset %d" % (e['diskpath'],e['data_start'],outfile.tell()))
+            outfile.write(e['filename'].encode()); outfile.write((SIZE['DATA-ENTRY_FILENAME']-len(e['filename']))*NULL_BYTE) # filename (20 bytes)
+            outfile.write(pack('I', e['filesize'])) # filesize (4 bytes)
+            with open(e['diskpath'],'rb') as tmpfile:
+                outfile.write(tmpfile.read())
 
-        # write 
+        # write file terminator
+        outfile.write(terminator.encode())
 
 class LGP:
     '''LGP Archive class'''
