@@ -27,7 +27,6 @@ if __name__ == "__main__":
         print("* File ToC and Lookup Match: %s" % lgp.valid_lookup())
         print("* Number of Files: %d" % lgp.header['num_files'])
         print("* Number of Filenames with Conflicts: %d" % lgp.num_conflicting_filenames)
-        #print("* Length of Conflict Table: %d" % len(lgp.conflict_table))
         print()
         print("Table of Contents")
         print("* FILENAME\tFILESIZE\tSTART\tCHECK\tCONFLICT TABLE INDEX")
