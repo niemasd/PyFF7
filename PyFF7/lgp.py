@@ -29,18 +29,19 @@ SIZE = {
 
     # Conflict Table
     'CONTAB_NUM-CONFLICTS':        2, # Conflict Table: Number of Filenames with Conflicts
-    'CONTAB-ENTRY_FOLDER-NAME': 128, # Conflict Table Entry: Folder Name
+    'CONTAB-ENTRY_NUM-LOCATIONS':  2, # Conflict Table Entry: Number of Folder Locations
+    'CONTAB-ENTRY_FOLDER-NAME':  128, # Conflict Table Entry: Folder Name
     'CONTAB-ENTRY_TOC-INDEX':      2, # Conflict Table Entry: ToC Index
 
     # Data Entries
     'DATA-ENTRY_FILENAME':        20, # Data Entry: Filename
     'DATA-ENTRY_FILESIZE':         4, # Data Entry: File Size
 }
-SIZE['HEADER'] = sum(SIZE[k] for k in SIZE if k.startswith('HEADER_'))
-SIZE['TOC-ENTRY'] = sum(SIZE[k] for k in SIZE if k.startswith('TOC-ENTRY_'))
-SIZE['LOOKTAB-ENTRY'] = sum(SIZE[k] for k in SIZE if k.startswith('LOOKTAB-ENTRY_'))
-SIZE['LOOKTAB'] = NUM_LOOKTAB_ENTRIES*SIZE['LOOKTAB-ENTRY']
-SIZE['DATA-ENTRY_HEADER'] = sum(SIZE[k] for k in SIZE if k.startswith('DATA-ENTRY_'))
+SIZE['HEADER'] = sum(SIZE[k] for k in SIZE if k.startswith('HEADER_')) # 16 bytes
+SIZE['TOC-ENTRY'] = sum(SIZE[k] for k in SIZE if k.startswith('TOC-ENTRY_')) # 27 bytes
+SIZE['LOOKTAB-ENTRY'] = sum(SIZE[k] for k in SIZE if k.startswith('LOOKTAB-ENTRY_')) # 4 bytes
+SIZE['LOOKTAB'] = NUM_LOOKTAB_ENTRIES*SIZE['LOOKTAB-ENTRY'] # 3600 bytes
+SIZE['DATA-ENTRY_HEADER'] = sum(SIZE[k] for k in SIZE if k.startswith('DATA-ENTRY_')) # 24 bytes
 
 # start positions of various items in an LGP archive (in bytes)
 START = {
@@ -134,21 +135,70 @@ def toc_to_lookup_table(toc):
     return [(toc_index[i], file_count[i]) for i in range(NUM_LOOKTAB_ENTRIES)]
 
 
-def pack_lgp(num_files, files, lgp_filename, creator=DEFAULT_CREATOR):
+def pack_lgp(files, lgp_filename, creator=DEFAULT_CREATOR):
     '''Pack the files in ``files`` into an LGP archive ``lgp_filename``. Note that we specify the number of files just in case ``files`` streams data for memory purposes.
 
     Args:
-        ``num_files`` (``int``): Number of files to pack
-
-        ``files`` (iterable of (``str``,``bytes``) tuples): The data to pack in the form of (filename, data) tuples
+        ``files`` (iterable of tuple of ``str``): The filenames to pack as (full path in archive, full path on disk) tuples
 
         ``lgp_filename`` (``str``): The filename to write the packed LGP archive
     '''
+    if len(creator) > SIZE['HEADER_FILE-CREATOR']:
+        raise ValueError("Creator name longer than %d characters: %s" % (SIZE['HEADER_FILE-CREATOR'],creator))
+
+    # check filenames for validity and start building ToC
+    toc = list(); file2path = dict()
+    for i,e in enumerate(files):
+        archive_path, disk_path = e
+        f = archive_path.split('/')[-1]
+        if len(f) > SIZE['TOC-ENTRY_FILENAME']:
+            raise ValueError("File name longer than %d characters: %s" % (SIZE['TOC-ENTRY_FILENAME'],f))
+        path = '/'.join(archive_path.split('/')[:-1])
+        if len(path) > SIZE['CONTAB-ENTRY_FOLDER-NAME']:
+            raise ValueError("Path name longer than %d characters: %s" % (SIZE['CONTAB-ENTRY_FOLDER-NAME'],path))
+        if f not in file2path:
+            file2path[f] = list()
+        file2path[f].append(path)
+        entry = {'filename':f, 'path':path, 'diskpath':disk_path, 'filesize': -1} # TODO HERE FILESIZE
+        entry['check'] = 14 # TODO FIGURE THIS OUT
+        toc.append(entry)
+
+    # get information for conflict table
+    num_conflicts = 0; file2conflict = dict()
+    for e in toc:
+        if len(file2path[e['filename']]) > 1:
+            if e['filename'] not in file2conflict:
+                num_conflicts += 1; file2conflict[e['filename']] = num_conflicts
+        else:
+            file2conflict[e['filename']] = 0
+        e['conflict_index'] = file2conflict[e['filename']]
+
+    # compute data start positions
+    toc_size = len(toc) * SIZE['TOC-ENTRY']
+    contab_size = SIZE['CONTAB_NUM-CONFLICTS'] + sum((SIZE['CONTAB-ENTRY_NUM-LOCATIONS'] + len(file2path[f])*(SIZE['CONTAB-ENTRY_FOLDER-NAME']+SIZE['CONTAB-ENTRY_TOC-INDEX'])) for f in file2conflict if file2conflict[f] != 0)
+    data_start = SIZE['HEADER'] + toc_size + SIZE['LOOKTAB'] + contab_size
+    curr_start = data_start
+    for e in toc:
+        toc['data_start'] = curr_start; curr_start += (SIZE['DATA-ENTRY_FILENAME'] + SIZE['DATA-ENTRY_FILESIZE'] + e['filesize'])
+
+    # build LGP file
+    with open(lgp_filename, 'wb') as outfile:
+        # write header
+        outfile.write((SIZE['HEADER_FILE-CREATOR']-len(creator))*NULL_BYTE); outfile.write(creator.encode()) # file creator (12 bytes)
+        outfile.write(pack('I', len(toc))) # number of files (4 bytes)
+
+        # write table of contents
+        for e in toc:
+            outfile.write(e['filename'].encode()); outfile.write((SIZE['TOC-ENTRY_FILENAME']-len(e['filename']))*NULL_BYTE) # filename (20 bytes)
+
+
+    
+    print('\n'.join(str(e) for e in toc))
     exit(1) # TODO IMPLEMENT
     with open(lgp_filename, 'wb') as outfile:
         # write header
         outfile.write((12-len(DEFAULT_CREATOR))*NULL_BYTE); f.write(DEFAULT_CREATOR.encode())
-        outfile.write(pack('i', num_files))
+        outfile.write(pack('I', num_files))
 
         # write 
 
@@ -168,7 +218,7 @@ class LGP:
         tmp = self.file.read(SIZE['HEADER'])
         self.header = {
             'file_creator': tmp[START['HEADER_FILE-CREATOR']:START['HEADER_FILE-CREATOR']+SIZE['HEADER_FILE-CREATOR']].decode().strip(NULL_STR),
-            'num_files': unpack('i', tmp[START['HEADER_NUM-FILES']:START['HEADER_NUM-FILES']+SIZE['HEADER_NUM-FILES']])[0],
+            'num_files': unpack('I', tmp[START['HEADER_NUM-FILES']:START['HEADER_NUM-FILES']+SIZE['HEADER_NUM-FILES']])[0],
         }
 
         # read table of contents
@@ -176,9 +226,9 @@ class LGP:
         for i in range(self.header['num_files']):
             tmp = self.file.read(SIZE['TOC-ENTRY'])
             tmp_filename = tmp[START['TOC-ENTRY_FILENAME']:START['TOC-ENTRY_FILENAME']+SIZE['TOC-ENTRY_FILENAME']].decode().strip(NULL_STR)
-            tmp_data_start = unpack('i', tmp[START['TOC-ENTRY_DATA-START']:START['TOC-ENTRY_DATA-START']+SIZE['TOC-ENTRY_DATA-START']])[0]
+            tmp_data_start = unpack('I', tmp[START['TOC-ENTRY_DATA-START']:START['TOC-ENTRY_DATA-START']+SIZE['TOC-ENTRY_DATA-START']])[0]
             tmp_check = ord(tmp[START['TOC-ENTRY_CHECK']:START['TOC-ENTRY_CHECK']+SIZE['TOC-ENTRY_CHECK']])
-            tmp_conflict_index = unpack('h', tmp[START['TOC-ENTRY_CONFLICT-INDEX']:START['TOC-ENTRY_CONFLICT-INDEX']+SIZE['TOC-ENTRY_CONFLICT-INDEX']])[0]
+            tmp_conflict_index = unpack('H', tmp[START['TOC-ENTRY_CONFLICT-INDEX']:START['TOC-ENTRY_CONFLICT-INDEX']+SIZE['TOC-ENTRY_CONFLICT-INDEX']])[0]
             self.toc.append({'filename':tmp_filename, 'data_start':tmp_data_start, 'check':tmp_check, 'conflict_index':tmp_conflict_index})
             if tmp_conflict_index != 0:
                 self.conflicting_filenames.add(tmp_filename)
@@ -188,26 +238,26 @@ class LGP:
         self.lookup_table = list()
         for i in range(NUM_LOOKTAB_ENTRIES):
             start = i*SIZE['LOOKTAB-ENTRY']
-            tmp_toc_index = unpack('h', tmp[start : start + SIZE['LOOKTAB-ENTRY_INDEX']])[0]
-            tmp_file_count = unpack('h', tmp[start + SIZE['LOOKTAB-ENTRY_INDEX'] : start + SIZE['LOOKTAB-ENTRY']])[0]
+            tmp_toc_index = unpack('H', tmp[start : start + SIZE['LOOKTAB-ENTRY_INDEX']])[0]
+            tmp_file_count = unpack('H', tmp[start + SIZE['LOOKTAB-ENTRY_INDEX'] : start + SIZE['LOOKTAB-ENTRY']])[0]
             self.lookup_table.append((tmp_toc_index,tmp_file_count))
 
         # read conflict table (2 bytes for number of conflicts, and for files with num_conflicts != 0, the actual table)
-        self.num_conflicting_filenames = unpack('h', self.file.read(SIZE['CONTAB_NUM-CONFLICTS']))[0] # the first 2 bytes of the conflict table are the number of conflicts
+        self.num_conflicting_filenames = unpack('H', self.file.read(SIZE['CONTAB_NUM-CONFLICTS']))[0] # the first 2 bytes of the conflict table are the number of conflicts
         for i in range(self.num_conflicting_filenames): # if there were conflicts, handle them (e.g. magic.lgp); other files work properly (num_conflicting = 0)
-            curr_num_conflicts = unpack('h', self.file.read(SIZE['CONTAB_NUM-CONFLICTS']))[0]
+            curr_num_conflicts = unpack('H', self.file.read(SIZE['CONTAB-ENTRY_NUM-LOCATIONS']))[0]
             for j in range(curr_num_conflicts):
                 curr_folder_name = self.file.read(SIZE['CONTAB-ENTRY_FOLDER-NAME']).decode().strip(NULL_STR)
-                curr_toc_index = unpack('h', self.file.read(SIZE['CONTAB-ENTRY_TOC-INDEX']))[0] #- 1 # it's 1-based, so subtract 1 to get indexing into self.toc
+                curr_toc_index = unpack('H', self.file.read(SIZE['CONTAB-ENTRY_TOC-INDEX']))[0] #- 1 # it's 1-based, so subtract 1 to get indexing into self.toc
                 self.toc[curr_toc_index]['filename'] = "%s/%s" % (curr_folder_name, self.toc[curr_toc_index]['filename']) # update filename in Table of Contents
 
         # read file sizes
         for entry in self.toc:
-            self.file.seek(entry['data_start']+SIZE['DATA-ENTRY_FILENAME'], 0); entry['filesize'] = unpack('i', self.file.read(SIZE['DATA-ENTRY_FILESIZE']))[0]
+            self.file.seek(entry['data_start']+SIZE['DATA-ENTRY_FILENAME'], 0); entry['filesize'] = unpack('I', self.file.read(SIZE['DATA-ENTRY_FILESIZE']))[0]
 
         # read terminator
         self.file.seek(self.toc[-1]['data_start']+SIZE['DATA-ENTRY_FILENAME'], 0) # move to filesize of last file
-        self.file.seek(unpack('i', self.file.read(SIZE['DATA-ENTRY_FILESIZE']))[0], 1)    # move forward to end of last file's data
+        self.file.seek(unpack('I', self.file.read(SIZE['DATA-ENTRY_FILESIZE']))[0], 1)    # move forward to end of last file's data
         self.terminator = self.file.read().decode().strip(NULL_STR)
 
         # check lookup table for validity
