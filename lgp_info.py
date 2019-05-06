@@ -12,7 +12,7 @@ ERROR_HEADER_TOC_LENGTH_MISMATCH = "Number of files in header doesn't match Tabl
 ERROR_TOC_CONTAB_NUM_CONFLICTS_MISMATCH = "Number of conflicting files in Conflict Table doesn't match Table of Contents"
 
 if __name__ == "__main__":
-    if len(argv) != 2:
+    if len(argv) != 2 or argv[1] == '-h' or argv[1] == '--help':
         print(USAGE); exit(1)
     lgp = LGP(argv[1], check=False)
     if lgp.header['num_files'] != len(lgp.toc):
