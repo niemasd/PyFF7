@@ -7,7 +7,7 @@ from os import path
 here = path.abspath(path.dirname(__file__))
 setup(
     name='PyFF7',  # Required
-    version='1.0.0',  # Required
+    version='1.0.1',  # Required
     description='PyFF7: Python tools for manipulating files from Final Fantasy VII',  # Required
     long_description='A Python toolkit for manipulating files from Final Fantasy VII.',  # Optional
     long_description_content_type='text/plain',  # Optional (see note above)
@@ -37,7 +37,7 @@ setup(
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
     ],
-    keywords='f77 lgp mod',  # Optional
+    keywords='f77 mod lgp lzss',  # Optional
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),  # Required
     extras_require={  # Optional
         'dev': ['check-manifest'],
