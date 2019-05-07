@@ -17,7 +17,7 @@ Unpack an LGP archive.
 
 Usage: `python3 <lgp_file> <output_directory>`
 
-## [LZSS](../../wiki/LZSS-Format) Files
+## [LZSS](../../wiki/LZSS-Files) Files
 ### [lzss_decompress.py](lzss_decompress.py)
 Decompress an LZSS-compressed file.
 
