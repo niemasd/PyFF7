@@ -214,7 +214,7 @@ class FieldScript:
     def get_bytes(self, version=DEFAULT_VERSION):
         '''Return the bytes encoding this Field Script to repack into a Field File
 
-        Arts:
+        Args:
             ``version`` (``int``): The version field of the file (it's always 0x0502)
 
         Returns:
@@ -310,6 +310,24 @@ class CameraMatrix:
     def __iter__(self):
         for cam in self.cameras:
             yield cam
+
+    def get_bytes(self):
+        '''Return the bytes encoding this Camera Matrix to repack into a Field File
+
+        Returns:
+            ``bytes``: The data to repack into a Field File
+        '''
+        data = bytearray()
+        for cam in self.cameras:
+            for a in SECTION2_AXES:
+                for v in cam['vector_%s'%a]:
+                    data += pack('H', v)
+        data += pack('H', cam['vector_z'][2])
+        for v in cam['position_camera_space']:
+            data += pack('I', v)
+        data += cam['blank']
+        data += pack('H', cam['zoom'])
+        return data
 
 class FieldFile:
     '''Field File class'''
