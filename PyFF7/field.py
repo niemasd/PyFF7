@@ -250,6 +250,11 @@ class FieldScript:
             data += a
         return data
 
+class CameraMatrix:
+    '''Camera Matrix (Section 2) class'''
+    def __init__(self, data):
+        pass
+
 class FieldFile:
     '''Field File class'''
     def __init__(self, data):
@@ -275,3 +280,4 @@ class FieldFile:
 
         # read sections (ignore section length 4-byte chunk at beginning of each)
         self.field_script = FieldScript(data[starts[0]+SIZE['SECTION-LENGTH']:starts[1]])
+        self.camera_matrix = CameraMatrix(data[starts[1]+SIZE['SECTION-LENGTH']:starts[2]])
