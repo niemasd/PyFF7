@@ -5,6 +5,7 @@ Niema Moshiri 2019
 '''
 from . import NULL_BYTE,NULL_STR
 from .lzss import decompress_lzss
+from .text import decode_field_text
 from struct import unpack
 
 # section names
@@ -178,8 +179,8 @@ class FieldScript:
         # read the string offset table
         ind = string_table_offset
         num_strings = unpack('H', data[ind:ind+SIZE['SECTION1_NUM-STRINGS']])[0]; ind += SIZE['SECTION1_NUM-STRINGS'] # internet says this is unreliable
-        string_offsets = [unpack('H', data[ind:ind+SIZE['SECTION1_STRING-OFFSET']])[0]]; ind += SIZE['SECTION1_STRING-OFFSET']
-        num_strings = int(string_offsets[0] / 2) - 1 # internet says this is more reliable
+        first_string_offset = unpack('H', data[ind:ind+SIZE['SECTION1_STRING-OFFSET']])[0]
+        num_strings = int(first_string_offset / 2) - 1 # internet says this is more reliable
         string_offsets = [unpack('H', data[ind + i*SIZE['SECTION1_STRING-OFFSET'] : ind + (i+1)*SIZE['SECTION1_STRING-OFFSET']])[0] for i in range(num_strings)]
 
         # read the strings (each string is 0xff-terminated)
@@ -187,6 +188,14 @@ class FieldScript:
 
         # read the Akao/tutorial blocks
         self.akao = [data[akao_offsets[i]:akao_offsets[i+1]] for i in range(num_akao)]
+
+    def get_strings(self):
+        '''Return the strings in this Field Script
+
+        Returns:
+            ``list`` of ``str``: The strings in this Field Script
+        '''
+        return [decode_field_text(s) for s in self.string_data]
 
 class FieldFile:
     '''Field File class'''

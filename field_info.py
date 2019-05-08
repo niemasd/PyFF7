@@ -25,6 +25,8 @@ if __name__ == "__main__":
         print("  * Number of Models: %d" % ff.field_script.num_models)
         print("  * Length of Script Code: %d bytes" % len(ff.field_script.script_code))
         print("  * Number of Strings: %d" % len(ff.field_script.string_data))
+        for s in ff.field_script.get_strings():
+            print("    * %s" % s.replace('\n','\\n'))
         print("  * Number of Akao/Tutorial Blocks: %d" % len(ff.field_script.akao))
         '''
         print("* File Name: %s" % argv[1])
