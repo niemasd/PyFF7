@@ -25,6 +25,9 @@ SECTION_NAME = [ # Sections 1-9
 DEFAULT_VERSION = 0x0502
 MAX_NUM_STRINGS = 256
 SECTION1_HEADER_NUM_SCRIPTS_PER_ACTOR = 32
+SECTION2_AXES = ('x','y','z')
+SECTION2_VECTOR_DIV = 4096.
+SECTION2_NUM_DIMENSIONS = 3
 STRING_TERMINATOR = b'\xff'
 
 # OP codes
@@ -108,11 +111,18 @@ SIZE = {
     'SECTION1-HEADER_ACTOR-SCRIPT':   2, # Section 1 Header: Actor Script
     'SECTION1_NUM-STRINGS':           2, # Section 1: Number of Strings in String Offset Table
     'SECTION1_STRING-OFFSET':         2, # Section 1: String Offset
+
+    # Section 2 (Camera Matrix)
+    'SECTION2-ENTRY_VECTOR-VALUE':    2, # Section 2 Entry: Value in an Axis Vector
+    'SECTION2-ENTRY_SPACE-POSITION':  4, # Section 2 Entry: Camera Space Position in an Axis
+    'SECTION2-ENTRY_BLANK':           4, # Section 2 Entry: Blank
+    'SECTION2-ENTRY_ZOOM':            2, # Section 2 Entry: Zoom
 }
-SIZE['SECTION1_HEADER'] = sum(SIZE[k] for k in SIZE if k.startswith('SECTION1-HEADER_'))
+SIZE['SECTION2-ENTRY'] = len(SECTION2_AXES)*SECTION2_NUM_DIMENSIONS*SIZE['SECTION2-ENTRY_VECTOR-VALUE'] + SIZE['SECTION2-ENTRY_VECTOR-VALUE'] + len(SECTION2_AXES)*SIZE['SECTION2-ENTRY_SPACE-POSITION'] + SIZE['SECTION2-ENTRY_BLANK'] + SIZE['SECTION2-ENTRY_ZOOM']
 
 # error messages
 ERROR_INVALID_FIELD_FILE = "Invalid Field file"
+ERROR_SECTION2_CAM_VEC_Z_DUP_MISMATCH = "Duplicate z-axis vector dimension 3 value does not match"
 
 def instruction_size(code, offset):
     '''Find the size of the instruction at the given offset in a script code block
@@ -253,7 +263,53 @@ class FieldScript:
 class CameraMatrix:
     '''Camera Matrix (Section 2) class'''
     def __init__(self, data):
-        pass
+        '''``CameraMatrix`` constructor
+
+        Args:
+            ``data`` (``bytes``): The data of the Field File
+        '''
+        self.cameras = list(); ind = 0
+        for _ in range(int(len(data)/SIZE['SECTION2-ENTRY'])):
+            cam = dict()
+
+            # read camera vectors
+            for a in SECTION2_AXES:
+                cam['vector_%s'%a] = list()
+                for __ in range(SECTION2_NUM_DIMENSIONS):
+                    cam['vector_%s'%a].append(unpack('H', data[ind:ind+SIZE['SECTION2-ENTRY_VECTOR-VALUE']])[0]); ind += SIZE['SECTION2-ENTRY_VECTOR-VALUE']
+
+            # read vector z 3rd dimension duplicate (sanity check? padding?)
+            vec_z_dim_3_dup = unpack('H', data[ind:ind+SIZE['SECTION2-ENTRY_VECTOR-VALUE']])[0]; ind += SIZE['SECTION2-ENTRY_VECTOR-VALUE']
+            if vec_z_dim_3_dup != cam['vector_z'][2]:
+                raise ValueError(ERROR_SECTION2_CAM_VEC_Z_DUP_MISMATCH)
+
+            # correct vectors (for each vector, divide all 3 dimensions by 4096 and negate 2nd and 3rd dimensions)
+            #for a in SECTION2_AXES:
+            #    for d in range(SECTION2_NUM_DIMENSIONS):
+            #        cam['vector_%s'%a][d] /= SECTION2_VECTOR_DIV # divide all vector values by 4096
+            #        if d > 0:
+            #            cam['vector_%s'%a][d] *= -1 # negate the 2nd and 3rd dimensions of each vector
+
+            # read camera space positions
+            cam['position_camera_space'] = list()
+            for _ in range(len(SECTION2_AXES)):
+                cam['position_camera_space'].append(unpack('I', data[ind:ind+SIZE['SECTION2-ENTRY_SPACE-POSITION']])[0]); ind += SIZE['SECTION2-ENTRY_SPACE-POSITION']
+
+            # read blank (seems to usually be 0, but not always)
+            cam['blank'] = data[ind:ind+SIZE['SECTION2-ENTRY_BLANK']]; ind += SIZE['SECTION2-ENTRY_BLANK']
+
+            # read zoom (unknown if it's unsigned or signed, but Makou Reactor assumes signed, so I will to)
+            cam['zoom'] = unpack('H', data[ind:ind+SIZE['SECTION2-ENTRY_ZOOM']])[0]; ind += SIZE['SECTION2-ENTRY_ZOOM']
+            
+            # camera is loaded, so append to cameras
+            self.cameras.append(cam)
+
+    def __len__(self):
+        return len(self.cameras)
+
+    def __iter__(self):
+        for cam in self.cameras:
+            yield cam
 
 class FieldFile:
     '''Field File class'''

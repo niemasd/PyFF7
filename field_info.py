@@ -30,5 +30,13 @@ if __name__ == "__main__":
             print("    * %s" % s.replace('\n','\\n'))
         print()
         print("* Section 2: %s" % SECTION_NAME[1])
+        print("  * Number of Cameras: %d" % len(ff.camera_matrix))
+        for i,cam in enumerate(ff.camera_matrix):
+            print("  * Camera %d:" % (i+1))
+            for a in ('x','y','z'):
+                print("    * %s-Axis Vector: %s" % (a, str(cam['vector_%s'%a])))
+            print("    * Position (Camera Space): %s" % str(cam['position_camera_space']))
+            print("    * Zoom: %d" % cam['zoom'])
+
     except BrokenPipeError:
         stderr.close()
