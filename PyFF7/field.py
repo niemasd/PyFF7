@@ -6,7 +6,7 @@ Niema Moshiri 2019
 from . import NULL_BYTE,NULL_STR
 from .lzss import decompress_lzss
 from .text import decode_field_text
-from struct import unpack
+from struct import pack,unpack
 
 # section names
 SECTION_NAME = [ # Sections 1-9
@@ -22,6 +22,8 @@ SECTION_NAME = [ # Sections 1-9
 ]
 
 # constants
+DEFAULT_VERSION = 0x0502
+MAX_NUM_STRINGS = 256
 SECTION1_HEADER_NUM_SCRIPTS_PER_ACTOR = 32
 STRING_TERMINATOR = b'\xff'
 
@@ -107,6 +109,7 @@ SIZE = {
     'SECTION1_NUM-STRINGS':           2, # Section 1: Number of Strings in String Offset Table
     'SECTION1_STRING-OFFSET':         2, # Section 1: String Offset
 }
+SIZE['SECTION1_HEADER'] = sum(SIZE[k] for k in SIZE if k.startswith('SECTION1-HEADER_'))
 
 # error messages
 ERROR_INVALID_FIELD_FILE = "Invalid Field file"
@@ -153,7 +156,7 @@ class FieldScript:
         self.name = data[ind:ind+SIZE['SECTION1-HEADER_NAME']].decode().rstrip(NULL_STR); ind += SIZE['SECTION1-HEADER_NAME']
         self.actor_names = [data[ind + i*SIZE['SECTION1-HEADER_ACTOR-NAME'] : ind + (i+1)*SIZE['SECTION1-HEADER_ACTOR-NAME']].decode().rstrip(NULL_STR) for i in range(num_actors)]; ind += num_actors*SIZE['SECTION1-HEADER_ACTOR-NAME']
         akao_offsets = [unpack('I', data[ind + i*SIZE['SECTION1-HEADER_AKAO-OFFSET'] : ind + (i+1)*SIZE['SECTION1-HEADER_AKAO-OFFSET']])[0] for i in range(num_akao)]; ind += num_akao*SIZE['SECTION1-HEADER_AKAO-OFFSET']
-        akao_offsets.append(len(data)) # dummy offset to determine end of last extra block (I think not needed: can just use empty end in Python slice)
+        akao_offsets.append(len(data))
         self.actor_scripts = [[unpack('H', data[ind + SIZE['SECTION1-HEADER_ACTOR-SCRIPT']*(i*SECTION1_HEADER_NUM_SCRIPTS_PER_ACTOR + j) : ind + SIZE['SECTION1-HEADER_ACTOR-SCRIPT']*(i*SECTION1_HEADER_NUM_SCRIPTS_PER_ACTOR + j+1)])[0] for j in range(SECTION1_HEADER_NUM_SCRIPTS_PER_ACTOR)] for i in range(num_actors)]; ind += SIZE['SECTION1-HEADER_ACTOR-SCRIPT']*SECTION1_HEADER_NUM_SCRIPTS_PER_ACTOR*num_actors
         self.script_entry_offsets = {e for l in self.actor_scripts for e in l}
 
@@ -185,6 +188,7 @@ class FieldScript:
 
         # read the strings (each string is 0xff-terminated)
         self.string_data = [data[string_table_offset+o : data.find(STRING_TERMINATOR, string_table_offset+o)+1] for o in string_offsets]
+        tmp = data.find(STRING_TERMINATOR,string_table_offset+string_offsets[-1])
 
         # read the Akao/tutorial blocks
         self.akao = [data[akao_offsets[i]:akao_offsets[i+1]] for i in range(num_akao)]
@@ -196,6 +200,55 @@ class FieldScript:
             ``list`` of ``str``: The strings in this Field Script
         '''
         return [decode_field_text(s) for s in self.string_data]
+
+    def get_bytes(self, version=DEFAULT_VERSION):
+        '''Return the bytes encoding this Field Script to repack into a Field File
+
+        Arts:
+            ``version`` (``int``): The version field of the file (it's always 0x0502)
+
+        Returns:
+            ``bytes``: The data to repack into a Field File
+        '''
+        if len(self.string_data) > MAX_NUM_STRINGS:
+            raise ValueError("Number of strings (%d) exceeds maximum allowed (%d)" % (len(self.string_data), MAX_NUM_STRINGS))
+
+        # prepare helpful variables
+        string_table_offset = SIZE['SECTION1-HEADER_VERSION'] + SIZE['SECTION1-HEADER_NUM-ACTORS'] + SIZE['SECTION1-HEADER_NUM-MODELS'] + SIZE['SECTION1-HEADER_STRINGS-OFFSET'] + SIZE['SECTION1-HEADER_NUM-AKAO'] + SIZE['SECTION1-HEADER_SCALE'] + SIZE['SECTION1-HEADER_BLANK'] + SIZE['SECTION1-HEADER_CREATOR'] + SIZE['SECTION1-HEADER_NAME'] + SIZE['SECTION1-HEADER_ACTOR-NAME']*len(self.actor_names) + SIZE['SECTION1-HEADER_AKAO-OFFSET']*len(self.akao) + SECTION1_HEADER_NUM_SCRIPTS_PER_ACTOR*SIZE['SECTION1-HEADER_ACTOR-SCRIPT']*len(self.actor_names) + len(self.script_code)
+
+        # create string table
+        string_offsets = bytearray(); string_table = bytearray(); offset = SIZE['SECTION1_NUM-STRINGS'] + SIZE['SECTION1_STRING-OFFSET']*len(self.string_data)
+        for s in self.string_data:
+            string_offsets += pack('H', offset); string_table += s; offset += len(s)
+        string_table = pack('H', len(self.string_data)) + string_offsets + string_table
+        align = string_table_offset + len(string_table)
+        if align % 4 != 0: # for some reason, this way of padding is right on MOST files, but not all (e.g. ancnt*)
+            string_table += NULL_BYTE*(4 - (align % 4))
+
+        # encode data
+        data = bytearray()
+        data += pack('H', version)
+        data += pack('B', len(self.actor_names))
+        data += pack('B', self.num_models)
+        data += pack('H', string_table_offset)
+        data += pack('H', len(self.akao))
+        data += pack('H', self.scale)
+        data += NULL_BYTE*SIZE['SECTION1-HEADER_BLANK']
+        data += self.creator.encode(); data += NULL_BYTE*(SIZE['SECTION1-HEADER_CREATOR']-len(self.creator))
+        data += self.name.encode(); data += NULL_BYTE*(SIZE['SECTION1-HEADER_NAME']-len(self.name))
+        for actor_name in self.actor_names:
+            data += actor_name.encode(); data += NULL_BYTE*(SIZE['SECTION1-HEADER_ACTOR-NAME']-len(actor_name))
+        offset = string_table_offset + len(string_table)
+        for a in self.akao:
+            data += pack('I', offset); offset += len(a)
+        for scripts in self.actor_scripts:
+            for i in range(SECTION1_HEADER_NUM_SCRIPTS_PER_ACTOR): # I added the extra 33rd item, so this gets rid of it
+                data += pack('H', scripts[i])
+        data += self.script_code # MAYBE IT NEEDS TO BE ALIGNED WITH SCRIPT CODE?
+        data += string_table
+        for a in self.akao:
+            data += a
+        return data
 
 class FieldFile:
     '''Field File class'''
