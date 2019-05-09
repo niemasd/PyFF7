@@ -28,6 +28,8 @@ SECTION1_HEADER_NUM_SCRIPTS_PER_ACTOR = 32
 SECTION2_AXES = ('x','y','z')
 SECTION2_VECTOR_DIV = 4096.
 SECTION2_NUM_DIMENSIONS = 3
+SECTION3_NUM_LIGHTS = 3
+SECTION3_NUM_DIMENSIONS = 3
 STRING_TERMINATOR = b'\xff'
 
 # OP codes
@@ -117,6 +119,21 @@ SIZE = {
     'SECTION2-ENTRY_SPACE-POSITION':  4, # Section 2 Entry: Camera Space Position in an Axis
     'SECTION2-ENTRY_BLANK':           4, # Section 2 Entry: Blank
     'SECTION2-ENTRY_ZOOM':            2, # Section 2 Entry: Zoom
+
+    # Section 3 (Model Loader)
+    'SECTION3-HEADER_BLANK':          2, # Section 3 Header: Blanks (NULL bytes)
+    'SECTION3-HEADER_NUM-MODELS':     2, # Section 3 Header: Number of Models
+    'SECTION3-HEADER_SCALE':          2, # Section 3 Header: Scale
+    'SECTION3-MODEL_NAME-LENGTH':     2, # Section 3 Model: Model Name Length
+    'SECTION3-MODEL_ATTR':            2, # Section 3 Model: Unknown Attribute (sometimes 0 if the model is playable, 1 otherwise)
+    'SECTION3-MODEL_HRC':             8, # Section 3 Model: HRC Name (e.g. AAAA.HRC)
+    'SECTION3-MODEL_SCALE':           4, # Section 3 Model: Scale String
+    'SECTION3-MODEL_NUM-ANIMATIONS':  2, # Section 3 Model: Number of Animations
+    'SECTION3-MODEL_LIGHT-COLOR-VAL': 1, # Section 3 Model: Light Color Value (whole color is in RGB format, 1 byte each, so 3 bytes total)
+    'SECTION3-MODEL_LIGHT-COORD-VAL': 2, # Section 3 Model: Light Coordinate Value (2-byte signed integer)
+    'SECTION3-MODEL_GLOB-COLOR-VAL':  1, # Section 3 Model: Global Light Color Value (whole color is in RGB format, 1 byte each, so 3 bytes total)
+    'SECTION3-ANIMATION_NAME-LENGTH': 2, # Section 3 Animation: Animation Name Length
+    'SECTION3-ANIMATION_ATTR':        2, # Section 3 Animation: Unknown Attribute (the 2nd byte is always 0x0 and the 1st byte varies, so maybe an unsigned integer?)
 }
 SIZE['SECTION2-ENTRY'] = len(SECTION2_AXES)*SECTION2_NUM_DIMENSIONS*SIZE['SECTION2-ENTRY_VECTOR-VALUE'] + SIZE['SECTION2-ENTRY_VECTOR-VALUE'] + len(SECTION2_AXES)*SIZE['SECTION2-ENTRY_SPACE-POSITION'] + SIZE['SECTION2-ENTRY_BLANK'] + SIZE['SECTION2-ENTRY_ZOOM']
 
@@ -202,6 +219,12 @@ class FieldScript:
 
         # read the Akao/tutorial blocks
         self.akao = [data[akao_offsets[i]:akao_offsets[i+1]] for i in range(num_akao)]
+
+    def __eq__(self, other):
+        return isinstance(other,FieldScript) and self.version == other.version and self.num_models == other.num_models and self.scale == other.scale and self.creator == other.creator and self.name == other.name and self.actor_names == other.actor_names and self.actor_scripts == other.actor_scripts and self.script_entry_offsets == other.script_entry_offsets and self.script_start_offset == other.script_start_offset and self.script_code == other.script_code and self.string_data == other.string_data and self.akao == other.akao
+
+    def __ne__(self, other):
+        return not self == other
 
     def get_strings(self):
         '''Return the strings in this Field Script
@@ -304,6 +327,12 @@ class CameraMatrix:
             # camera is loaded, so append to cameras
             self.cameras.append(cam)
 
+    def __eq__(self, other):
+        return isinstance(other,CameraMatrix) and self.cameras == other.cameras
+
+    def __ne__(self, other):
+        return not self == other
+
     def __len__(self):
         return len(self.cameras)
 
@@ -327,6 +356,84 @@ class CameraMatrix:
             data += pack('I', v)
         data += cam['blank']
         data += pack('H', cam['zoom'])
+        return data
+
+class ModelLoader:
+    '''Model Loader class'''
+    def __init__(self, data):
+        self.models = list(); ind = 0
+        self.blank = data[ind:ind+SIZE['SECTION3-HEADER_BLANK']]; ind = SIZE['SECTION3-HEADER_BLANK']
+        num_models = unpack('H', data[ind:ind+SIZE['SECTION3-HEADER_NUM-MODELS']])[0]; ind += SIZE['SECTION3-HEADER_NUM-MODELS']
+        self.scale = unpack('H', data[ind:ind+SIZE['SECTION3-HEADER_SCALE']])[0]; ind += SIZE['SECTION3-HEADER_SCALE']
+        for _ in range(num_models):
+            model = dict()
+            name_length = unpack('H', data[ind:ind+SIZE['SECTION3-MODEL_NAME-LENGTH']])[0]; ind += SIZE['SECTION3-MODEL_NAME-LENGTH']
+            model['name'] = data[ind:ind+name_length].decode(); ind += name_length
+            model['attribute'] = unpack('H', data[ind:ind+SIZE['SECTION3-MODEL_ATTR']])[0]; ind += SIZE['SECTION3-MODEL_ATTR']
+            model['hrc'] = data[ind:ind+SIZE['SECTION3-MODEL_HRC']].decode(); ind += SIZE['SECTION3-MODEL_HRC']
+            model['scale'] = int(data[ind:ind+SIZE['SECTION3-MODEL_SCALE']].decode().rstrip(NULL_STR)); ind += SIZE['SECTION3-MODEL_SCALE']
+            num_animations = unpack('H', data[ind:ind+SIZE['SECTION3-MODEL_NUM-ANIMATIONS']])[0]; ind += SIZE['SECTION3-MODEL_NUM-ANIMATIONS']
+            for i in range(SECTION3_NUM_LIGHTS):
+                model['light_%d'%i] = dict()
+                model['light_%d'%i]['color'] = list()
+                for c in ('R','G','B'):
+                    model['light_%d'%i]['color'].append(data[ind]); ind += SIZE['SECTION3-MODEL_LIGHT-COLOR-VAL']
+                model['light_%d'%i]['coord'] = list()
+                for d in range(SECTION3_NUM_DIMENSIONS):
+                    model['light_%d'%i]['coord'].append(unpack('h', data[ind:ind+SIZE['SECTION3-MODEL_LIGHT-COORD-VAL']])[0]); ind += SIZE['SECTION3-MODEL_LIGHT-COORD-VAL']
+            model['global_light_color'] = list()
+            for c in ('R','G','B'):
+                model['global_light_color'].append(data[ind]); ind += SIZE['SECTION3-MODEL_GLOB-COLOR-VAL']
+            model['animations'] = list()
+            for __ in range(num_animations):
+                animation = dict()
+                name_length = unpack('H', data[ind:ind+SIZE['SECTION3-ANIMATION_NAME-LENGTH']])[0]; ind += SIZE['SECTION3-ANIMATION_NAME-LENGTH']
+                animation['name'] = data[ind:ind+name_length].decode(); ind += name_length
+                animation['attr'] = unpack('H', data[ind:ind+SIZE['SECTION3-ANIMATION_ATTR']])[0]; ind += SIZE['SECTION3-ANIMATION_ATTR']
+                model['animations'].append(animation)
+            self.models.append(model)
+
+    def __eq__(self, other):
+        return isinstance(other,ModelLoader) and self.models == other.models and self.scale == other.scale and self.blank == other.blank
+
+    def __ne__(self, other):
+        return not self == other
+
+    def __len__(self):
+        return len(self.models)
+
+    def __iter__(self):
+        for model in self.models:
+            yield model
+
+    def get_bytes(self):
+        '''Return the bytes encoding this Model Loader to repack into a Field File
+
+        Returns:
+            ``bytes``: The data to repack into a Field File
+        '''
+        data = bytearray()
+        data += NULL_BYTE*SIZE['SECTION3-HEADER_BLANK']
+        data += pack('H', len(self.models))
+        data += pack('H', self.scale)
+        for model in self.models:
+            data += pack('H', len(model['name']))
+            data += model['name'].encode()
+            data += pack('H', model['attribute'])
+            data += model['hrc'].encode()
+            data += str(model['scale']).encode(); data += NULL_BYTE*(SIZE['SECTION3-MODEL_SCALE']-len(str(model['scale'])))
+            data += pack('H', len(model['animations']))
+            for i in range(SECTION3_NUM_LIGHTS):
+                for v in model['light_%d'%i]['color']:
+                    data += pack('B', v)
+                for v in model['light_%d'%i]['coord']:
+                    data += pack('h', v)
+            for v in model['global_light_color']:
+                data += pack('B', v)
+            for animation in model['animations']:
+                data += pack('H', len(animation['name']))
+                data += animation['name'].encode()
+                data += pack('H', animation['attr'])
         return data
 
 class FieldFile:
@@ -354,4 +461,7 @@ class FieldFile:
 
         # read sections (ignore section length 4-byte chunk at beginning of each)
         self.field_script = FieldScript(data[starts[0]+SIZE['SECTION-LENGTH']:starts[1]])
+        tmp = FieldScript(self.field_script.get_bytes())
         self.camera_matrix = CameraMatrix(data[starts[1]+SIZE['SECTION-LENGTH']:starts[2]])
+        self.model_loader = ModelLoader(data[starts[2]+SIZE['SECTION-LENGTH']:starts[3]])
+        exit()
