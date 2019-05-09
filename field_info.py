@@ -56,5 +56,14 @@ if __name__ == "__main__":
                 print("    * Animation %d:" % (j+1))
                 print("      * Name: %s" % animation['name'])
                 print("      * Attribute: %d" % animation['attribute'])
+        print()
+        print("* Section 4: %s" % SECTION_NAME[3])
+        print("  * PalX: %d" % ff.palette.palX)
+        print("  * PalY: %d" % ff.palette.palY)
+        print("  * Number of Colors per Page: %d" % ff.palette.colors_per_page)
+        print("  * Number of Pages: %d" % int(len(ff.palette.colors) / ff.palette.colors_per_page))
+        print("  * Page Colors (A,R,G,B):")
+        for i in range(int(len(ff.palette.colors) / ff.palette.colors_per_page)):
+            print("    * Page %d:\t%s" % (i+1, str([str(tuple(e)).replace(' ','') for e in ff.palette.colors[i*ff.palette.colors_per_page : (i+1)*ff.palette.colors_per_page]]).replace("'",'')))
     except BrokenPipeError:
         stderr.close()

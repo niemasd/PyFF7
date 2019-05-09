@@ -30,6 +30,11 @@ SECTION2_VECTOR_DIV = 4096.
 SECTION2_NUM_DIMENSIONS = 3
 SECTION3_NUM_LIGHTS = 3
 SECTION3_NUM_DIMENSIONS = 3
+SECTION4_COLOR_MASK = 0b11111
+SECTION4_COLOR_A_SHIFT = 15 # A = Alpha = Transparency
+SECTION4_COLOR_B_SHIFT = 10 # B = Blue
+SECTION4_COLOR_G_SHIFT = 5  # G = Green
+SECTION4_COLOR_R_SHIFT = 0  # R = Red
 STRING_TERMINATOR = b'\xff'
 
 # OP codes
@@ -134,6 +139,14 @@ SIZE = {
     'SECTION3-MODEL_GLOB-COLOR-VAL':  1, # Section 3 Model: Global Light Color Value (whole color is in RGB format, 1 byte each, so 3 bytes total)
     'SECTION3-ANIMATION_NAME-LENGTH': 2, # Section 3 Animation: Animation Name Length
     'SECTION3-ANIMATION_ATTR':        2, # Section 3 Animation: Unknown Attribute (the 2nd byte is always 0x0 and the 1st byte varies, so maybe an unsigned integer?)
+
+    # Section 4 (Palette)
+    'SECTION4-HEADER_LENGTH':         4, # Section 4 Header: Length
+    'SECTION4-HEADER_PALX':           2, # Section 4 Header: PalX (always 0)
+    'SECTION4-HEADER_PALY':           2, # Section 4 Header: PalY (always 480)
+    'SECTION4-HEADER_COLORS-PER-PAGE':     2, # Section 4 Header: Number of Colors in Palette (always 256)
+    'SECTION4-HEADER_NUM-PAGES':   2, # Section 4 Header: Number of Palettes
+    'SECTION4_COLOR':                 2, # Section 4: Color (16-bit MBBBBBGGGGGRRRRR where M = Mask, B = Blue, G = Green, R = Red)
 }
 SIZE['SECTION2-ENTRY'] = len(SECTION2_AXES)*SECTION2_NUM_DIMENSIONS*SIZE['SECTION2-ENTRY_VECTOR-VALUE'] + SIZE['SECTION2-ENTRY_VECTOR-VALUE'] + len(SECTION2_AXES)*SIZE['SECTION2-ENTRY_SPACE-POSITION'] + SIZE['SECTION2-ENTRY_BLANK'] + SIZE['SECTION2-ENTRY_ZOOM']
 
@@ -439,7 +452,40 @@ class ModelLoader:
 class Palette:
     '''Palette class'''
     def __init__(self, data):
-        exit()
+        self.colors = list(); ind = SIZE['SECTION4-HEADER_LENGTH']
+        self.palX = unpack('H', data[ind:ind+SIZE['SECTION4-HEADER_PALX']])[0]; ind += SIZE['SECTION4-HEADER_PALX']
+        self.palY = unpack('H', data[ind:ind+SIZE['SECTION4-HEADER_PALY']])[0]; ind += SIZE['SECTION4-HEADER_PALY']
+        self.colors_per_page = unpack('H', data[ind:ind+SIZE['SECTION4-HEADER_COLORS-PER-PAGE']])[0]; ind += SIZE['SECTION4-HEADER_COLORS-PER-PAGE']
+        num_pages = unpack('H', data[ind:ind+SIZE['SECTION4-HEADER_NUM-PAGES']])[0]; ind += SIZE['SECTION4-HEADER_NUM-PAGES']
+        while ind < len(data):
+            color = unpack('H', data[ind:ind+SIZE['SECTION4_COLOR']])[0]; ind += SIZE['SECTION4_COLOR']
+            color_a = (color >> SECTION4_COLOR_A_SHIFT) & SECTION4_COLOR_MASK
+            color_r = (color >> SECTION4_COLOR_R_SHIFT) & SECTION4_COLOR_MASK
+            color_g = (color >> SECTION4_COLOR_G_SHIFT) & SECTION4_COLOR_MASK
+            color_b = (color >> SECTION4_COLOR_B_SHIFT) & SECTION4_COLOR_MASK
+            self.colors.append([color_a, color_r, color_g, color_b]) # I read them as A BGR, but I like saving them as A RGB
+
+    def __eq__(self, other):
+        return isinstance(other,Palette) and self.palX == other.palX and self.palY == other.palY and self.colors_per_page == other.colors_per_page and self.colors == other.colors
+
+    def __ne__(self, other):
+        return not self == other
+
+    def get_bytes(self):
+        '''Return the bytes encoding this Palette to repack into a Field File
+
+        Returns:
+            ``bytes``: The data to repack into a Field File
+        '''
+        data = bytearray()
+        data += pack('H', self.palX)            # always 0
+        data += pack('H', self.palY)            # always 480
+        data += pack('H', self.colors_per_page) # always 256
+        data += pack('H', int((len(self.colors)/self.colors_per_page)))
+        for c in self.colors:
+            data += pack('H', (c[0] << SECTION4_COLOR_A_SHIFT) | (c[1] << SECTION4_COLOR_R_SHIFT) | (c[2] << SECTION4_COLOR_G_SHIFT) | (c[3] << SECTION4_COLOR_B_SHIFT))
+        data = pack('I', SIZE['SECTION4-HEADER_LENGTH']+len(data)) + data
+        return data
 
 class FieldFile:
     '''Field File class'''
@@ -466,6 +512,6 @@ class FieldFile:
 
         # read sections (ignore section length 4-byte chunk at beginning of each)
         self.field_script = FieldScript(data[starts[0]+SIZE['SECTION-LENGTH']:starts[1]])
-        tmp = FieldScript(self.field_script.get_bytes())
         self.camera_matrix = CameraMatrix(data[starts[1]+SIZE['SECTION-LENGTH']:starts[2]])
         self.model_loader = ModelLoader(data[starts[2]+SIZE['SECTION-LENGTH']:starts[3]])
+        self.palette = Palette(data[starts[3]+SIZE['SECTION-LENGTH']:starts[4]])
