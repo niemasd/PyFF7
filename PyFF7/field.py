@@ -35,6 +35,7 @@ SECTION4_COLOR_A_SHIFT = 15 # A = Alpha = Transparency
 SECTION4_COLOR_B_SHIFT = 10 # B = Blue
 SECTION4_COLOR_G_SHIFT = 5  # G = Green
 SECTION4_COLOR_R_SHIFT = 0  # R = Red
+SECTION5_NUM_VERTICES_PER_SECTOR = 3 # Sectors are triangles, which have 3 vertices
 STRING_TERMINATOR = b'\xff'
 
 # OP codes
@@ -96,63 +97,69 @@ OP_SPECIAL = 0x0F # Special Opcode (Multibyte sequence)
 # sizes
 SIZE = {
     # header sizes
-    'HEADER_BLANK':                   2, # Header starts with 2 NULL bytes
-    'HEADER_NUM-SECTIONS':            4, # Header: Number of Sections in File
-    'HEADER_SECTION-START':           4, # Header: Section Start Position
+    'HEADER_BLANK':                    2, # Header starts with 2 NULL bytes
+    'HEADER_NUM-SECTIONS':             4, # Header: Number of Sections in File
+    'HEADER_SECTION-START':            4, # Header: Section Start Position
 
     # properties of all sections
-    'SECTION-LENGTH':                 4, # Section Length
+    'SECTION-LENGTH':                  4, # Section Length
 
     # Section 1 (Field Script)
-    'SECTION1-HEADER_VERSION':        2, # Section 1 Header: Version
-    'SECTION1-HEADER_NUM-ACTORS':     1, # Section 1 Header: Number of Actors
-    'SECTION1-HEADER_NUM-MODELS':     1, # Section 1 Header: Number of Models
-    'SECTION1-HEADER_STRINGS-OFFSET': 2, # Section 1 Header: String Table Offset
-    'SECTION1-HEADER_NUM-AKAO':       2, # Section 1 Header: Number of Akao/Tutorial Blocks
-    'SECTION1-HEADER_SCALE':          2, # Section 1 Header: Field Scale
-    'SECTION1-HEADER_BLANK':          6, # Section 1 Header: Blanks (NULL bytes)
-    'SECTION1-HEADER_CREATOR':        8, # Section 1 Header: Field Creator
-    'SECTION1-HEADER_NAME':           8, # Section 1 Header: Field Name
-    'SECTION1-HEADER_ACTOR-NAME':     8, # Section 1 Header: Actor Name
-    'SECTION1-HEADER_AKAO-OFFSET':    4, # Section 1 Header: Akao/Tutorial Block Offsets
-    'SECTION1-HEADER_ACTOR-SCRIPT':   2, # Section 1 Header: Actor Script
-    'SECTION1_NUM-STRINGS':           2, # Section 1: Number of Strings in String Offset Table
-    'SECTION1_STRING-OFFSET':         2, # Section 1: String Offset
+    'SECTION1-HEADER_VERSION':         2, # Section 1 Header: Version
+    'SECTION1-HEADER_NUM-ACTORS':      1, # Section 1 Header: Number of Actors
+    'SECTION1-HEADER_NUM-MODELS':      1, # Section 1 Header: Number of Models
+    'SECTION1-HEADER_STRINGS-OFFSET':  2, # Section 1 Header: String Table Offset
+    'SECTION1-HEADER_NUM-AKAO':        2, # Section 1 Header: Number of Akao/Tutorial Blocks
+    'SECTION1-HEADER_SCALE':           2, # Section 1 Header: Field Scale
+    'SECTION1-HEADER_BLANK':           6, # Section 1 Header: Blanks (NULL bytes)
+    'SECTION1-HEADER_CREATOR':         8, # Section 1 Header: Field Creator
+    'SECTION1-HEADER_NAME':            8, # Section 1 Header: Field Name
+    'SECTION1-HEADER_ACTOR-NAME':      8, # Section 1 Header: Actor Name
+    'SECTION1-HEADER_AKAO-OFFSET':     4, # Section 1 Header: Akao/Tutorial Block Offsets
+    'SECTION1-HEADER_ACTOR-SCRIPT':    2, # Section 1 Header: Actor Script
+    'SECTION1_NUM-STRINGS':            2, # Section 1: Number of Strings in String Offset Table
+    'SECTION1_STRING-OFFSET':          2, # Section 1: String Offset
 
     # Section 2 (Camera Matrix)
-    'SECTION2-ENTRY_VECTOR-VALUE':    2, # Section 2 Entry: Value in an Axis Vector
-    'SECTION2-ENTRY_SPACE-POSITION':  4, # Section 2 Entry: Camera Space Position in an Axis
-    'SECTION2-ENTRY_BLANK':           4, # Section 2 Entry: Blank
-    'SECTION2-ENTRY_ZOOM':            2, # Section 2 Entry: Zoom
+    'SECTION2-ENTRY_VECTOR-VALUE':     2, # Section 2 Entry: Value in an Axis Vector
+    'SECTION2-ENTRY_SPACE-POSITION':   4, # Section 2 Entry: Camera Space Position in an Axis
+    'SECTION2-ENTRY_BLANK':            4, # Section 2 Entry: Blank
+    'SECTION2-ENTRY_ZOOM':             2, # Section 2 Entry: Zoom
 
     # Section 3 (Model Loader)
-    'SECTION3-HEADER_BLANK':          2, # Section 3 Header: Blanks (NULL bytes)
-    'SECTION3-HEADER_NUM-MODELS':     2, # Section 3 Header: Number of Models
-    'SECTION3-HEADER_SCALE':          2, # Section 3 Header: Scale
-    'SECTION3-MODEL_NAME-LENGTH':     2, # Section 3 Model: Model Name Length
-    'SECTION3-MODEL_ATTR':            2, # Section 3 Model: Unknown Attribute (sometimes 0 if the model is playable, 1 otherwise)
-    'SECTION3-MODEL_HRC':             8, # Section 3 Model: HRC Name (e.g. AAAA.HRC)
-    'SECTION3-MODEL_SCALE':           4, # Section 3 Model: Scale String
-    'SECTION3-MODEL_NUM-ANIMATIONS':  2, # Section 3 Model: Number of Animations
-    'SECTION3-MODEL_LIGHT-COLOR-VAL': 1, # Section 3 Model: Light Color Value (whole color is in RGB format, 1 byte each, so 3 bytes total)
-    'SECTION3-MODEL_LIGHT-COORD-VAL': 2, # Section 3 Model: Light Coordinate Value (2-byte signed integer)
-    'SECTION3-MODEL_GLOB-COLOR-VAL':  1, # Section 3 Model: Global Light Color Value (whole color is in RGB format, 1 byte each, so 3 bytes total)
-    'SECTION3-ANIMATION_NAME-LENGTH': 2, # Section 3 Animation: Animation Name Length
-    'SECTION3-ANIMATION_ATTR':        2, # Section 3 Animation: Unknown Attribute (the 2nd byte is always 0x0 and the 1st byte varies, so maybe an unsigned integer?)
+    'SECTION3-HEADER_BLANK':           2, # Section 3 Header: Blanks (NULL bytes)
+    'SECTION3-HEADER_NUM-MODELS':      2, # Section 3 Header: Number of Models
+    'SECTION3-HEADER_SCALE':           2, # Section 3 Header: Scale
+    'SECTION3-MODEL_NAME-LENGTH':      2, # Section 3 Model: Model Name Length
+    'SECTION3-MODEL_ATTR':             2, # Section 3 Model: Unknown Attribute (sometimes 0 if the model is playable, 1 otherwise)
+    'SECTION3-MODEL_HRC':              8, # Section 3 Model: HRC Name (e.g. AAAA.HRC)
+    'SECTION3-MODEL_SCALE':            4, # Section 3 Model: Scale String
+    'SECTION3-MODEL_NUM-ANIMATIONS':   2, # Section 3 Model: Number of Animations
+    'SECTION3-MODEL_LIGHT-COLOR-VAL':  1, # Section 3 Model: Light Color Value (whole color is in RGB format, 1 byte each, so 3 bytes total)
+    'SECTION3-MODEL_LIGHT-COORD-VAL':  2, # Section 3 Model: Light Coordinate Value (2-byte signed integer)
+    'SECTION3-MODEL_GLOB-COLOR-VAL':   1, # Section 3 Model: Global Light Color Value (whole color is in RGB format, 1 byte each, so 3 bytes total)
+    'SECTION3-ANIMATION_NAME-LENGTH':  2, # Section 3 Animation: Animation Name Length
+    'SECTION3-ANIMATION_ATTR':         2, # Section 3 Animation: Unknown Attribute (the 2nd byte is always 0x0 and the 1st byte varies, so maybe an unsigned integer?)
 
     # Section 4 (Palette)
-    'SECTION4-HEADER_LENGTH':         4, # Section 4 Header: Length
-    'SECTION4-HEADER_PALX':           2, # Section 4 Header: PalX (always 0)
-    'SECTION4-HEADER_PALY':           2, # Section 4 Header: PalY (always 480)
-    'SECTION4-HEADER_COLORS-PER-PAGE':     2, # Section 4 Header: Number of Colors in Palette (always 256)
-    'SECTION4-HEADER_NUM-PAGES':   2, # Section 4 Header: Number of Palettes
-    'SECTION4_COLOR':                 2, # Section 4: Color (16-bit MBBBBBGGGGGRRRRR where M = Mask, B = Blue, G = Green, R = Red)
+    'SECTION4-HEADER_LENGTH':          4, # Section 4 Header: Length
+    'SECTION4-HEADER_PALX':            2, # Section 4 Header: PalX (always 0)
+    'SECTION4-HEADER_PALY':            2, # Section 4 Header: PalY (always 480)
+    'SECTION4-HEADER_COLORS-PER-PAGE': 2, # Section 4 Header: Number of Colors in Palette (always 256)
+    'SECTION4-HEADER_NUM-PAGES':       2, # Section 4 Header: Number of Palettes
+    'SECTION4_COLOR':                  2, # Section 4: Color (16-bit MBBBBBGGGGGRRRRR where M = Mask, B = Blue, G = Green, R = Red)
+
+    # Section 5 (Walkmesh)
+    'SECTION5-HEADER_NUM-SECTORS':     4, # Section 5 Header: Number of Sectors
+    'SECTION5-SP_VECTOR-VALUE':        2, # Section 5: Value in a Sector Pool Vector (x, y, z, res) (signed integer)
+    'SECTION5-AP_VECTOR-VALUE':        2, # Section 5: Value in an Access Pool Vector (access1, access2, access3) (signed integer)
 }
 SIZE['SECTION2-ENTRY'] = len(SECTION2_AXES)*SECTION2_NUM_DIMENSIONS*SIZE['SECTION2-ENTRY_VECTOR-VALUE'] + SIZE['SECTION2-ENTRY_VECTOR-VALUE'] + len(SECTION2_AXES)*SIZE['SECTION2-ENTRY_SPACE-POSITION'] + SIZE['SECTION2-ENTRY_BLANK'] + SIZE['SECTION2-ENTRY_ZOOM']
 
 # error messages
 ERROR_INVALID_FIELD_FILE = "Invalid Field file"
 ERROR_SECTION2_CAM_VEC_Z_DUP_MISMATCH = "Duplicate z-axis vector dimension 3 value does not match"
+ERROR_SECTION5_SLICE_NOT_IMPLEMENTED = "The ability to slice indices in a Walkmesh has not yet been implemented"
 
 def instruction_size(code, offset):
     '''Find the size of the instruction at the given offset in a script code block
@@ -374,6 +381,11 @@ class CameraMatrix:
 class ModelLoader:
     '''Model Loader class'''
     def __init__(self, data):
+        '''``ModelLoader`` constructor
+
+        Args:
+            ``data`` (``bytes``): The data of the Field File
+        '''
         self.models = list(); ind = 0
         self.blank = data[ind:ind+SIZE['SECTION3-HEADER_BLANK']]; ind = SIZE['SECTION3-HEADER_BLANK']
         num_models = unpack('H', data[ind:ind+SIZE['SECTION3-HEADER_NUM-MODELS']])[0]; ind += SIZE['SECTION3-HEADER_NUM-MODELS']
@@ -452,6 +464,11 @@ class ModelLoader:
 class Palette:
     '''Palette class'''
     def __init__(self, data):
+        '''``Palette`` constructor
+
+        Args:
+            ``data`` (``bytes``): The data of the Field File
+        '''
         self.colors = list(); ind = SIZE['SECTION4-HEADER_LENGTH']
         self.palX = unpack('H', data[ind:ind+SIZE['SECTION4-HEADER_PALX']])[0]; ind += SIZE['SECTION4-HEADER_PALX']
         self.palY = unpack('H', data[ind:ind+SIZE['SECTION4-HEADER_PALY']])[0]; ind += SIZE['SECTION4-HEADER_PALY']
@@ -487,6 +504,67 @@ class Palette:
         data = pack('I', SIZE['SECTION4-HEADER_LENGTH']+len(data)) + data
         return data
 
+class Walkmesh:
+    '''Walkmesh class'''
+    def __init__(self, data):
+        '''``Walkmesh`` constructor
+
+        Args:
+            ``data`` (``bytes``): The data of the Field File
+        '''
+        self.sector_pool = list(); self.access_pool = list(); ind = 0
+        num_sectors = unpack('I', data[ind:ind+SIZE['SECTION5-HEADER_NUM-SECTORS']])[0]; ind += SIZE['SECTION5-HEADER_NUM-SECTORS']
+        for _ in range(num_sectors):
+            triangle = list()
+            for __ in range(SECTION5_NUM_VERTICES_PER_SECTOR):
+                vertex_x = unpack('h', data[ind:ind+SIZE['SECTION5-SP_VECTOR-VALUE']])[0]; ind += SIZE['SECTION5-SP_VECTOR-VALUE']
+                vertex_y = unpack('h', data[ind:ind+SIZE['SECTION5-SP_VECTOR-VALUE']])[0]; ind += SIZE['SECTION5-SP_VECTOR-VALUE']
+                vertex_z = unpack('h', data[ind:ind+SIZE['SECTION5-SP_VECTOR-VALUE']])[0]; ind += SIZE['SECTION5-SP_VECTOR-VALUE']
+                vertex_r = unpack('h', data[ind:ind+SIZE['SECTION5-SP_VECTOR-VALUE']])[0]; ind += SIZE['SECTION5-SP_VECTOR-VALUE']
+                triangle.append([vertex_x, vertex_y, vertex_z, vertex_r])
+            self.sector_pool.append(triangle)
+        for _ in range(num_sectors):
+            access_1 = unpack('h', data[ind:ind+SIZE['SECTION5-AP_VECTOR-VALUE']])[0]; ind += SIZE['SECTION5-AP_VECTOR-VALUE']
+            access_2 = unpack('h', data[ind:ind+SIZE['SECTION5-AP_VECTOR-VALUE']])[0]; ind += SIZE['SECTION5-AP_VECTOR-VALUE']
+            access_3 = unpack('h', data[ind:ind+SIZE['SECTION5-AP_VECTOR-VALUE']])[0]; ind += SIZE['SECTION5-AP_VECTOR-VALUE']
+            self.access_pool.append([access_1, access_2, access_3])
+
+    def __eq__(self, other):
+        return isinstance(other,Walkmesh) and self.sector_pool == other.sector_pool and self.access_pool == other.access_pool
+
+    def __ne__(self, other):
+        return not self == other
+
+    def __len__(self):
+        return len(self.sector_pool)
+
+    def __getitem__(self, key):
+        if isinstance(key, slice):
+            raise NotImplementedError(ERROR_SECTION5_SLICE_NOT_IMPLEMENTED)
+        elif isinstance(key, int):
+            if key < 0 or key >= len(self.sector_pool):
+                raise IndexError("Index must be between at least 0 and less than %d" % len(self.sector_pool))
+            return (self.sector_pool[key], self.access_pool[key])
+        else:
+            raise TypeError('Index must be int, not {}'.format(type(key).__name__))
+
+    def get_bytes(self):
+        '''Return the bytes encoding this Walkmesh to repack into a Field File
+
+        Returns:
+            ``bytes``: The data to repack into a Field File
+        '''
+        data = bytearray()
+        data += pack('I', len(self.sector_pool))
+        for triangle in self.sector_pool:
+            for vertex in triangle:
+                for v in vertex:
+                    data += pack('h', v)
+        for vector in self.access_pool:
+            for v in vector:
+                data += pack('h', v)
+        return data
+
 class FieldFile:
     '''Field File class'''
     def __init__(self, data):
@@ -515,3 +593,4 @@ class FieldFile:
         self.camera_matrix = CameraMatrix(data[starts[1]+SIZE['SECTION-LENGTH']:starts[2]])
         self.model_loader = ModelLoader(data[starts[2]+SIZE['SECTION-LENGTH']:starts[3]])
         self.palette = Palette(data[starts[3]+SIZE['SECTION-LENGTH']:starts[4]])
+        self.walkmesh = Walkmesh(data[starts[4]+SIZE['SECTION-LENGTH']:starts[5]])
