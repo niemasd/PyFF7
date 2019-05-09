@@ -37,6 +37,24 @@ if __name__ == "__main__":
                 print("    * %s-Axis Vector: %s" % (a, str(cam['vector_%s'%a])))
             print("    * Position (Camera Space): %s" % str(cam['position_camera_space']))
             print("    * Zoom: %d" % cam['zoom'])
-
+        print()
+        print("* Section 3: %s" % SECTION_NAME[2])
+        print("  * Scale: %d" % ff.model_loader.scale)
+        print("  * Number of Models: %d" % len(ff.model_loader))
+        for i,model in enumerate(ff.model_loader):
+            print("  * Model %d:" % (i+1))
+            print("    * Name: %s" % model['name'])
+            print("    * Attribute: %d" % model['attribute'])
+            print("    * HRC Name: %s" % model['hrc'])
+            print("    * Scale: %d" % model['scale'])
+            for l in range(1,4):
+                print("    * Light %d Color (RGB): (%d, %d, %d)" % tuple([l]+model['light_%d'%l]['color']))
+                print("    * Light %d Coordinates (x,y,z): (%d, %d, %d)" % tuple([l]+model['light_%d'%l]['coord']))
+            print("    * Global Light Color (RGB): (%d, %d, %d)" % tuple(model['global_light_color']))
+            print("    * Number of Animations: %d" % len(model['animations']))
+            for j,animation in enumerate(model['animations']):
+                print("    * Animation %d:" % (j+1))
+                print("      * Name: %s" % animation['name'])
+                print("      * Attribute: %d" % animation['attribute'])
     except BrokenPipeError:
         stderr.close()

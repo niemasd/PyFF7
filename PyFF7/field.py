@@ -373,7 +373,7 @@ class ModelLoader:
             model['hrc'] = data[ind:ind+SIZE['SECTION3-MODEL_HRC']].decode(); ind += SIZE['SECTION3-MODEL_HRC']
             model['scale'] = int(data[ind:ind+SIZE['SECTION3-MODEL_SCALE']].decode().rstrip(NULL_STR)); ind += SIZE['SECTION3-MODEL_SCALE']
             num_animations = unpack('H', data[ind:ind+SIZE['SECTION3-MODEL_NUM-ANIMATIONS']])[0]; ind += SIZE['SECTION3-MODEL_NUM-ANIMATIONS']
-            for i in range(SECTION3_NUM_LIGHTS):
+            for i in range(1, SECTION3_NUM_LIGHTS+1):
                 model['light_%d'%i] = dict()
                 model['light_%d'%i]['color'] = list()
                 for c in ('R','G','B'):
@@ -389,7 +389,7 @@ class ModelLoader:
                 animation = dict()
                 name_length = unpack('H', data[ind:ind+SIZE['SECTION3-ANIMATION_NAME-LENGTH']])[0]; ind += SIZE['SECTION3-ANIMATION_NAME-LENGTH']
                 animation['name'] = data[ind:ind+name_length].decode(); ind += name_length
-                animation['attr'] = unpack('H', data[ind:ind+SIZE['SECTION3-ANIMATION_ATTR']])[0]; ind += SIZE['SECTION3-ANIMATION_ATTR']
+                animation['attribute'] = unpack('H', data[ind:ind+SIZE['SECTION3-ANIMATION_ATTR']])[0]; ind += SIZE['SECTION3-ANIMATION_ATTR']
                 model['animations'].append(animation)
             self.models.append(model)
 
@@ -423,7 +423,7 @@ class ModelLoader:
             data += model['hrc'].encode()
             data += str(model['scale']).encode(); data += NULL_BYTE*(SIZE['SECTION3-MODEL_SCALE']-len(str(model['scale'])))
             data += pack('H', len(model['animations']))
-            for i in range(SECTION3_NUM_LIGHTS):
+            for i in range(1, SECTION3_NUM_LIGHTS+1):
                 for v in model['light_%d'%i]['color']:
                     data += pack('B', v)
                 for v in model['light_%d'%i]['coord']:
@@ -433,8 +433,13 @@ class ModelLoader:
             for animation in model['animations']:
                 data += pack('H', len(animation['name']))
                 data += animation['name'].encode()
-                data += pack('H', animation['attr'])
+                data += pack('H', animation['attribute'])
         return data
+
+class Palette:
+    '''Palette class'''
+    def __init__(self, data):
+        exit()
 
 class FieldFile:
     '''Field File class'''
@@ -464,4 +469,3 @@ class FieldFile:
         tmp = FieldScript(self.field_script.get_bytes())
         self.camera_matrix = CameraMatrix(data[starts[1]+SIZE['SECTION-LENGTH']:starts[2]])
         self.model_loader = ModelLoader(data[starts[2]+SIZE['SECTION-LENGTH']:starts[3]])
-        exit()
