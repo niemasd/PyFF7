@@ -65,5 +65,14 @@ if __name__ == "__main__":
         print("  * Page Colors (A,R,G,B):")
         for i in range(int(len(ff.palette.colors) / ff.palette.colors_per_page)):
             print("    * Page %d:\t%s" % (i+1, str([str(tuple(e)).replace(' ','') for e in ff.palette.colors[i*ff.palette.colors_per_page : (i+1)*ff.palette.colors_per_page]]).replace("'",'')))
+        print()
+        print("* Section 5: %s" % SECTION_NAME[4])
+        print("  * Number of Sectors: %d" % len(ff.walkmesh))
+        for i in range(len(ff.walkmesh)):
+            sec,acc = ff.walkmesh[i]
+            print("  * Sector %d" % (i+1))
+            for j,k in enumerate(['X','Y','Z']):
+                print("    * Sector Pool Vertex %s: %s" % (k, str(sec[j])))
+            print("    * Access Pool: %s" % str(acc))
     except BrokenPipeError:
         stderr.close()

@@ -731,6 +731,7 @@ class TileMap:
             ``bytes``: The data to repack into a Field File
         '''
         data = bytearray()
+        # TODO
         return data
 
 class FieldFile:
