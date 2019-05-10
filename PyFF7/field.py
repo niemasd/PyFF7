@@ -36,18 +36,28 @@ SECTION4_COLOR_B_SHIFT = 10 # B = Blue
 SECTION4_COLOR_G_SHIFT = 5  # G = Green
 SECTION4_COLOR_R_SHIFT = 0  # R = Red
 SECTION5_NUM_VERTICES_PER_SECTOR = 3 # Sectors are triangles, which have 3 vertices
+SECTION6_SPRITE_TP_BLEND_ZZ_MASK         = 0b1111111000000000
+SECTION6_SPRITE_TP_BLEND_DEPH_MASK       = 0b0000000110000000
+SECTION6_SPRITE_TP_BLEND_BLEND_MODE_MASK = 0b0000000001100000
+SECTION6_SPRITE_TP_BLEND_PAGE_Y_MASK     = 0b0000000000010000
+SECTION6_SPRITE_TP_BLEND_PAGE_X_MASK     = 0b0000000000001111
+SECTION6_SPRITE_TP_BLEND_ZZ_SHIFT = 9
+SECTION6_SPRITE_TP_BLEND_DEPH_SHIFT = 7
+SECTION6_SPRITE_TP_BLEND_BLEND_MODE_SHIFT = 5
+SECTION6_SPRITE_TP_BLEND_PAGE_Y_SHIFT = 4
+SECTION6_SPRITE_TP_BLEND_PAGE_X_SHIFT = 0
+SECTION6_TILE_CLUT_ZZ1_MASK      = 0b1111110000000000
+SECTION6_TILE_CLUT_CLUT_NUM_MASK = 0b0000001111000000
+SECTION6_TILE_CLUT_ZZ2_MASK      = 0b0000000000111111
+SECTION6_TILE_CLUT_ZZ1_SHIFT = 10
+SECTION6_TILE_CLUT_CLUT_NUM_SHIFT = 6
+SECTION6_TILE_CLUT_ZZ2_SHIFT = 0
+SECTION6_PARAM_BLENDING_MASK = 0b10000000
+SECTION6_PARAM_ID_MASK       = 0b01111111
+SECTION6_PARAM_BLENDING_SHIFT = 7
+SECTION6_PARAM_ID_SHIFT = 0
 SECTION6_SUB1_END_OF_LAYER_TYPE = 0x7FFF
 SECTION6_SUB1_SPRITE_TYPE = 0x7FFE
-SECTION6_SUB3_ZZ_MASK         = 0b1111111000000000
-SECTION6_SUB3_DEPH_MASK       = 0b0000000110000000
-SECTION6_SUB3_BLEND_MODE_MASK = 0b0000000001100000
-SECTION6_SUB3_PAGE_Y_MASK     = 0b0000000000010000
-SECTION6_SUB3_PAGE_X_MASK     = 0b0000000000001111
-SECTION6_SUB3_ZZ_SHIFT = 9
-SECTION6_SUB3_DEPH_SHIFT = 7
-SECTION6_SUB3_BLEND_MODE_SHIFT = 5
-SECTION6_SUB3_PAGE_Y_SHIFT = 4
-SECTION6_SUB3_PAGE_X_SHIFT = 0
 STRING_TERMINATOR = b'\xff'
 
 # OP codes
@@ -603,6 +613,43 @@ class Walkmesh:
                 data += pack('h', v)
         return data
 
+def parse_sec6_sprite_tp_blend(raw):
+    '''Parse a (raw) Sprite TP Blend represented as a 2-byte integer
+
+    Returns:
+        ``dict``: The parsed Sprite Blend
+    '''
+    entry = dict()
+    entry['zz']            = (raw & SECTION6_SPRITE_TP_BLEND_ZZ_MASK)         >> SECTION6_SPRITE_TP_BLEND_ZZ_SHIFT
+    entry['deph']          = (raw & SECTION6_SPRITE_TP_BLEND_DEPH_MASK)       >> SECTION6_SPRITE_TP_BLEND_DEPH_SHIFT
+    entry['blending_mode'] = (raw & SECTION6_SPRITE_TP_BLEND_BLEND_MODE_MASK) >> SECTION6_SPRITE_TP_BLEND_BLEND_MODE_SHIFT
+    entry['page_y']        = (raw & SECTION6_SPRITE_TP_BLEND_PAGE_Y_MASK)     >> SECTION6_SPRITE_TP_BLEND_PAGE_Y_SHIFT
+    entry['page_x']        = (raw & SECTION6_SPRITE_TP_BLEND_PAGE_X_MASK)     >> SECTION6_SPRITE_TP_BLEND_PAGE_X_SHIFT
+    return entry
+
+def parse_sec6_tile_clut(raw):
+    '''Parse a (raw) Tile Clut represented as a 2-byte integer
+
+    Returns:
+        ``dict``: The parsed Tile Clut
+    '''
+    entry = dict()
+    entry['zz1']      = (raw & SECTION6_TILE_CLUT_ZZ1_MASK)      >> SECTION6_TILE_CLUT_ZZ1_SHIFT
+    entry['clut_num'] = (raw & SECTION6_TILE_CLUT_CLUT_NUM_MASK) >> SECTION6_TILE_CLUT_CLUT_NUM_SHIFT
+    entry['zz2']      = (raw & SECTION6_TILE_CLUT_ZZ2_MASK)      >> SECTION6_TILE_CLUT_ZZ2_SHIFT
+    return entry
+
+def parse_sec6_param(raw):
+    '''Parse a (raw) Parameter represented as a 2-byte integer
+
+    Returns:
+        ``dict``: The parsed Parameter
+    '''
+    entry = dict()
+    entry['blending'] = (raw & SECTION6_PARAM_BLENDING_MASK) >> SECTION6_PARAM_BLENDING_SHIFT
+    entry['ID']       = (raw & SECTION6_PARAM_ID_MASK)       >> SECTION6_PARAM_ID_SHIFT
+    return entry
+
 class TileMap:
     '''Tile Map (Section 6) class'''
     def __init__(self, data):
@@ -637,36 +684,30 @@ class TileMap:
         self.sub2_tiles = list()
         while ind < subsection_3_offset:
             tile = dict()
-            tile['destination_x'] = unpack('H', data[ind:ind+SIZE['SECTION6-SUB2_DEST-X']])[0]; ind += SIZE['SECTION6-SUB2_DEST-X']
-            tile['destination_y'] = unpack('H', data[ind:ind+SIZE['SECTION6-SUB2_DEST-Y']])[0]; ind += SIZE['SECTION6-SUB2_DEST-Y']
+            tile['destination_x'] = unpack('h', data[ind:ind+SIZE['SECTION6-SUB2_DEST-X']])[0]; ind += SIZE['SECTION6-SUB2_DEST-X']
+            tile['destination_y'] = unpack('h', data[ind:ind+SIZE['SECTION6-SUB2_DEST-Y']])[0]; ind += SIZE['SECTION6-SUB2_DEST-Y']
             tile['tex_pg_src_x'] = unpack('B', data[ind:ind+SIZE['SECTION6-SUB2_TEX-PG-SRC-X']])[0]; ind += SIZE['SECTION6-SUB2_TEX-PG-SRC-X']
             tile['tex_pg_src_y'] = unpack('B', data[ind:ind+SIZE['SECTION6-SUB2_TEX-PG-SRC-Y']])[0]; ind += SIZE['SECTION6-SUB2_TEX-PG-SRC-Y']
-            tile['tile_clut'] = unpack('H', data[ind:ind+SIZE['SECTION6-SUB2_TILE-CLUT']])[0]; ind += SIZE['SECTION6-SUB2_TILE-CLUT']
+            tile['tile_clut'] = parse_sec6_tile_clut(unpack('H', data[ind:ind+SIZE['SECTION6-SUB2_TILE-CLUT']])[0]); ind += SIZE['SECTION6-SUB2_TILE-CLUT']
             self.sub2_tiles.append(tile)
 
         # read subsection 3
-        self.sub3_sprite_blends = list()
+        self.sub3_sprite_tp_blends = list()
         while ind < subsection_4_offset:
-            entry = dict(); tmp = unpack('H', data[ind:ind+SIZE['SECTION6-SUB3_ENTRY']])[0]; ind += SIZE['SECTION6-SUB3_ENTRY']
-            entry['zz']            = (tmp & SECTION6_SUB3_ZZ_MASK)         >> SECTION6_SUB3_ZZ_SHIFT
-            entry['deph']          = (tmp & SECTION6_SUB3_DEPH_MASK)       >> SECTION6_SUB3_DEPH_SHIFT
-            entry['blending_mode'] = (tmp & SECTION6_SUB3_BLEND_MODE_MASK) >> SECTION6_SUB3_BLEND_MODE_SHIFT
-            entry['page_y']        = (tmp & SECTION6_SUB3_PAGE_Y_MASK)     >> SECTION6_SUB3_PAGE_Y_SHIFT
-            entry['page_x']        = (tmp & SECTION6_SUB3_PAGE_X_MASK)     >> SECTION6_SUB3_PAGE_X_SHIFT
-            self.sub3_sprite_blends.append(entry)
+            self.sub3_sprite_tp_blends.append(parse_sec6_sprite_tp_blend(unpack('H', data[ind:ind+SIZE['SECTION6-SUB3_ENTRY']])[0])); ind += SIZE['SECTION6-SUB3_ENTRY']
 
         # read subsection 4
         self.sub4_sprite_tiles = list()
         while ind < subsection_5_offset:
             tile = dict()
-            tile['destination_x'] = unpack('H', data[ind:ind+SIZE['SECTION6-SUB4_DEST-X']])[0]; ind += SIZE['SECTION6-SUB4_DEST-X']
-            tile['destination_y'] = unpack('H', data[ind:ind+SIZE['SECTION6-SUB4_DEST-Y']])[0]; ind += SIZE['SECTION6-SUB4_DEST-Y']
+            tile['destination_x'] = unpack('h', data[ind:ind+SIZE['SECTION6-SUB4_DEST-X']])[0]; ind += SIZE['SECTION6-SUB4_DEST-X']
+            tile['destination_y'] = unpack('h', data[ind:ind+SIZE['SECTION6-SUB4_DEST-Y']])[0]; ind += SIZE['SECTION6-SUB4_DEST-Y']
             tile['tex_pg_src_x'] = unpack('B', data[ind:ind+SIZE['SECTION6-SUB4_TEX-PG-SRC-X']])[0]; ind += SIZE['SECTION6-SUB4_TEX-PG-SRC-X']
             tile['tex_pg_src_y'] = unpack('B', data[ind:ind+SIZE['SECTION6-SUB4_TEX-PG-SRC-Y']])[0]; ind += SIZE['SECTION6-SUB4_TEX-PG-SRC-Y']
-            tile['tile_clut'] = unpack('H', data[ind:ind+SIZE['SECTION6-SUB4_TILE-CLUT']])[0]; ind += SIZE['SECTION6-SUB4_TILE-CLUT']
-            tile['sprite_tp_blend'] = unpack('H', data[ind:ind+SIZE['SECTION6-SUB4_SPRITE-TP-BLEND']])[0]; ind += SIZE['SECTION6-SUB4_SPRITE-TP-BLEND']
+            tile['tile_clut'] = parse_sec6_tile_clut(unpack('H', data[ind:ind+SIZE['SECTION6-SUB4_TILE-CLUT']])[0]); ind += SIZE['SECTION6-SUB4_TILE-CLUT']
+            tile['sprite_tp_blend'] = parse_sec6_sprite_tp_blend(unpack('H', data[ind:ind+SIZE['SECTION6-SUB4_SPRITE-TP-BLEND']])[0]); ind += SIZE['SECTION6-SUB4_SPRITE-TP-BLEND']
             tile['group'] = unpack('H', data[ind:ind+SIZE['SECTION6-SUB4_GROUP']])[0]; ind += SIZE['SECTION6-SUB4_GROUP']
-            tile['param'] = unpack('B', data[ind:ind+SIZE['SECTION6-SUB4_PARAM']])[0]; ind += SIZE['SECTION6-SUB4_PARAM']
+            tile['param'] = parse_sec6_param(unpack('B', data[ind:ind+SIZE['SECTION6-SUB4_PARAM']])[0]); ind += SIZE['SECTION6-SUB4_PARAM']
             tile['state'] = unpack('B', data[ind:ind+SIZE['SECTION6-SUB4_STATE']])[0]; ind += SIZE['SECTION6-SUB4_STATE']
             self.sub4_sprite_tiles.append(tile)
 
@@ -674,14 +715,23 @@ class TileMap:
         self.sub5_sprite_tiles = list()
         while ind < len(data):
             tile = dict()
-            tile['destination_x'] = unpack('H', data[ind:ind+SIZE['SECTION6-SUB5_DEST-X']])[0]; ind += SIZE['SECTION6-SUB5_DEST-X']
-            tile['destination_y'] = unpack('H', data[ind:ind+SIZE['SECTION6-SUB5_DEST-Y']])[0]; ind += SIZE['SECTION6-SUB5_DEST-Y']
+            tile['destination_x'] = unpack('h', data[ind:ind+SIZE['SECTION6-SUB5_DEST-X']])[0]; ind += SIZE['SECTION6-SUB5_DEST-X']
+            tile['destination_y'] = unpack('h', data[ind:ind+SIZE['SECTION6-SUB5_DEST-Y']])[0]; ind += SIZE['SECTION6-SUB5_DEST-Y']
             tile['tex_pg_src_x'] = unpack('B', data[ind:ind+SIZE['SECTION6-SUB5_TEX-PG-SRC-X']])[0]; ind += SIZE['SECTION6-SUB5_TEX-PG-SRC-X']
             tile['tex_pg_src_y'] = unpack('B', data[ind:ind+SIZE['SECTION6-SUB5_TEX-PG-SRC-Y']])[0]; ind += SIZE['SECTION6-SUB5_TEX-PG-SRC-Y']
-            tile['tile_clut'] = unpack('H', data[ind:ind+SIZE['SECTION6-SUB5_TILE-CLUT']])[0]; ind += SIZE['SECTION6-SUB5_TILE-CLUT']
-            tile['param'] = unpack('B', data[ind:ind+SIZE['SECTION6-SUB5_PARAM']])[0]; ind += SIZE['SECTION6-SUB5_PARAM']
+            tile['tile_clut'] = parse_sec6_tile_clut(unpack('H', data[ind:ind+SIZE['SECTION6-SUB5_TILE-CLUT']])[0]); ind += SIZE['SECTION6-SUB5_TILE-CLUT']
+            tile['param'] = parse_sec6_param(unpack('B', data[ind:ind+SIZE['SECTION6-SUB5_PARAM']])[0]); ind += SIZE['SECTION6-SUB5_PARAM']
             tile['state'] = unpack('B', data[ind:ind+SIZE['SECTION6-SUB5_STATE']])[0]; ind += SIZE['SECTION6-SUB5_STATE']
             self.sub5_sprite_tiles.append(tile)
+
+    def get_bytes(self):
+        '''Return the bytes encoding this Walkmesh to repack into a Field File
+
+        Returns:
+            ``bytes``: The data to repack into a Field File
+        '''
+        data = bytearray()
+        return data
 
 class FieldFile:
     '''Field File class'''
