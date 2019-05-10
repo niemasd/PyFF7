@@ -181,7 +181,6 @@ KANJI_BANK = {0xFA:'KANJI_SET1', 0xFB:'KANJI_SET2', 0xFC:'KANJI_SET3', 0xFD:'KAN
 #FIELD_COMMAND = {**{v:k for k, v in CHAR['FIELD_SPECIAL'].items() if v}, **{v:('\xfe' + k) for k, v in CHAR['FIELD_CONTROL'].items()}}
 
 # errors
-ERROR_NOT_BYTES = "Input must be 'bytes'"
 
 def decode_kanji(bank, code):
     '''Decode a Kanji given code from a given bank
@@ -209,8 +208,8 @@ def decode_field_text(data, JP=False):
     Returns:
         ``str``: Decoded unicode text
     '''
-    if not isinstance(data,bytes):
-        raise TypeError(ERROR_NOT_BYTES)
+    if not isinstance(data,bytes) and not isinstance(data,bytearray):
+        raise TypeError("Expected bytes, but received %s" % str(type(data)))
     char_set = {True:CHAR['NORMAL_JP'], False:CHAR['NORMAL']}[JP]
     num_normal_chars = {True:0xE7, False:0xE0}[JP]
     text = u''; i = 0
