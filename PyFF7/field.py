@@ -36,6 +36,18 @@ SECTION4_COLOR_B_SHIFT = 10 # B = Blue
 SECTION4_COLOR_G_SHIFT = 5  # G = Green
 SECTION4_COLOR_R_SHIFT = 0  # R = Red
 SECTION5_NUM_VERTICES_PER_SECTOR = 3 # Sectors are triangles, which have 3 vertices
+SECTION6_SUB1_END_OF_LAYER_TYPE = 0x7FFF
+SECTION6_SUB1_SPRITE_TYPE = 0x7FFE
+SECTION6_SUB3_ZZ_MASK         = 0b1111111000000000
+SECTION6_SUB3_DEPH_MASK       = 0b0000000110000000
+SECTION6_SUB3_BLEND_MODE_MASK = 0b0000000001100000
+SECTION6_SUB3_PAGE_Y_MASK     = 0b0000000000010000
+SECTION6_SUB3_PAGE_X_MASK     = 0b0000000000001111
+SECTION6_SUB3_ZZ_SHIFT = 9
+SECTION6_SUB3_DEPH_SHIFT = 7
+SECTION6_SUB3_BLEND_MODE_SHIFT = 5
+SECTION6_SUB3_PAGE_Y_SHIFT = 4
+SECTION6_SUB3_PAGE_X_SHIFT = 0
 STRING_TERMINATOR = b'\xff'
 
 # OP codes
@@ -153,6 +165,32 @@ SIZE = {
     'SECTION5-HEADER_NUM-SECTORS':     4, # Section 5 Header: Number of Sectors
     'SECTION5-SP_VECTOR-VALUE':        2, # Section 5: Value in a Sector Pool Vector (x, y, z, res) (signed integer)
     'SECTION5-AP_VECTOR-VALUE':        2, # Section 5: Value in an Access Pool Vector (access1, access2, access3) (signed integer)
+
+    # Section 6 (Tile Map)
+    'SECTION6-HEADER_OFFSET':          4, # Section 6 Header: Subsection Offset
+    'SECTION6-SUB1_TYPE':              2, # Section 6 Subsection 1: Type (Layer or Not Layer)
+    'SECTION6-SUB2_DEST-X':            2, # Section 6 Subsection 2: Destination X
+    'SECTION6-SUB2_DEST-Y':            2, # Section 6 Subsection 2: Destination Y
+    'SECTION6-SUB2_TEX-PG-SRC-X':      1, # Section 6 Subsection 2: Tex Page Source X
+    'SECTION6-SUB2_TEX-PG-SRC-Y':      1, # Section 6 Subsection 2: Tex Page Source Y
+    'SECTION6-SUB2_TILE-CLUT':         2, # Section 6 Subsection 2: Tile Clut Data
+    'SECTION6-SUB3_ENTRY':             2, # Section 6 Subsection 3: Entry
+    'SECTION6-SUB4_DEST-X':            2, # Section 6 Subsection 4: Destination X
+    'SECTION6-SUB4_DEST-Y':            2, # Section 6 Subsection 4: Destination Y
+    'SECTION6-SUB4_TEX-PG-SRC-X':      1, # Section 6 Subsection 4: Tex Page Source X
+    'SECTION6-SUB4_TEX-PG-SRC-Y':      1, # Section 6 Subsection 4: Tex Page Source Y
+    'SECTION6-SUB4_TILE-CLUT':         2, # Section 6 Subsection 4: Tile Clut Data
+    'SECTION6-SUB4_SPRITE-TP-BLEND':   2, # Section 6 Subsection 4: Sprite TP Blend
+    'SECTION6-SUB4_GROUP':             2, # Section 6 Subsection 4: Group
+    'SECTION6-SUB4_PARAM':             1, # Section 6 Subsection 4: Parameter
+    'SECTION6-SUB4_STATE':             1, # Section 6 Subsection 4: State
+    'SECTION6-SUB5_DEST-X':            2, # Section 6 Subsection 5: Destination X
+    'SECTION6-SUB5_DEST-Y':            2, # Section 6 Subsection 5: Destination Y
+    'SECTION6-SUB5_TEX-PG-SRC-X':      1, # Section 6 Subsection 5: Tex Page Source X
+    'SECTION6-SUB5_TEX-PG-SRC-Y':      1, # Section 6 Subsection 5: Tex Page Source Y
+    'SECTION6-SUB5_TILE-CLUT':         2, # Section 6 Subsection 5: Tile Clut Data
+    'SECTION6-SUB5_PARAM':             1, # Section 6 Subsection 5: Parameter
+    'SECTION6-SUB5_STATE':             1, # Section 6 Subsection 5: State
 }
 SIZE['SECTION2-ENTRY'] = len(SECTION2_AXES)*SECTION2_NUM_DIMENSIONS*SIZE['SECTION2-ENTRY_VECTOR-VALUE'] + SIZE['SECTION2-ENTRY_VECTOR-VALUE'] + len(SECTION2_AXES)*SIZE['SECTION2-ENTRY_SPACE-POSITION'] + SIZE['SECTION2-ENTRY_BLANK'] + SIZE['SECTION2-ENTRY_ZOOM']
 
@@ -309,7 +347,7 @@ class CameraMatrix:
         '''``CameraMatrix`` constructor
 
         Args:
-            ``data`` (``bytes``): The data of the Field File
+            ``data`` (``bytes``): The Camera Matrix (Section 2) data
         '''
         self.cameras = list(); ind = 0
         for _ in range(int(len(data)/SIZE['SECTION2-ENTRY'])):
@@ -379,12 +417,12 @@ class CameraMatrix:
         return data
 
 class ModelLoader:
-    '''Model Loader class'''
+    '''Model Loader (Section 3) class'''
     def __init__(self, data):
         '''``ModelLoader`` constructor
 
         Args:
-            ``data`` (``bytes``): The data of the Field File
+            ``data`` (``bytes``): The Model Loader (Section 3) data
         '''
         self.models = list(); ind = 0
         self.blank = data[ind:ind+SIZE['SECTION3-HEADER_BLANK']]; ind = SIZE['SECTION3-HEADER_BLANK']
@@ -462,12 +500,12 @@ class ModelLoader:
         return data
 
 class Palette:
-    '''Palette class'''
+    '''Palette (Section 4) class'''
     def __init__(self, data):
         '''``Palette`` constructor
 
         Args:
-            ``data`` (``bytes``): The data of the Field File
+            ``data`` (``bytes``): The Palette (Section 4) data
         '''
         self.colors = list(); ind = SIZE['SECTION4-HEADER_LENGTH']
         self.palX = unpack('H', data[ind:ind+SIZE['SECTION4-HEADER_PALX']])[0]; ind += SIZE['SECTION4-HEADER_PALX']
@@ -505,12 +543,12 @@ class Palette:
         return data
 
 class Walkmesh:
-    '''Walkmesh class'''
+    '''Walkmesh (Section 5) class'''
     def __init__(self, data):
         '''``Walkmesh`` constructor
 
         Args:
-            ``data`` (``bytes``): The data of the Field File
+            ``data`` (``bytes``): The Walkmesh (Section 5) data
         '''
         self.sector_pool = list(); self.access_pool = list(); ind = 0
         num_sectors = unpack('I', data[ind:ind+SIZE['SECTION5-HEADER_NUM-SECTORS']])[0]; ind += SIZE['SECTION5-HEADER_NUM-SECTORS']
@@ -565,6 +603,86 @@ class Walkmesh:
                 data += pack('h', v)
         return data
 
+class TileMap:
+    '''Tile Map (Section 6) class'''
+    def __init__(self, data):
+        '''``TileMap`` constructor
+
+        Args:
+            ``data`` (``bytes``): The Tile Map (Section 6) data
+        '''
+        ind = 0
+
+        # read subsection offsets from header
+        subsection_2_offset = unpack('I', data[ind:ind+SIZE['SECTION6-HEADER_OFFSET']])[0]; ind += SIZE['SECTION6-HEADER_OFFSET']
+        subsection_3_offset = unpack('I', data[ind:ind+SIZE['SECTION6-HEADER_OFFSET']])[0]; ind += SIZE['SECTION6-HEADER_OFFSET']
+        subsection_4_offset = unpack('I', data[ind:ind+SIZE['SECTION6-HEADER_OFFSET']])[0]; ind += SIZE['SECTION6-HEADER_OFFSET']
+        subsection_5_offset = unpack('I', data[ind:ind+SIZE['SECTION6-HEADER_OFFSET']])[0]; ind += SIZE['SECTION6-HEADER_OFFSET']
+
+        # read subsection 1
+        tile_pos = 0; tile_count = 0; layer_ID = 0; self.sub1_tiles_tex = list(); self.sub1_tiles_layer = list()
+        while ind < subsection_2_offset:
+            curr_type = unpack('H', data[ind:ind+SIZE['SECTION6-SUB1_TYPE']])[0]
+            if curr_type == SECTION6_SUB1_END_OF_LAYER_TYPE:
+                self.sub1_tiles_layer.append(tile_pos + tile_count)
+            else:
+                if curr_type == SECTION6_SUB1_SPRITE_TYPE:
+                    tile_pos = unpack('H', data[ind-4:ind-2])[0]; tile_count = unpack('H', data[ind-2:ind])[0]; self.sub1_tiles_tex.append(tile_pos + tile_count)
+                else:
+                    tile_pos = unpack('H', data[ind+2:ind+4])[0]; tile_count = unpack('H', data[ind+4:ind+6])[0]
+                ind += 4
+            ind += 2
+
+        # read subsection 2
+        self.sub2_tiles = list()
+        while ind < subsection_3_offset:
+            tile = dict()
+            tile['destination_x'] = unpack('H', data[ind:ind+SIZE['SECTION6-SUB2_DEST-X']])[0]; ind += SIZE['SECTION6-SUB2_DEST-X']
+            tile['destination_y'] = unpack('H', data[ind:ind+SIZE['SECTION6-SUB2_DEST-Y']])[0]; ind += SIZE['SECTION6-SUB2_DEST-Y']
+            tile['tex_pg_src_x'] = unpack('B', data[ind:ind+SIZE['SECTION6-SUB2_TEX-PG-SRC-X']])[0]; ind += SIZE['SECTION6-SUB2_TEX-PG-SRC-X']
+            tile['tex_pg_src_y'] = unpack('B', data[ind:ind+SIZE['SECTION6-SUB2_TEX-PG-SRC-Y']])[0]; ind += SIZE['SECTION6-SUB2_TEX-PG-SRC-Y']
+            tile['tile_clut'] = unpack('H', data[ind:ind+SIZE['SECTION6-SUB2_TILE-CLUT']])[0]; ind += SIZE['SECTION6-SUB2_TILE-CLUT']
+            self.sub2_tiles.append(tile)
+
+        # read subsection 3
+        self.sub3_sprite_blends = list()
+        while ind < subsection_4_offset:
+            entry = dict(); tmp = unpack('H', data[ind:ind+SIZE['SECTION6-SUB3_ENTRY']])[0]; ind += SIZE['SECTION6-SUB3_ENTRY']
+            entry['zz']            = (tmp & SECTION6_SUB3_ZZ_MASK)         >> SECTION6_SUB3_ZZ_SHIFT
+            entry['deph']          = (tmp & SECTION6_SUB3_DEPH_MASK)       >> SECTION6_SUB3_DEPH_SHIFT
+            entry['blending_mode'] = (tmp & SECTION6_SUB3_BLEND_MODE_MASK) >> SECTION6_SUB3_BLEND_MODE_SHIFT
+            entry['page_y']        = (tmp & SECTION6_SUB3_PAGE_Y_MASK)     >> SECTION6_SUB3_PAGE_Y_SHIFT
+            entry['page_x']        = (tmp & SECTION6_SUB3_PAGE_X_MASK)     >> SECTION6_SUB3_PAGE_X_SHIFT
+            self.sub3_sprite_blends.append(entry)
+
+        # read subsection 4
+        self.sub4_sprite_tiles = list()
+        while ind < subsection_5_offset:
+            tile = dict()
+            tile['destination_x'] = unpack('H', data[ind:ind+SIZE['SECTION6-SUB4_DEST-X']])[0]; ind += SIZE['SECTION6-SUB4_DEST-X']
+            tile['destination_y'] = unpack('H', data[ind:ind+SIZE['SECTION6-SUB4_DEST-Y']])[0]; ind += SIZE['SECTION6-SUB4_DEST-Y']
+            tile['tex_pg_src_x'] = unpack('B', data[ind:ind+SIZE['SECTION6-SUB4_TEX-PG-SRC-X']])[0]; ind += SIZE['SECTION6-SUB4_TEX-PG-SRC-X']
+            tile['tex_pg_src_y'] = unpack('B', data[ind:ind+SIZE['SECTION6-SUB4_TEX-PG-SRC-Y']])[0]; ind += SIZE['SECTION6-SUB4_TEX-PG-SRC-Y']
+            tile['tile_clut'] = unpack('H', data[ind:ind+SIZE['SECTION6-SUB4_TILE-CLUT']])[0]; ind += SIZE['SECTION6-SUB4_TILE-CLUT']
+            tile['sprite_tp_blend'] = unpack('H', data[ind:ind+SIZE['SECTION6-SUB4_SPRITE-TP-BLEND']])[0]; ind += SIZE['SECTION6-SUB4_SPRITE-TP-BLEND']
+            tile['group'] = unpack('H', data[ind:ind+SIZE['SECTION6-SUB4_GROUP']])[0]; ind += SIZE['SECTION6-SUB4_GROUP']
+            tile['param'] = unpack('B', data[ind:ind+SIZE['SECTION6-SUB4_PARAM']])[0]; ind += SIZE['SECTION6-SUB4_PARAM']
+            tile['state'] = unpack('B', data[ind:ind+SIZE['SECTION6-SUB4_STATE']])[0]; ind += SIZE['SECTION6-SUB4_STATE']
+            self.sub4_sprite_tiles.append(tile)
+
+        # read subsection 5 (if it exists)
+        self.sub5_sprite_tiles = list()
+        while ind < len(data):
+            tile = dict()
+            tile['destination_x'] = unpack('H', data[ind:ind+SIZE['SECTION6-SUB5_DEST-X']])[0]; ind += SIZE['SECTION6-SUB5_DEST-X']
+            tile['destination_y'] = unpack('H', data[ind:ind+SIZE['SECTION6-SUB5_DEST-Y']])[0]; ind += SIZE['SECTION6-SUB5_DEST-Y']
+            tile['tex_pg_src_x'] = unpack('B', data[ind:ind+SIZE['SECTION6-SUB5_TEX-PG-SRC-X']])[0]; ind += SIZE['SECTION6-SUB5_TEX-PG-SRC-X']
+            tile['tex_pg_src_y'] = unpack('B', data[ind:ind+SIZE['SECTION6-SUB5_TEX-PG-SRC-Y']])[0]; ind += SIZE['SECTION6-SUB5_TEX-PG-SRC-Y']
+            tile['tile_clut'] = unpack('H', data[ind:ind+SIZE['SECTION6-SUB5_TILE-CLUT']])[0]; ind += SIZE['SECTION6-SUB5_TILE-CLUT']
+            tile['param'] = unpack('B', data[ind:ind+SIZE['SECTION6-SUB5_PARAM']])[0]; ind += SIZE['SECTION6-SUB5_PARAM']
+            tile['state'] = unpack('B', data[ind:ind+SIZE['SECTION6-SUB5_STATE']])[0]; ind += SIZE['SECTION6-SUB5_STATE']
+            self.sub5_sprite_tiles.append(tile)
+
 class FieldFile:
     '''Field File class'''
     def __init__(self, data):
@@ -594,3 +712,4 @@ class FieldFile:
         self.model_loader = ModelLoader(data[starts[2]+SIZE['SECTION-LENGTH']:starts[3]])
         self.palette = Palette(data[starts[3]+SIZE['SECTION-LENGTH']:starts[4]])
         self.walkmesh = Walkmesh(data[starts[4]+SIZE['SECTION-LENGTH']:starts[5]])
+        self.tile_map = TileMap(data[starts[5]+SIZE['SECTION-LENGTH']:starts[6]])
