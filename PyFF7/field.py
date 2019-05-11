@@ -64,6 +64,10 @@ SECTION7_ENCOUNTER_PROB_MASK = 0b1111110000000000
 SECTION7_ENCOUNTER_ID_MASK   = 0b0000001111111111
 SECTION7_ENCOUNTER_PROB_SHIFT = 10
 SECTION7_ENCOUNTER_ID_SHIFT = 0
+SECTION8_NUM_GATEWAYS = 12
+SECTION8_NUM_TRIGGERS = 12
+SECTION8_NUM_SHOWN_ARROWS = 12
+SECTION8_NUM_ARROWS = 12
 STRING_TERMINATOR = b'\xff'
 
 # OP codes
@@ -213,6 +217,27 @@ SIZE = {
     'SECTION7_RATE':                   1, # Section 7: Rate
     'SECTION7_ENCOUNTER':              2, # Section 7: Encounter
     'SECTION7_PAD':                    2, # Section 7: Paddig at End of Table
+
+    # Section 8 (Triggers)
+    'SECTION8_FIELD-NAME':             9, # Section 8: Field Name (terminated with 0x00)
+    'SECTION8_CONTROL-DIRECTION':      1, # Section 8: Control Direction
+    'SECTION8_FOCUS-HEIGHT':           2, # Section 8: Camera Focus Height
+    'SECTION8_CAMERA-RANGE-DIR':       2, # Section 8: Camera Range Direction
+    'SECTION8_UNKNOWN-1':              2, # Section 8: Unknown 1 (related to Background Layer 3 or 4)
+    'SECTION8_ANIMATION-WIDTH':        2, # Section 8: Background Layer Animation Width
+    'SECTION8_ANIMATION-HEIGHT':       2, # Section 8: Background Layer Animation Height
+    'SECTION8_UNKNOWN-2':             12, # Section 8: Unknown 2 (related to Background Layer 3 or 4)
+    'SECTION8-GATEWAY_VERTEX-DIM':     2, # Section 8 Gateway: Vertex Coordinate (x, y, or z)
+    'SECTION8-GATEWAY_FIELD-ID':       2, # Section 8 Gateway: Field ID
+    'SECTION8-GATEWAY_UNKNOWN':        4, # Section 8 Gateway: Unknown
+    'SECTION8-TRIGGER_VERTEX-DIM':     2, # Section 8 Trigger: Vertex Coordinate (x, y, or z)
+    'SECTION8-TRIGGER_BG-GROUP-ID':    1, # Section 8 Trigger: Background Group ID (Parameter)
+    'SECTION8-TRIGGER_BG-FRAME-ID':    1, # Section 8 Trigger: Background Frame ID (State)
+    'SECTION8-TRIGGER_BEHAVIOR':       1, # Section 8 Trigger: Behavior
+    'SECTION8-TRIGGER_SOUND-ID':       1, # Section 8 Trigger: Sound ID
+    'SECTION8_SHOWN-ARROW':            1, # Section 8: Shown Arrow
+    'SECTION8-ARROW_POSITION':         4, # Section 8 Arrow: Position (x, y, or z)
+    'SECTION8-ARROW_TYPE':             4, # Section 8 Arrow: Type
 }
 SIZE['SECTION2-ENTRY'] = len(SECTION2_AXES)*SECTION2_NUM_DIMENSIONS*SIZE['SECTION2-ENTRY_VECTOR-VALUE'] + SIZE['SECTION2-ENTRY_VECTOR-VALUE'] + len(SECTION2_AXES)*SIZE['SECTION2-ENTRY_SPACE-POSITION'] + SIZE['SECTION2-ENTRY_BLANK'] + SIZE['SECTION2-ENTRY_ZOOM']
 
@@ -848,6 +873,104 @@ class Encounter:
             data += table['pad']
         return data
 
+class Triggers:
+    '''Triggers (Section 8) class'''
+    def __init__(self, data):
+        '''``Triggers`` constructor
+
+        Args:
+            ``data`` (``bytes``): The Encounter (Section 8) data
+        '''
+        ind = 0
+        self.name = data[ind:ind+SIZE['SECTION8_FIELD-NAME']].decode().rstrip(NULL_STR); ind += SIZE['SECTION8_FIELD-NAME']
+        self.control_direction = unpack('b', data[ind:ind+SIZE['SECTION8_CONTROL-DIRECTION']])[0]; ind += SIZE['SECTION8_CONTROL-DIRECTION']
+        self.focus_height = unpack('h', data[ind:ind+SIZE['SECTION8_FOCUS-HEIGHT']])[0]; ind += SIZE['SECTION8_FOCUS-HEIGHT']
+        self.camera_range = dict()
+        for d in ['left','bottom','right','top']:
+            self.camera_range[d] = unpack('h', data[ind:ind+SIZE['SECTION8_CAMERA-RANGE-DIR']])[0]; ind += SIZE['SECTION8_CAMERA-RANGE-DIR']
+        self.unknown_1 = dict()
+        for k in ['layer_3', 'layer_4']:
+            self.unknown_1[k] = unpack('H', data[ind:ind+SIZE['SECTION8_UNKNOWN-1']])[0]; ind += SIZE['SECTION8_UNKNOWN-1']
+        self.bg_animation = {'layer_3':dict(), 'layer_4':dict()}
+        for k in ['layer_3', 'layer_4']:
+            self.bg_animation[k]['width'] = unpack('h', data[ind:ind+SIZE['SECTION8_ANIMATION-WIDTH']])[0]; ind += SIZE['SECTION8_ANIMATION-WIDTH']
+            self.bg_animation[k]['height'] = unpack('h', data[ind:ind+SIZE['SECTION8_ANIMATION-HEIGHT']])[0]; ind += SIZE['SECTION8_ANIMATION-HEIGHT']
+        self.unknown_2 = {'layer_3':list(), 'layer_4':list()}
+        for k in ['layer_3', 'layer_4']:
+            self.unknown_2[k] = data[ind:ind+SIZE['SECTION8_UNKNOWN-2']]; ind += SIZE['SECTION8_UNKNOWN-2']
+        self.gateways = list()
+        for _ in range(SECTION8_NUM_GATEWAYS):
+            gateway = dict()
+            for k in ['exit_vertex_1', 'exit_vertex_2', 'destination_vertex']:
+                gateway[k] = list()
+                for d in ['x','z','y']:
+                    gateway[k].append(unpack('h', data[ind:ind+SIZE['SECTION8-GATEWAY_VERTEX-DIM']])[0]); ind += SIZE['SECTION8-GATEWAY_VERTEX-DIM']
+            gateway['field_ID'] = unpack('H', data[ind:ind+SIZE['SECTION8-GATEWAY_FIELD-ID']])[0]; ind += SIZE['SECTION8-GATEWAY_FIELD-ID']
+            gateway['unknown'] = data[ind:ind+SIZE['SECTION8-GATEWAY_UNKNOWN']]; ind += SIZE['SECTION8-GATEWAY_UNKNOWN']
+            self.gateways.append(gateway)
+        self.triggers = list()
+        for _ in range(SECTION8_NUM_TRIGGERS):
+            trigger = dict()
+            for k in ['vertex_corner_1', 'vertex_corner_2']:
+                trigger[k] = list()
+                for d in ['x','y','z']:
+                    trigger[k].append(unpack('h', data[ind:ind+SIZE['SECTION8-TRIGGER_VERTEX-DIM']])[0]); ind += SIZE['SECTION8-TRIGGER_VERTEX-DIM']
+            trigger['bg_group_ID'] = unpack('b', data[ind:ind+SIZE['SECTION8-TRIGGER_BG-GROUP-ID']])[0]; ind += SIZE['SECTION8-TRIGGER_BG-GROUP-ID']
+            trigger['bg_frame_ID'] = unpack('B', data[ind:ind+SIZE['SECTION8-TRIGGER_BG-FRAME-ID']])[0]; ind += SIZE['SECTION8-TRIGGER_BG-FRAME-ID']
+            trigger['behavior'] = unpack('B', data[ind:ind+SIZE['SECTION8-TRIGGER_BEHAVIOR']])[0]; ind += SIZE['SECTION8-TRIGGER_BEHAVIOR']
+            trigger['sound_ID'] = unpack('B', data[ind:ind+SIZE['SECTION8-TRIGGER_SOUND-ID']])[0]; ind += SIZE['SECTION8-TRIGGER_SOUND-ID']
+            self.triggers.append(trigger)
+        self.shown_arrows = list()
+        for _ in range(SECTION8_NUM_SHOWN_ARROWS):
+            self.shown_arrows.append(unpack('B', data[ind:ind+SIZE['SECTION8_SHOWN-ARROW']])[0]); ind += SIZE['SECTION8_SHOWN-ARROW']
+        self.arrows = list()
+        for _ in range(SECTION8_NUM_ARROWS):
+            arrow = {'position': list()}
+            for d in ['x','z','y']:
+                arrow['position'].append(unpack('i', data[ind:ind+SIZE['SECTION8-ARROW_POSITION']])[0]); ind += SIZE['SECTION8-ARROW_POSITION']
+            arrow['type'] = unpack('i', data[ind:ind+SIZE['SECTION8-ARROW_TYPE']])[0]; ind += SIZE['SECTION8-ARROW_TYPE']
+            self.arrows.append(arrow)
+
+    def get_bytes(self):
+        '''Return the bytes encoding this Triggers to repack into a Field File
+
+        Returns:
+            ``bytes``: The data to repack into a Field File
+        '''
+        data = bytearray()
+        data += self.name.encode(); data += NULL_BYTE*(SIZE['SECTION8_FIELD-NAME'] - len(self.name))
+        data += pack('b', self.control_direction)
+        data += pack('h', self.focus_height)
+        for d in ['left','bottom','right','top']:
+            data += pack('h', self.camera_range[d])
+        for k in ['layer_3', 'layer_4']:
+            data += pack('H', self.unknown_1[k])
+        for k in ['layer_3', 'layer_4']:
+            data += pack('h', self.bg_animation[k]['width']); data += pack('h', self.bg_animation[k]['height'])
+        for k in ['layer_3', 'layer_4']:
+            data += self.unknown_2[k]
+        for gateway in self.gateways:
+            for k in ['exit_vertex_1', 'exit_vertex_2', 'destination_vertex']:
+                for v in gateway[k]:
+                    data += pack('h', v)
+            data += pack('H', gateway['field_ID'])
+            data += gateway['unknown']
+        for trigger in self.triggers:
+            for k in ['vertex_corner_1', 'vertex_corner_2']:
+                for v in trigger[k]:
+                    data += pack('h', v)
+            data += pack('b', trigger['bg_group_ID'])
+            data += pack('B', trigger['bg_frame_ID'])
+            data += pack('B', trigger['behavior'])
+            data += pack('B', trigger['sound_ID'])
+        for shown_arrow in self.shown_arrows:
+            data += pack('B', shown_arrow)
+        for arrow in self.arrows:
+            for v in arrow['position']:
+                data += pack('i', v)
+            data += pack('i', arrow['type'])
+        return data
+
 class FieldFile:
     '''Field File class'''
     def __init__(self, data):
@@ -879,3 +1002,4 @@ class FieldFile:
         self.walkmesh = Walkmesh(data[starts[4]+SIZE['SECTION-LENGTH']:starts[5]])
         self.tile_map = TileMap(data[starts[5]+SIZE['SECTION-LENGTH']:starts[6]])
         self.encounter = Encounter(data[starts[6]+SIZE['SECTION-LENGTH']:starts[7]])
+        self.triggers = Triggers(data[starts[7]+SIZE['SECTION-LENGTH']:starts[8]])
