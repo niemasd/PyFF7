@@ -58,6 +58,12 @@ SECTION6_PARAM_BLENDING_SHIFT = 7
 SECTION6_PARAM_ID_SHIFT = 0
 SECTION6_SUB1_END_OF_LAYER_TYPE = 0x7FFF
 SECTION6_SUB1_SPRITE_TYPE = 0x7FFE
+SECTION7_NUM_STANDARD = 6
+SECTION7_NUM_SPECIAL = 4
+SECTION7_ENCOUNTER_PROB_MASK = 0b1111110000000000
+SECTION7_ENCOUNTER_ID_MASK   = 0b0000001111111111
+SECTION7_ENCOUNTER_PROB_SHIFT = 10
+SECTION7_ENCOUNTER_ID_SHIFT = 0
 STRING_TERMINATOR = b'\xff'
 
 # OP codes
@@ -201,6 +207,12 @@ SIZE = {
     'SECTION6-SUB5_TILE-CLUT':         2, # Section 6 Subsection 5: Tile Clut Data
     'SECTION6-SUB5_PARAM':             1, # Section 6 Subsection 5: Parameter
     'SECTION6-SUB5_STATE':             1, # Section 6 Subsection 5: State
+
+    # Section 7 (Encounter)
+    'SECTION7_ENABLED':                1, # Section 7: Enabled
+    'SECTION7_RATE':                   1, # Section 7: Rate
+    'SECTION7_ENCOUNTER':              2, # Section 7: Encounter
+    'SECTION7_PAD':                    2, # Section 7: Paddig at End of Table
 }
 SIZE['SECTION2-ENTRY'] = len(SECTION2_AXES)*SECTION2_NUM_DIMENSIONS*SIZE['SECTION2-ENTRY_VECTOR-VALUE'] + SIZE['SECTION2-ENTRY_VECTOR-VALUE'] + len(SECTION2_AXES)*SIZE['SECTION2-ENTRY_SPACE-POSITION'] + SIZE['SECTION2-ENTRY_BLANK'] + SIZE['SECTION2-ENTRY_ZOOM']
 
@@ -658,6 +670,8 @@ class TileMap:
         Args:
             ``data`` (``bytes``): The Tile Map (Section 6) data
         '''
+        if len(data) == 0:
+            return
         ind = 0
 
         # read subsection offsets from header
@@ -667,7 +681,10 @@ class TileMap:
         subsection_5_offset = unpack('I', data[ind:ind+SIZE['SECTION6-HEADER_OFFSET']])[0]; ind += SIZE['SECTION6-HEADER_OFFSET']
 
         # read subsection 1
+        self.sub1_bytes = data[ind:subsection_2_offset] # for now, idk how to regenerate this, so just save it for get_bytes
         tile_pos = 0; tile_count = 0; layer_ID = 0; self.sub1_tiles_tex = list(); self.sub1_tiles_layer = list()
+        ind = subsection_2_offset # TODO FIX: for now, I'm just ignoring this section
+        '''
         while ind < subsection_2_offset:
             curr_type = unpack('H', data[ind:ind+SIZE['SECTION6-SUB1_TYPE']])[0]
             if curr_type == SECTION6_SUB1_END_OF_LAYER_TYPE:
@@ -679,6 +696,7 @@ class TileMap:
                     tile_pos = unpack('H', data[ind+2:ind+4])[0]; tile_count = unpack('H', data[ind+4:ind+6])[0]
                 ind += 4
             ind += 2
+        '''
 
         # read subsection 2
         self.sub2_tiles = list()
@@ -724,14 +742,110 @@ class TileMap:
             tile['state'] = unpack('B', data[ind:ind+SIZE['SECTION6-SUB5_STATE']])[0]; ind += SIZE['SECTION6-SUB5_STATE']
             self.sub5_sprite_tiles.append(tile)
 
+    def empty(self):
+        '''Check if this Tile Map is empty
+
+        Returns:
+            ``bool``: ``True`` if this Tile Map is empty, otherwise ``False``
+        '''
+        return hasattr(self, "sub5_sprite_tiles")
+
     def get_bytes(self):
-        '''Return the bytes encoding this Walkmesh to repack into a Field File
+        '''Return the bytes encoding this Tile Map to repack into a Field File
 
         Returns:
             ``bytes``: The data to repack into a Field File
         '''
         data = bytearray()
-        # TODO
+        if self.empty():
+            return data
+
+        # encode subsection 1
+        data += self.sub1_bytes # TODO FIX: for now, idk how to regenerate this, so just use the one I saved
+
+        # encode subsection 2
+        subsection_2_offset = len(data) + 4*SIZE['SECTION6-HEADER_OFFSET']
+        for tile in self.sub2_tiles:
+            data += pack('h', tile['destination_x'])
+            data += pack('h', tile['destination_y'])
+            data += pack('B', tile['tex_pg_src_x'])
+            data += pack('B', tile['tex_pg_src_y'])
+            data += pack('H', (tile['tile_clut']['zz1'] << SECTION6_TILE_CLUT_ZZ1_SHIFT) | (tile['tile_clut']['clut_num'] << SECTION6_TILE_CLUT_CLUT_NUM_SHIFT) | (tile['tile_clut']['zz2'] << SECTION6_TILE_CLUT_ZZ2_SHIFT))
+
+        # encode subsection 3
+        subsection_3_offset = len(data) + 4*SIZE['SECTION6-HEADER_OFFSET']
+        for sprite_tp_blend in self.sub3_sprite_tp_blends:
+            data += pack('H', (sprite_tp_blend['zz'] << SECTION6_SPRITE_TP_BLEND_ZZ_SHIFT) | (sprite_tp_blend['deph'] << SECTION6_SPRITE_TP_BLEND_DEPH_SHIFT) | (sprite_tp_blend['blending_mode'] << SECTION6_SPRITE_TP_BLEND_BLEND_MODE_SHIFT) | (sprite_tp_blend['page_y'] << SECTION6_SPRITE_TP_BLEND_PAGE_Y_SHIFT) | (sprite_tp_blend['page_x'] << SECTION6_SPRITE_TP_BLEND_PAGE_X_SHIFT))
+
+        # encode subsection 4
+        subsection_4_offset = len(data) + 4*SIZE['SECTION6-HEADER_OFFSET']
+        for tile in self.sub4_sprite_tiles:
+            data += pack('h', tile['destination_x'])
+            data += pack('h', tile['destination_y'])
+            data += pack('B', tile['tex_pg_src_x'])
+            data += pack('B', tile['tex_pg_src_y'])
+            data += pack('H', (tile['tile_clut']['zz1'] << SECTION6_TILE_CLUT_ZZ1_SHIFT) | (tile['tile_clut']['clut_num'] << SECTION6_TILE_CLUT_CLUT_NUM_SHIFT) | (tile['tile_clut']['zz2'] << SECTION6_TILE_CLUT_ZZ2_SHIFT))
+            data += pack('H', (tile['sprite_tp_blend']['zz'] << SECTION6_SPRITE_TP_BLEND_ZZ_SHIFT) | (tile['sprite_tp_blend']['deph'] << SECTION6_SPRITE_TP_BLEND_DEPH_SHIFT) | (tile['sprite_tp_blend']['blending_mode'] << SECTION6_SPRITE_TP_BLEND_BLEND_MODE_SHIFT) | (tile['sprite_tp_blend']['page_y'] << SECTION6_SPRITE_TP_BLEND_PAGE_Y_SHIFT) | (tile['sprite_tp_blend']['page_x'] << SECTION6_SPRITE_TP_BLEND_PAGE_X_SHIFT))
+            data += pack('H', tile['group'])
+            data += pack('B', (tile['param']['blending'] << SECTION6_PARAM_BLENDING_SHIFT) | (tile['param']['ID'] << SECTION6_PARAM_ID_SHIFT))
+            data += pack('B', tile['state'])
+
+        # encode subsection 5
+        subsection_5_offset = len(data) + 4*SIZE['SECTION6-HEADER_OFFSET']
+        for tile in self.sub5_sprite_tiles:
+            data += pack('h', tile['destination_x'])
+            data += pack('h', tile['destination_y'])
+            data += pack('B', tile['tex_pg_src_x'])
+            data += pack('B', tile['tex_pg_src_y'])
+            data += pack('H', (tile['tile_clut']['zz1'] << SECTION6_TILE_CLUT_ZZ1_SHIFT) | (tile['tile_clut']['clut_num'] << SECTION6_TILE_CLUT_CLUT_NUM_SHIFT) | (tile['tile_clut']['zz2'] << SECTION6_TILE_CLUT_ZZ2_SHIFT))
+            data += pack('B', (tile['param']['blending'] << SECTION6_PARAM_BLENDING_SHIFT) | (tile['param']['ID'] << SECTION6_PARAM_ID_SHIFT))
+            data += pack('B', tile['state'])
+
+        # add header (subsection offsets)
+        header = bytearray()
+        header += pack('I', subsection_2_offset)
+        header += pack('I', subsection_3_offset)
+        header += pack('I', subsection_4_offset)
+        header += pack('I', subsection_5_offset)
+        return header + data
+
+class Encounter:
+    '''Encounter (Section 7) class'''
+    def __init__(self, data):
+        '''``Encounter`` constructor
+
+        Args:
+            ``data`` (``bytes``): The Encounter (Section 7) data
+        '''
+        self.table_1 = dict(); self.table_2 = dict(); ind = 0
+        for table in [self.table_1, self.table_2]:
+            table['enabled'] = unpack('B', data[ind:ind+SIZE['SECTION7_ENABLED']])[0]; ind += SIZE['SECTION7_ENABLED']
+            table['rate'] = unpack('B', data[ind:ind+SIZE['SECTION7_RATE']])[0]; ind += SIZE['SECTION7_RATE']
+            table['den'] = dict()
+            for k,n in [('standard',SECTION7_NUM_STANDARD), ('special',SECTION7_NUM_SPECIAL)]:
+                table[k] = list()
+                for _ in range(n):
+                    tmp = unpack('H', data[ind:ind+SIZE['SECTION7_ENCOUNTER']])[0]; ind += SIZE['SECTION7_ENCOUNTER']
+                    table[k].append({'prob':(tmp & SECTION7_ENCOUNTER_PROB_MASK) >> SECTION7_ENCOUNTER_PROB_SHIFT, 'ID':(tmp & SECTION7_ENCOUNTER_ID_MASK) >> SECTION7_ENCOUNTER_ID_SHIFT})
+                tot = sum(enc['prob'] for enc in table[k]); table['den'][k] = {True:1., False:float(tot)}[tot == 0]
+                for enc in table[k]: # divide by sum to get probability
+                    enc['prob'] /= table['den'][k]
+            table['pad'] = data[ind:ind+SIZE['SECTION7_PAD']]; ind += SIZE['SECTION7_PAD']
+
+    def get_bytes(self):
+        '''Return the bytes encoding this Encounter to repack into a Field File
+
+        Returns:
+            ``bytes``: The data to repack into a Field File
+        '''
+        data = bytearray()
+        for table in [self.table_1, self.table_2]:
+            data += pack('B', table['enabled'])
+            data += pack('B', table['rate'])
+            for k in ['standard','special']:
+                for enc in table[k]:
+                    data += pack('H', (int(enc['prob']*table['den'][k]) << SECTION7_ENCOUNTER_PROB_SHIFT) | (enc['ID'] << SECTION7_ENCOUNTER_ID_SHIFT))
+            data += table['pad']
         return data
 
 class FieldFile:
@@ -764,3 +878,4 @@ class FieldFile:
         self.palette = Palette(data[starts[3]+SIZE['SECTION-LENGTH']:starts[4]])
         self.walkmesh = Walkmesh(data[starts[4]+SIZE['SECTION-LENGTH']:starts[5]])
         self.tile_map = TileMap(data[starts[5]+SIZE['SECTION-LENGTH']:starts[6]])
+        self.encounter = Encounter(data[starts[6]+SIZE['SECTION-LENGTH']:starts[7]])
