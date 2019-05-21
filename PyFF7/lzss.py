@@ -45,8 +45,10 @@ def ref_to_offset_len(ref):
 
         ``length`` (``int``): The corresponding length
     '''
+    if len(ref) == 1: # some files have a reference of `OOOOLLLL` instead of `OOOOOOOO OOOOLLLL`, e.g. in RIDE_0.NPK
+        return ((ref[0] & RIGHT_NIBBLE_MASK) + MIN_REF_LEN), ((ref[0] & LEFT_NIBBLE_MASK) >> 4)
     if len(ref) != SIZE['REF']:
-        raise ValueError(ERROR_REF_TOO_LONG)
+        raise ValueError("Reference must be %d bytes, but it was %d bytes" % (SIZE['REF'],len(ref)))
     length = (ref[1] & RIGHT_NIBBLE_MASK) + MIN_REF_LEN
     offset = ((ref[1] & LEFT_NIBBLE_MASK) << 4) | ref[0]
     return offset,length
@@ -102,5 +104,8 @@ def decompress_lzss(input_lzss):
                     chunk = bytearray()
                 chunk += out[pos:pos+length-len(chunk)]; out += chunk
                 for i in range(len(chunk), length): # out-of-bounds offset = repeated runs
-                    out.append(chunk[i%len(chunk)])
+                    if len(chunk) == 0: # RIDE_0.NPK had some file(s) with empty chunks. I imagine this means NULL_BYTE?
+                        out += NULL_BYTE
+                    else:
+                        out.append(chunk[i%len(chunk)])
     return out
