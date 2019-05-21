@@ -77,7 +77,7 @@ def decompress_lzss(input_lzss):
     if isinstance(input_lzss,str): # if filename instead of bytes, read bytes
         with open(input_lzss,'rb') as f:
             input_lzss = f.read()
-    elif not isinstance(input_lzss, bytes):
+    elif not isinstance(input_lzss, bytes) and not isinstance(input_lzss, bytearray):
         raise TypeError(ERROR_NOT_FILENAME_OR_BYTES)
     datasize = unpack('I', input_lzss[:SIZE['HEADER']])[0]
     if len(input_lzss) - 4 != datasize:
