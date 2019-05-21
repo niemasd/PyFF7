@@ -7,7 +7,7 @@ from . import NULL_BYTE,NULL_STR
 from .lzss import decompress_lzss
 from struct import pack,unpack
 
-# size of various items in an LGP archive (in bytes)
+# size of various items in an NPK archive (in bytes)
 SIZE = {
     'BLOCK':                1024, # Block
     'BLOCK_NUM-SUBBLOCKS':     4, # Block: Number of Sub-Blocks in this Block
