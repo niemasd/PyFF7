@@ -7,10 +7,6 @@ from PyFF7.npk import NPK
 from sys import argv,stderr
 USAGE = "USAGE: %s <npk_file>" % argv[0]
 
-# error messages
-#ERROR_HEADER_TOC_LENGTH_MISMATCH = "Number of files in header doesn't match Table of Contents length"
-#ERROR_TOC_CONTAB_NUM_CONFLICTS_MISMATCH = "Number of conflicting files in Conflict Table doesn't match Table of Contents"
-
 if __name__ == "__main__":
     if len(argv) != 2 or argv[1] == '-h' or argv[1] == '--help':
         print(USAGE); exit(1)
