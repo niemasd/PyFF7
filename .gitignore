@@ -3,6 +3,7 @@
 *.hrc
 *.ini
 *.lgp
+*.lpk
 *.npk
 *.out
 *.p
