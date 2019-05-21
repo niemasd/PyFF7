@@ -29,7 +29,7 @@ ERROR_INVALID_NPK_FILE = "Invalid NPK file"
 class NPK:
     '''NPK archive class'''
     def __init__(self, filename):
-        '''``FieldFile`` constructor
+        '''``NPK`` constructor
 
         Args:
             ``filename`` (``str``): The filename of the NPK archive
