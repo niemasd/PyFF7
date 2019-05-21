@@ -21,7 +21,12 @@ if __name__ == "__main__":
         print("Extracting file %d of %d..." % (i+1,len(lgp.toc)), end='\r')
         if '/' in e[0]:
             makedirs('%s/%s' % (argv[2], '/'.join(e[0].split('/')[:-1])), exist_ok=True)
-        if isfile("%s/%s" % (argv[2],e[0])):
-            raise RuntimeError("Duplicate file: %s" % "%s/%s" % (argv[2],e[0]))
-        f = open("%s/%s" % (argv[2],e[0]), 'wb'); f.write(e[1]); f.close()
+        filename = "%s/%s" % (argv[2],e[0])
+        try:
+            isfile(filename)
+        except:
+            filename = filename[:filename.index('.')+4] # weird characters in filename, so truncate extension
+        if isfile(filename):
+            raise RuntimeError("Duplicate file: %s" % filename)
+        f = open(filename, 'wb'); f.write(e[1]); f.close()
     print("Extracted %d files successfully" % len(lgp.toc))
