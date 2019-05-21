@@ -22,3 +22,14 @@ Usage: `python3 <lgp_file> <output_directory>`
 Decompress an LZSS-compressed file.
 
 Usage: `python3 <lzss_file> <output_file>`
+
+## [NPK](../../wiki/NPK-Format) Files
+### [npk_info.py](npk_info.py)
+Read the information of an NPK archive.
+
+Usage: `python3 npk_info.py <npk_file>`
+
+### [npk_unpack.py](npk_unpack.py)
+Unpack an NPK archive.
+
+Usage: `python3 <npk_file> <output_directory>`
