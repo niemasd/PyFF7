@@ -30,7 +30,10 @@ if __name__ == "__main__":
         print()
         print("Table of Contents")
         print("* FILENAME\tFILESIZE\tSTART\tCHECK\tCONFLICT TABLE INDEX")
-        for entry in lgp.toc:
-            print("* %s\t%d\t%d\t%d\t%d" % (entry['filename'], entry['filesize'], entry['data_start'], entry['check'], entry['conflict_index']))
+        for entry in lgp:
+            if 'check' in entry:
+                print("* %s\t%d\t%d\t%d\t%d" % (entry['filename'], entry['filesize'], entry['data_start'], entry['check'], entry['conflict_index']))
+            else:
+                print("* %s\t%d\t%d\tN/A\tN/A" % (entry['filename'], entry['filesize'], entry['data_start']))
     except BrokenPipeError:
         stderr.close()

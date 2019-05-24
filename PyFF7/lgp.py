@@ -319,6 +319,11 @@ class LGP:
         '''
         return self.header['num_files']+len(self.non_toc_files)
 
+    def __iter__(self):
+        '''Iterate over the file entires in this LGP'''
+        for entry in self.toc+self.non_toc_files:
+            yield entry
+
     def load_bytes(self, start, size):
         '''Load the first ``size`` bytes starting with position ``start``
 
