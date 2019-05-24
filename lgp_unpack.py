@@ -18,7 +18,7 @@ if __name__ == "__main__":
     print("LGP File: %s" % argv[1])
     print("Output Directory: %s" % argv[2])
     for i,e in enumerate(lgp.load_files()):
-        print("Extracting file %d of %d..." % (i+1,len(lgp.toc)), end='\r')
+        print("Extracting file %d of %d..." % (i+1,len(lgp)), end='\r')
         if '/' in e[0]:
             makedirs('%s/%s' % (argv[2], '/'.join(e[0].split('/')[:-1])), exist_ok=True)
         filename = "%s/%s" % (argv[2],e[0])

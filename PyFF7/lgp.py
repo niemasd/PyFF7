@@ -37,6 +37,9 @@ SIZE = {
     # Data Entries
     'DATA-ENTRY_FILENAME':        20, # Data Entry: Filename
     'DATA-ENTRY_FILESIZE':         4, # Data Entry: File Size
+
+    # Other
+    'TERMINATOR':                 14, # File Terminator (default: "FINAL FANTASY7")
 }
 SIZE['HEADER'] = sum(SIZE[k] for k in SIZE if k.startswith('HEADER_')) # 16 bytes
 SIZE['TOC-ENTRY'] = sum(SIZE[k] for k in SIZE if k.startswith('TOC-ENTRY_')) # 27 bytes
@@ -72,6 +75,7 @@ ERROR_FILENAME_START_PERIOD = "Filename cannot begin with '.'"
 ERROR_INVALID_TOC_ENTRY = "Invalid Table of Contents entry"
 ERROR_LOOKUP_TOC_MISMATCH = "Lookup Table and Table of Contents do not match"
 ERROR_NOT_STR = "Input is not a string"
+ERROR_TERMINATOR_SIZE = "Terminator is the wrong size"
 
 def char_to_lookup_value(c):
     '''Convert a character ``c`` to a value for the Lookup Table index (this is done to the first and second characters of a filename)
@@ -237,7 +241,7 @@ class LGP:
 
             ``check`` (``bool``): ``True`` to check the Lookup Table vs. Table of Contents for validity, otherwise ``False``
         '''
-        self.filename = filename; self.file = open(filename, 'rb')
+        self.filename = filename; self.file = open(filename, 'rb'); total_filesize = getsize(self.filename)
 
         # read header
         tmp = self.file.read(SIZE['HEADER'])
@@ -280,9 +284,22 @@ class LGP:
         for entry in self.toc:
             self.file.seek(entry['data_start']+SIZE['DATA-ENTRY_FILENAME'], 0); entry['filesize'] = unpack('I', self.file.read(SIZE['DATA-ENTRY_FILESIZE']))[0]
 
-        # read terminator
+        # read any remaining files that weren't in Table of Contents (e.g. in battle.lgp)
+        self.non_toc_files = list()
         self.file.seek(self.toc[-1]['data_start']+SIZE['DATA-ENTRY_FILENAME'], 0) # move to filesize of last file
-        self.file.seek(unpack('I', self.file.read(SIZE['DATA-ENTRY_FILESIZE']))[0], 1)    # move forward to end of last file's data
+        self.file.seek(unpack('I', self.file.read(SIZE['DATA-ENTRY_FILESIZE']))[0], 1) # move forward to end of last file's data
+        stopping_point = total_filesize - SIZE['TERMINATOR']
+        while self.file.tell() < stopping_point:
+            entry = dict()
+            entry['data_start'] = self.file.tell()
+            entry['filename'] = self.file.read(SIZE['TOC-ENTRY_FILENAME']).decode().strip(NULL_STR)
+            entry['filesize'] = unpack('I', self.file.read(SIZE['DATA-ENTRY_FILESIZE']))[0]
+            self.file.seek(self.file.tell()+entry['filesize'])
+            self.non_toc_files.append(entry)
+
+        # read terminator
+        if total_filesize - self.file.tell() != SIZE['TERMINATOR']:
+            raise ValueError(ERROR_TERMINATOR_SIZE)
         self.terminator = self.file.read().decode().strip(NULL_STR)
 
         # check lookup table for validity
@@ -300,7 +317,7 @@ class LGP:
         Returns:
             ``int``: The number of files in this archive
         '''
-        return self.header['num_files']
+        return self.header['num_files']+len(self.non_toc_files)
 
     def load_bytes(self, start, size):
         '''Load the first ``size`` bytes starting with position ``start``
@@ -331,7 +348,7 @@ class LGP:
 
     def load_files(self):
         '''Load each file contained in the LGP archive, yielding (filename, data) tuples'''
-        for entry in self.toc:
+        for entry in self.toc+self.non_toc_files:
             yield (entry['filename'], self.load_toc_entry(entry))
 
     def valid_lookup(self):
