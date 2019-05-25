@@ -6,7 +6,7 @@ Niema Moshiri 2019
 from PyFF7.lzss import decompress_lzss
 from os.path import isdir,isfile
 from sys import argv
-USAGE = "USAGE: %s <lzss_file> <output_file>" % argv[0]
+USAGE = "USAGE: %s <input_lzss_file> <output_file>" % argv[0]
 
 if __name__ == "__main__":
     if len(argv) != 3:

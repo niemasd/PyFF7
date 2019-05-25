@@ -8,7 +8,7 @@ from os import makedirs
 from os.path import isdir,isfile
 from sys import argv
 from warnings import warn
-USAGE = "USAGE: %s <lgp_file> <output_directory>" % argv[0]
+USAGE = "USAGE: %s <input_lgp_file> <output_directory>" % argv[0]
 
 if __name__ == "__main__":
     if len(argv) != 3:

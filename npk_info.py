@@ -5,7 +5,7 @@ Niema Moshiri 2019
 '''
 from PyFF7.npk import NPK
 from sys import argv,stderr
-USAGE = "USAGE: %s <npk_file>" % argv[0]
+USAGE = "USAGE: %s <input_npk_file>" % argv[0]
 
 if __name__ == "__main__":
     if len(argv) != 2 or argv[1] == '-h' or argv[1] == '--help':

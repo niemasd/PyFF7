@@ -7,7 +7,7 @@ from PyFF7.lgp import pack_lgp
 from glob import glob
 from os.path import isdir,isfile
 from sys import argv,stderr
-USAGE = "USAGE: %s <file_directory> <output_lgp_file>" % argv[0]
+USAGE = "USAGE: %s <input_directory> <output_lgp_file>" % argv[0]
 
 if __name__ == "__main__":
     if len(argv) != 3:

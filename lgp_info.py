@@ -5,7 +5,7 @@ Niema Moshiri 2019
 '''
 from PyFF7.lgp import LGP
 from sys import argv,stderr
-USAGE = "USAGE: %s <lgp_file>" % argv[0]
+USAGE = "USAGE: %s <input_lgp_file>" % argv[0]
 
 # error messages
 ERROR_HEADER_TOC_LENGTH_MISMATCH = "Number of files in header doesn't match Table of Contents length"

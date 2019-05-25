@@ -7,7 +7,7 @@ from PyFF7.npk import NPK
 from os import makedirs
 from os.path import isdir,isfile
 from sys import argv
-USAGE = "USAGE: %s <npk_file> <output_directory>" % argv[0]
+USAGE = "USAGE: %s <input_npk_file> <output_directory>" % argv[0]
 
 if __name__ == "__main__":
     if len(argv) != 3:
