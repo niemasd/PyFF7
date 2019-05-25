@@ -7,6 +7,7 @@ from PyFF7.lgp import LGP
 from os import makedirs
 from os.path import isdir,isfile
 from sys import argv
+from warnings import warn
 USAGE = "USAGE: %s <lgp_file> <output_directory>" % argv[0]
 
 if __name__ == "__main__":
@@ -27,6 +28,6 @@ if __name__ == "__main__":
         except:
             filename = filename[:filename.index('.')+4] # weird characters in filename, so truncate extension
         if isfile(filename):
-            raise RuntimeError("Duplicate file: %s" % filename)
+            warn("Duplicate file not unpacked: %s" % filename)
         f = open(filename, 'wb'); f.write(e[1]); f.close()
     print("Extracted %d files successfully" % len(lgp.toc))
