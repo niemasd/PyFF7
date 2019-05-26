@@ -174,12 +174,7 @@ def compress_lzss(data):
     # Output data
     output = bytearray(); i = 0
     while i < len(data):
-
-        # Accumulated output chunk
-        chunk = bytearray()
-
-        # Process 8 literals or references at a time
-        flags = 0
+        chunk = bytearray(); flags = 0
         for bit in range(8):
             if i >= len(data):
                 break
