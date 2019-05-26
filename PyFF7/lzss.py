@@ -112,16 +112,15 @@ def decompress_lzss(data):
                         out.append(chunk[i%len(chunk)])
     return out
 
-# Dictionary for LZSS compression
 class Dictionary:
-
-    # Initialize the dictionary.
-    def __init__(self):
+    '''Dictionary for LZSS compression'''
+    def __init__(self, ptr):
+        '''``Dictionary`` constructor'''
+        self.ptr = ptr
 
         # For each reference length there is one dictionary mapping substrings
         # to dictionary offsets.
         self.d = [{} for i in range(0, MAX_REF_LEN + 1)]
-        self.ptr = 0
 
         # For each reference length there is also a reverse dictionary
         # mapping dictionary offsets to substrings. This makes removing
@@ -188,10 +187,9 @@ def compress_lzss(data):
             data = f.read()
     elif not isinstance(data, bytes) and not isinstance(data, bytearray):
         raise TypeError(ERROR_NOT_FILENAME_OR_BYTES)
-    dictionary = Dictionary()
+    dictionary = Dictionary(WINDOW_SIZE - 2*MAX_REF_LEN)
 
     # Prime the dictionary
-    dictionary.ptr = WINDOW_SIZE - 2*MAX_REF_LEN
     for i in range(MAX_REF_LEN):
         dictionary.add(NULL_BYTE * (MAX_REF_LEN - i) + data[:i])
 
