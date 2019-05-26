@@ -18,6 +18,7 @@ if __name__ == "__main__":
     lgp = LGP(argv[1]); makedirs(argv[2])
     print("LGP File: %s" % argv[1])
     print("Output Directory: %s" % argv[2])
+    tot = len(lgp)
     for i,e in enumerate(lgp.load_files()):
         print("Extracting file %d of %d..." % (i+1,len(lgp)), end='\r')
         if '/' in e[0]:
@@ -28,6 +29,6 @@ if __name__ == "__main__":
         except:
             filename = filename[:filename.index('.')+4] # weird characters in filename, so truncate extension
         if isfile(filename):
-            warn("Duplicate file not unpacked: %s" % filename)
+            warn("Duplicate file not unpacked: %s" % filename); tot -= 1
         f = open(filename, 'wb'); f.write(e[1]); f.close()
-    print("Extracted %d files successfully" % len(lgp.toc))
+    print("Extracted %d of %d files successfully" % (tot,len(lgp)))
