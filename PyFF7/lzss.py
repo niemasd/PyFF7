@@ -117,32 +117,21 @@ class Dictionary:
     def __init__(self, ptr):
         '''``Dictionary`` constructor'''
         self.ptr = ptr
-
-        # For each reference length there is one dictionary mapping substrings
-        # to dictionary offsets.
-        self.d = [{} for i in range(0, MAX_REF_LEN + 1)]
-
-        # For each reference length there is also a reverse dictionary
-        # mapping dictionary offsets to substrings. This makes removing
-        # dictionary entries more efficient.
-        self.r = [{} for i in range(0, MAX_REF_LEN + 1)]
+        self.d = [{} for i in range(0, MAX_REF_LEN + 1)] # substring to offset
+        self.r = [{} for i in range(0, MAX_REF_LEN + 1)] # offset to substring
 
     # Add all initial substrings of a string to the dictionary.
     def add(self, s):
-        # Generate all substrings
         for length in range(MIN_REF_LEN, min(len(s),MAX_REF_LEN) + 1):
             substr = s[:length]
 
             # Remove obsolete mapping, if present
             try:
-                prevOffset = self.d[length][substr]
-                del self.r[length][prevOffset]
+                del self.r[length][self.d[length][substr]]
             except KeyError:
                 pass
-
             try:
-                prevSubstr = self.r[length][self.ptr]
-                del self.d[length][prevSubstr]
+                del self.d[length][self.r[length][self.ptr]]
             except KeyError:
                 pass
 
@@ -157,13 +146,8 @@ class Dictionary:
     # looking for long matches first. Returns an (offset, length) tuple if
     # found. Raises KeyError if not found.
     def find(self, s):
-        maxLength = MAX_REF_LEN
-        if maxLength > len(s):
-            maxLength = len(s)
-
-        for length in range(maxLength, MIN_REF_LEN - 1, -1):
+        for length in range(min(MAX_REF_LEN,len(s)), MIN_REF_LEN - 1, -1):
             substr = s[:length]
-
             try:
                 offset = self.d[length][substr]
                 if offset != self.ptr:  # the FF7 LZSS decompressor can't handle this case
@@ -188,51 +172,29 @@ def compress_lzss(data):
         dictionary.add(NULL_BYTE * (MAX_REF_LEN - i) + data[:i])
 
     # Output data
-    output = bytearray()
-
-    i = 0
-    dataSize = len(data)
-
-    while i < dataSize:
+    output = bytearray(); i = 0
+    while i < len(data):
 
         # Accumulated output chunk
-        accum = bytearray()
+        chunk = bytearray()
 
         # Process 8 literals or references at a time
         flags = 0
         for bit in range(8):
-            if i >= dataSize:
+            if i >= len(data):
                 break
-
-            # Next substring in dictionary?
             try:
-                substr = data[i:i + MAX_REF_LEN]
-                offset, length = dictionary.find(substr)
-
-                # Yes, append dictionary reference
-                accum += bytes([offset & 0xFF]) + bytes([(((offset >> 4) & 0xf0) | (length - MIN_REF_LEN))])
-
-                # Update dictionary
+                offset, length = dictionary.find(data[i : i+MAX_REF_LEN])
+                chunk += bytes([offset & 0xFF]) + bytes([(((offset >> 4) & 0xF0) | (length-MIN_REF_LEN))])
                 for j in range(length):
-                    dictionary.add(data[i + j:i + j + MAX_REF_LEN])
-
+                    dictionary.add(data[i+j : i+j+MAX_REF_LEN])
                 i += length
-
             except KeyError:
-
-                # Append literal value
-                v = bytes([data[i]])
-                accum += v
-
+                chunk += bytes([data[i]])
                 flags |= (1 << bit)
-
-                # Update dictionary
-                dictionary.add(data[i:i + MAX_REF_LEN])
-
+                dictionary.add(data[i : i+MAX_REF_LEN])
                 i += 1
 
         # Chunk complete, add to output
-        output += bytes([flags])
-        output += accum
-
+        output += bytes([flags]) + chunk
     return pack('I', len(output)) + output
