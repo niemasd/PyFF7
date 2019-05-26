@@ -129,14 +129,10 @@ class Dictionary:
 
     # Add all initial substrings of a string to the dictionary.
     def add(self, s):
-        maxLength = MAX_REF_LEN
-        if maxLength > len(s):
-            maxLength = len(s)
-
         offset = self.ptr
 
         # Generate all substrings
-        for length in range(MIN_REF_LEN, maxLength + 1):
+        for length in range(MIN_REF_LEN, min(len(s),MAX_REF_LEN) + 1):
             substr = s[:length]
 
             # Remove obsolete mapping, if present
