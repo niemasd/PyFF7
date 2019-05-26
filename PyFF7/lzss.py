@@ -129,8 +129,6 @@ class Dictionary:
 
     # Add all initial substrings of a string to the dictionary.
     def add(self, s):
-        offset = self.ptr
-
         # Generate all substrings
         for length in range(MIN_REF_LEN, min(len(s),MAX_REF_LEN) + 1):
             substr = s[:length]
@@ -143,14 +141,14 @@ class Dictionary:
                 pass
 
             try:
-                prevSubstr = self.r[length][offset]
+                prevSubstr = self.r[length][self.ptr]
                 del self.d[length][prevSubstr]
             except KeyError:
                 pass
 
             # Add new mapping
-            self.d[length][substr] = offset
-            self.r[length][offset] = substr
+            self.d[length][substr] = self.ptr
+            self.r[length][self.ptr] = substr
 
         # Advance dictionary pointer
         self.ptr = (self.ptr + 1) & WINDOW_MASK
