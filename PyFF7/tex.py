@@ -5,8 +5,6 @@ Niema Moshiri 2019
 '''
 from struct import pack,unpack
 
-# constants
-
 # size of various items in an LGP archive (in bytes)
 SIZE = {
     # Header
@@ -104,7 +102,7 @@ class TEX:
         if self.version != DEFAULT_VERSION:
             raise ValueError(ERROR_INVALID_TEX_FILE)
         self.unknown1 = data[ind:ind+SIZE['HEADER_VERSION']]; ind += SIZE['HEADER_VERSION']
-        self.color_key_flag = unpack('I', data[ind:ind+SIZE['HEADER_COLOR-KEY-FLAG']])[0]; ind += SIZE['HEADER_COLOR-KEY-FLAG']
+        color_key_flag = unpack('I', data[ind:ind+SIZE['HEADER_COLOR-KEY-FLAG']])[0]; ind += SIZE['HEADER_COLOR-KEY-FLAG']
         self.unknown2 = data[ind:ind+SIZE['HEADER_UNKNOWN2']]; ind += SIZE['HEADER_UNKNOWN2']
         self.unknown3 = data[ind:ind+SIZE['HEADER_UNKNOWN3']]; ind += SIZE['HEADER_UNKNOWN3']
         self.min_bits_per_color = unpack('I', data[ind:ind+SIZE['HEADER_MIN-BITS-PER-COLOR']])[0]; ind += SIZE['HEADER_MIN-BITS-PER-COLOR']
@@ -121,7 +119,7 @@ class TEX:
         height = unpack('I', data[ind:ind+SIZE['HEADER_IMAGE-HEIGHT']])[0]; ind += SIZE['HEADER_IMAGE-HEIGHT']
         bytes_per_row = unpack('I', data[ind:ind+SIZE['HEADER_BYTES-PER-ROW']])[0]; ind += SIZE['HEADER_BYTES-PER-ROW']
         self.unknown5 = data[ind:ind+SIZE['HEADER_UNKNOWN5']]; ind += SIZE['HEADER_UNKNOWN5']
-        self.palette_flag = unpack('I', data[ind:ind+SIZE['HEADER_PALETTE-FLAG']])[0]; ind += SIZE['HEADER_PALETTE-FLAG']
+        palette_flag = unpack('I', data[ind:ind+SIZE['HEADER_PALETTE-FLAG']])[0]; ind += SIZE['HEADER_PALETTE-FLAG']
         self.bits_per_index = unpack('I', data[ind:ind+SIZE['HEADER_BITS-PER-INDEX']])[0]; ind += SIZE['HEADER_BITS-PER-INDEX']
         self.indexed_to_8bit_flag = unpack('I', data[ind:ind+SIZE['HEADER_INDEXED-TO-8BIT-FLAG']])[0]; ind += SIZE['HEADER_INDEXED-TO-8BIT-FLAG']
         palette_size = unpack('I', data[ind:ind+SIZE['HEADER_PALETTE-SIZE']])[0]; ind += SIZE['HEADER_PALETTE-SIZE']
@@ -165,25 +163,99 @@ class TEX:
         self.unknown7 = data[ind:ind+SIZE['HEADER-2_UNKNOWN7']]; ind += SIZE['HEADER-2_UNKNOWN7']
 
         # read palette data
-        self.palette = list()
+        palette = list()
         for _ in range(palette_size):
             curr_blue = unpack('B', data[ind:ind+SIZE['PALETTE-ENTRY_BLUE']])[0]; ind += SIZE['PALETTE-ENTRY_BLUE']
             curr_green = unpack('B', data[ind:ind+SIZE['PALETTE-ENTRY_GREEN']])[0]; ind += SIZE['PALETTE-ENTRY_GREEN']
             curr_red = unpack('B', data[ind:ind+SIZE['PALETTE-ENTRY_RED']])[0]; ind += SIZE['PALETTE-ENTRY_RED']
             curr_alpha = unpack('B', data[ind:ind+SIZE['PALETTE-ENTRY_ALPHA']])[0]; ind += SIZE['PALETTE-ENTRY_ALPHA']
-            self.palette.append(tuple([curr_red, curr_green, curr_blue, curr_alpha])) # I read them as BGRA, but I like saving them as RGBA
+            palette.append(tuple([curr_red, curr_green, curr_blue, curr_alpha])) # I read them as BGRA, but I like saving them as RGBA
 
         # read pixel data
         self.pixels = list()
         for _ in range(height):
             row = list()
             for __ in range(width):
-                if len(self.palette) == 0:
+                if len(palette) == 0:
                     raise NotImplementedError("Using the Pixel Format Specification is not yet implemented")
                 else:
-                    color = self.palette[unpack(BYTES_TO_FORMAT[bytes_per_pixel], data[ind:ind+bytes_per_pixel])[0]]; ind += bytes_per_pixel
+                    color = palette[unpack(BYTES_TO_FORMAT[bytes_per_pixel], data[ind:ind+bytes_per_pixel])[0]]; ind += bytes_per_pixel
                 row.append(color)
             self.pixels.append(row)
+
+    def get_bytes(self):
+        '''Return the bytes encoding this TEX file
+
+        Returns:
+            ``bytes``: The data encoding this TEX file
+        '''
+        # prepare stuff
+        out = bytearray()
+        pal = list({c for row in self.pixels for c in row})
+        col_to_ind = {c:i for i,c in enumerate(pal)}
+        if len(pal) <= 256:
+            bytes_per_pixel = 1; pal_index_format = 'B'
+        elif len(pal) <= 65536:
+            bytes_per_pixel = 2; pal_index_format = 'H'
+        else:
+            bytes_per_pixel = 4; pal_index_format = 'I'
+        bits_per_pixel = BITS_PER_BYTE * bytes_per_pixel
+
+        # add header
+        out += pack('I', 1)                 # version
+        out += self.unknown1
+        out += pack('I', 1)                 # color key flag
+        out += self.unknown2
+        out += self.unknown3
+        out += pack('I', 0)                 # minimum bits per color
+        out += pack('I', 8)                 # maximum bits per color
+        out += pack('I', 0)                 # minimum alpha bits
+        out += pack('I', 8)                 # maximum alpha bits
+        out += pack('I', 8)                 # minimum bits per pixel
+        out += pack('I', 32)                # maximum bits per pixel
+        out += self.unknown4
+        out += pack('I', 1)                 # number of palettes
+        out += pack('I', len(pal))          # number of colors per palette
+        out += pack('I', self.bit_depth)
+        out += pack('I', self.get_width())
+        out += pack('I', self.get_height())
+        out += pack('I', bytes_per_pixel*self.get_width())
+        out += self.unknown5
+        out += pack('I', 1)                 # palette flag
+        out += pack('I', BITS_PER_BYTE)
+        out += pack('I', 0)                 # IndexedTo8bitsFlag
+        out += pack('I', len(pal))          # palette size
+        out += pack('I', len(pal))          # number of colors per palette (duplicate)
+        out += self.runtime_data1
+        out += pack('I', bits_per_pixel)
+        out += pack('I', bytes_per_pixel)
+
+        # don't use pixel format (just use palette instead)
+        for _ in range(20):
+            out += pack('I', 0)
+
+        # add header 2
+        out += pack('I', 0)                 # color key array flag
+        out += self.runtime_data2
+        out += pack('I', 255)               # reference alpha
+        out += self.runtime_data3
+        out += self.unknown6
+        out += pack('I', 0)                 # palette index
+        out += self.runtime_data4
+        out += self.unknown7
+
+        # add palette data
+        for r,g,b,a in pal:
+            out += pack('B', b)
+            out += pack('B', g)
+            out += pack('B', r)
+            out += pack('B', a)
+
+        # add pixels
+        for row in self.pixels:
+            for c in row:
+                out += pack(pal_index_format, col_to_ind[c])
+        return out
 
     def get_height(self):
         '''Get the image height of this TEX file
@@ -213,3 +285,17 @@ class TEX:
             for y in range(self.get_height()):
                 img.putpixel((x,y), self.pixels[y][x])
         return img
+
+    def change_image(self, img):
+        '''Change this TEX file's image
+
+        Args:
+            ``img`` (``Image``): The image to set this TEX file to
+        '''
+        img = img.convert('RGBA'); w,h = img.size
+        self.pixels = list()
+        for y in range(h):
+            row = list()
+            for x in range(w):
+                row.append(img.getpixel((x,y)))
+            self.pixels.append(row)
