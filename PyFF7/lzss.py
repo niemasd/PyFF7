@@ -72,7 +72,7 @@ def decompress_lzss(data):
     '''Decompress an LZSS file
 
     Args:
-        ``input_lzz`` (``bytes``): The input LZSS-compressed file
+        ``data`` (``bytes``): The input LZSS-compressed file
 
     Returns:
         ``bytes``: The resulting decompressed file
