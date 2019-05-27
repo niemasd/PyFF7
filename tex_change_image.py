@@ -3,7 +3,6 @@
 Change the image inside of a TEX file
 Niema Moshiri 2019
 '''
-from PIL import Image
 from PyFF7.tex import TEX
 from os.path import isdir,isfile
 from sys import argv,stderr
@@ -15,6 +14,6 @@ if __name__ == "__main__":
     if isdir(argv[3]) or isfile(argv[3]):
         raise ValueError("ERROR: Specified output file exists: %s" % argv[3])
     tex = TEX(argv[1])
-    tex.change_image(Image.open(argv[2]))
+    tex.change_image(argv[2])
     data = tex.get_bytes()
     f = open(argv[3],'wb'); f.write(data); f.close()

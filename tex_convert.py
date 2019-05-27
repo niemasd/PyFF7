@@ -13,4 +13,4 @@ if __name__ == "__main__":
         print(USAGE); exit(1)
     if isdir(argv[2]) or isfile(argv[2]):
         raise ValueError("ERROR: Specified output file exists: %s" % argv[2])
-    TEX(argv[1]).get_pillow_image().save(argv[2])
+    TEX(argv[1]).get_image().save(argv[2])

@@ -16,5 +16,6 @@ if __name__ == "__main__":
         print("* File Name: %s" % argv[1])
         print("* Image Width: %d" % tex.get_width())
         print("* Image Height: %d" % tex.get_height())
+        print("* RGBA Colors: %d" % tex.num_colors())
     except BrokenPipeError:
         stderr.close()

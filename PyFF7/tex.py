@@ -3,6 +3,7 @@
 Functions and classes for handling TEX files
 Niema Moshiri 2019
 '''
+from PIL import Image
 from struct import pack,unpack
 
 # size of various items in an LGP archive (in bytes)
@@ -171,16 +172,14 @@ class TEX:
                 palette.append(tuple([curr_red, curr_green, curr_blue, curr_alpha])) # I read them as BGRA, but I like saving them as RGBA
 
         # read pixel data
-        self.pixels = list()
-        for _ in range(height):
-            row = list()
-            for __ in range(width):
+        self.image = Image.new('RGBA', (width,height))
+        for y in range(height):
+            for x in range(width):
                 if len(palette) == 0:
                     raise NotImplementedError("Using the Pixel Format Specification is not yet implemented")
                 else:
                     color = palette[unpack(BYTES_TO_FORMAT[bytes_per_pixel], data[ind:ind+bytes_per_pixel])[0]]; ind += bytes_per_pixel
-                row.append(color)
-            self.pixels.append(row)
+                self.image.putpixel((x,y), color)
 
     def get_bytes(self):
         '''Return the bytes encoding this TEX file
@@ -190,7 +189,7 @@ class TEX:
         '''
         # prepare stuff
         out = bytearray()
-        pal = list({c for row in self.pixels for c in row})
+        pal = list(set(self.image.getdata()))
         col_to_ind = {c:i for i,c in enumerate(pal)}
         if len(pal) <= 256:
             bytes_per_pixel = 1; pal_index_format = 'B'
@@ -251,9 +250,9 @@ class TEX:
             out += pack('B', a)
 
         # add pixels
-        for row in self.pixels:
-            for c in row:
-                out += pack(pal_index_format, col_to_ind[c])
+        for y in range(self.get_height()):
+            for x in range(self.get_width()):
+                out += pack(pal_index_format, col_to_ind[self.image.getpixel((x,y))])
         return out
 
     def get_height(self):
@@ -262,7 +261,7 @@ class TEX:
         Returns:
             ``int``: The image height of this TEX file
         '''
-        return len(self.pixels)
+        return self.image.size[1]
 
     def get_width(self):
         '''Get the image width of this TEX file
@@ -270,20 +269,15 @@ class TEX:
         Returns:
             ``int``: The image width of this TEX file
         '''
-        return len(self.pixels[0])
+        return self.image.size[0]
 
-    def get_pillow_image(self):
+    def get_image(self):
         '''Get a Pillow image object from this TEX file
 
         Returns:
             ``Image``: A Pillow image object
         '''
-        from PIL import Image
-        img = Image.new('RGBA', (self.get_width(),self.get_height()))
-        for x in range(self.get_width()):
-            for y in range(self.get_height()):
-                img.putpixel((x,y), self.pixels[y][x])
-        return img
+        return self.image
 
     def change_image(self, img):
         '''Change this TEX file's image
@@ -291,10 +285,14 @@ class TEX:
         Args:
             ``img`` (``Image``): The image to set this TEX file to
         '''
-        img = img.convert('RGBA'); w,h = img.size
-        self.pixels = list()
-        for y in range(h):
-            row = list()
-            for x in range(w):
-                row.append(img.getpixel((x,y)))
-            self.pixels.append(row)
+        if isinstance(img,str):
+            img = Image.open(img)
+        self.image = img.convert('RGBA')
+
+    def num_colors(self):
+        '''Return the number of unique RGBA colors in this TEX file's image
+
+        Returns:
+            ``int``: The number of unique RGBA colors in this TEX file's image
+        '''
+        return len(set(self.image.getdata()))
