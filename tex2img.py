@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 '''
-Read the information of a TEX file
+Convert a TEX file to a regular image file
 Niema Moshiri 2019
 '''
 from PyFF7.tex import TEX
 from sys import argv,stderr
-USAGE = "USAGE: %s <input_tex_file> <output_file>" % argv[0]
+USAGE = "USAGE: %s <input_tex_file> <output_image_file>" % argv[0]
 
 if __name__ == "__main__":
     if len(argv) != 3:
