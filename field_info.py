@@ -58,7 +58,7 @@ def print_sec4(ff):
     print("  * PalY: %d" % ff.palette.palY)
     print("  * Number of Colors per Page: %d" % ff.palette.get_num_colors_per_page())
     print("  * Number of Pages: %d" % ff.palette.get_num_color_pages())
-    print("  * Page Colors (A,R,G,B):")
+    print("  * Page Colors (R,G,B,A):")
     for i,p in enumerate(ff.palette.color_pages):
         print("    * Page %d:\t%s" % (i+1, str([str(tuple(e)).replace(' ','') for e in p]).replace("'",'')))
 
@@ -74,70 +74,110 @@ def print_sec5(ff):
 
 def print_sec6(ff):
     print("* Section 6: %s" % SECTION_NAME[5])
-    print("  * Subsection 1: List of Data Structures")
-    print("    * Length of Tiles Tex: %d" % len(ff.tile_map.sub1_tiles_tex))
-    print("      * Tiles Tex: %s" % str(ff.tile_map.sub1_tiles_tex))
-    print("    * Length of Tiles Layer: %d" % len(ff.tile_map.sub1_tiles_layer))
-    print("      * Tiles Layer: %s" % str(ff.tile_map.sub1_tiles_layer))
-    print("  * Subsection 2: Layer 1 Tiles")
-    print("    * Number of Tiles: %d" % len(ff.tile_map.sub2_tiles))
-    for i,tile in enumerate(ff.tile_map.sub2_tiles):
-        print("      * Tile %d:" % (i+1))
-        print("        * Destination X: %d" % tile['destination_x'])
-        print("        * Destination Y: %d" % tile['destination_y'])
-        print("        * Tex Page Source X: %d" % tile['tex_pg_src_x'])
-        print("        * Tex Page Source Y: %d" % tile['tex_pg_src_y'])
-        print("        * Tile Clut:")
-        print("          * ZZ1: %d" % tile['tile_clut']['zz1'])
-        print("          * Clut Number: %d" % tile['tile_clut']['clut_num'])
-        print("          * ZZ2: %d" % tile['tile_clut']['zz2'])
-    print("  * Subsection 3: Sprite TP Blends")
-    print("    * Number of Sprite TP Blends: %d" % len(ff.tile_map.sub3_sprite_tp_blends))
-    for i,tp_blend in enumerate(ff.tile_map.sub3_sprite_tp_blends):
-        print("      * Sprite TP Blend %d:" % (i+1))
-        print("        * ZZ: %d" % tp_blend['zz'])
-        print("        * Deph: %d" % tp_blend['deph'])
-        print("        * Blending Mode: %d" % tp_blend['blending_mode'])
-        print("        * Page X: %d" % tp_blend['page_x'])
-        print("        * Page Y: %d" % tp_blend['page_y'])
-    print("  * Subsection 4: Sprite Tiles")
-    print("    * Number of Sprite Tiles: %d" % len(ff.tile_map.sub4_sprite_tiles))
-    for i,tile in enumerate(ff.tile_map.sub4_sprite_tiles):
-        print("      * Tile %d" % (i+1))
-        print("        * Destination X: %d" % tile['destination_x'])
-        print("        * Destination Y: %d" % tile['destination_y'])
-        print("        * Tex Page Source X: %d" % tile['tex_pg_src_x'])
-        print("        * Tex Page Source Y: %d" % tile['tex_pg_src_y'])
-        print("        * Tile Clut:")
-        print("          * ZZ1: %d" % tile['tile_clut']['zz1'])
-        print("          * Clut Number: %d" % tile['tile_clut']['clut_num'])
-        print("          * ZZ2: %d" % tile['tile_clut']['zz2'])
-        print("        * Sprite TP Blend:")
-        print("          * ZZ: %d" % tile['sprite_tp_blend']['zz'])
-        print("          * Deph: %d" % tile['sprite_tp_blend']['deph'])
-        print("          * Blending Mode: %d" % tile['sprite_tp_blend']['blending_mode'])
-        print("          * Page X: %d" % tile['sprite_tp_blend']['page_x'])
-        print("          * Page Y: %d" % tile['sprite_tp_blend']['page_y'])
-        print("        * Group: %d" % tile['group'])
-        print("        * Parameter:")
-        print("          * Blending: %d" % tile['param']['blending'])
-        print("          * ID: %d" % tile['param']['ID'])
-        print("        * State: %d" % tile['state'])
-    print("  * Subsection 5: Additional Layer")
-    print("    * Number of Sprite Tiles: %d" % (len(ff.tile_map.sub5_sprite_tiles)))
-    for i,tile in enumerate(ff.tile_map.sub5_sprite_tiles):
-        print("        * Destination X: %d" % tile['destination_x'])
-        print("        * Destination Y: %d" % tile['destination_y'])
-        print("        * Tex Page Source X: %d" % tile['tex_pg_src_x'])
-        print("        * Tex Page Source Y: %d" % tile['tex_pg_src_y'])
-        print("        * Tile Clut:")
-        print("          * ZZ1: %d" % tile['tile_clut']['zz1'])
-        print("          * Clut Number: %d" % tile['tile_clut']['clut_num'])
-        print("          * ZZ2: %d" % tile['tile_clut']['zz2'])
-        print("        * Parameter:")
-        print("          * Blending: %d" % tile['param']['blending'])
-        print("          * ID: %d" % tile['param']['ID'])
-        print("        * State: %d" % tile['state'])
+    print("  * Size: %d bytes" % len(ff.tile_map))
+
+def print_sec7(ff):
+    print("* Section 7: %s" % SECTION_NAME[6])
+    for ti,table in enumerate([ff.encounter.table_1,ff.encounter.table_2]):
+        print("  * Table %d:" % (ti+1))
+        print("    * Enabled: %s" % bool(table['enabled']))
+        print("    * Rate: %d" % table['rate'])
+        print("    * Pad: %s bytes" % len(table['pad']))
+        for k in ['standard','special']:
+            if sum(enc['prob'] == 0 for enc in table[k]) == len(table[k]):
+                continue
+            print("    * %s Encounters:" % k.capitalize())
+            for i,enc in enumerate(table[k]):
+                if enc['prob'] != 0:
+                    print("      * ID: %d" % enc['ID'])
+                    print("      * Probability: %f" % enc['prob'])
+
+def print_sec8(ff):
+    print("* Section 8: %s" % SECTION_NAME[7])
+    print("  * Name: %s" % ff.triggers.name)
+    print("  * Control Direction: %d" % ff.triggers.control_direction)
+    print("  * Focus Height: %d" % ff.triggers.focus_height)
+    print("  * Camera Range:")
+    for d in ['left','bottom','right','top']:
+        print("    * %s: %d" % (d.capitalize(), ff.triggers.camera_range[d]))
+    for k in ['layer_3', 'layer_4']:
+        print("  * %s:" % k.capitalize().replace('_',' '))
+        print("    * Unknown 1: %d" % ff.triggers.unknown_1[k])
+        print("    * Background Animation: %d x %d" % (ff.triggers.bg_animation[k]['width'], ff.triggers.bg_animation[k]['height']))
+        print("    * Unknown 2: %d bytes" % len(ff.triggers.unknown_2[k]))
+    print("  * Gateways:")
+    for i,gateway in enumerate(ff.triggers.gateways):
+        print("    * Gateway %d:" % (i+1))
+        print("      * Field ID: %d" % gateway['field_ID'])
+        for k in ['exit_vertex_1', 'exit_vertex_2', 'destination_vertex']:
+            print("      * %s: %s" % (k.replace('_',' ').title(), str(tuple(gateway[k]))))
+        print("      * Unknown: %d bytes" % len(gateway['unknown']))
+    print("  * Triggers:")
+    for i,trigger in enumerate(ff.triggers.triggers):
+        print("    * Trigger %d:" % (i+1))
+        for k in ['vertex_corner_1', 'vertex_corner_2']:
+            print("      * %s: %s" % (k.replace('_',' ').title(), str(tuple(trigger[k]))))
+        print("      * Background Group ID: %d" % trigger['bg_group_ID'])
+        print("      * Background Frame ID: %d" % trigger['bg_frame_ID'])
+        print("      * Behavior: %d" % trigger['behavior'])
+        print("      * Sound ID: %d" % trigger['sound_ID'])
+    print("  * Shown Arrows: %s" % str(ff.triggers.shown_arrows))
+    print("  * Arrows:")
+    for i,arrow in enumerate(ff.triggers.arrows):
+        print("    * Arrow %d:" % (i+1))
+        print("      * Type: %d" % arrow['type'])
+        print("      * Position: %s" % str(arrow['position']))
+
+def print_sec9_tile(tile):
+    print("          * Destination: (%d, %d)" % (tile['dst_x'],tile['dst_y']))
+    print("          * Source: (%d, %d)" % (tile['src_x'],tile['src_y']))
+    print("          * Source 2: (%d, %d)" % (tile['src_x2'],tile['src_y2']))
+    print("          * Dimensions: %d x %d" % (tile['width'],tile['height']))
+    print("          * Palette ID: %d" % tile['palette_ID'])
+    print("          * ID: %d" % tile['ID'])
+    print("          * Param: %d" % tile['param'])
+    print("          * State: %d" % tile['state'])
+    print("          * Blending: %d" % tile['blending'])
+    print("          * Type Trans: %d" % tile['type_trans'])
+    print("          * Texture ID: %d" % tile['texture_id'])
+    print("          * Texture ID 2: %d" % tile['texture_id2'])
+    print("          * Depth: %d" % tile['depth'])
+    print("          * ID Big: %d" % tile['ID_big'])
+
+def print_sec9(ff):
+    print("* Section 9: %s" % SECTION_NAME[8])
+    print("  *  Header:")
+    print("    * Depth: %d" % ff.background.header['depth'])
+    print("    * Unknown 1: %d" % ff.background.header['unknown1'])
+    print("    * Unknown 2: %d" % ff.background.header['unknown2'])
+    print("  * Palette:")
+    print("    * Title: %s" % ff.background.palette['title'])
+    print("    * Size: %d" % ff.background.palette['size'])
+    print("    * PalX: %d" % ff.background.palette['palX'])
+    print("    * PalY: %d" % ff.background.palette['palY'])
+    print("    * Width: %d" % ff.background.palette['width'])
+    print("    * Height: %d" % ff.background.palette['height'])
+    print("    * Colors (R,G,B,A): %s" % str([str(tuple(e)).replace(' ','') for e in ff.background.palette['colors']]).replace("'",''))
+    print("  * Background:")
+    print("    * Title: %s" % ff.background.back['title'])
+    print("    * Layer 1:")
+    print("      * Width: %d" % ff.background.back['layer_1']['width'])
+    print("      * Height: %d" % ff.background.back['layer_1']['height'])
+    print("      * Depth: %d" % ff.background.back['layer_1']['depth'])
+    print("      * Number of Tiles: %d" % len(ff.background.back['layer_1']['tiles']))
+    for i,tile in enumerate(ff.background.back['layer_1']['tiles']):
+        print("        * Tile %d:" % (i+1))
+        print_sec9_tile(tile)
+    if len(ff.background.back['layer_2']) != 0:
+        print("    * Layer 2:")
+        print("      * Width: %d" % ff.background.back['layer_2']['width'])
+        print("      * Height: %d" % ff.background.back['layer_2']['height'])
+        print("      * Number of Tiles: %d" % len(ff.background.back['layer_2']['tiles']))
+        for i,tile in enumerate(ff.background.back['layer_2']['tiles']):
+            print("        * Tile %d:" % (i+1))
+            print_sec9_tile(tile)
+    if len(ff.background.back['layer_3']) != 0:
+        print("    * Layer 3:") # TODO IMPLEMENT LAYER 3
 
 if __name__ == "__main__":
     if len(argv) != 2 or argv[1] == '-h' or argv[1] == '--help':
@@ -158,5 +198,11 @@ if __name__ == "__main__":
         print_sec5(ff)
         print()
         print_sec6(ff)
+        print()
+        print_sec7(ff)
+        print()
+        print_sec8(ff)
+        print()
+        print_sec9(ff)
     except BrokenPipeError:
         stderr.close()

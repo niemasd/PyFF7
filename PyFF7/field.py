@@ -68,9 +68,12 @@ SECTION8_NUM_GATEWAYS = 12
 SECTION8_NUM_TRIGGERS = 12
 SECTION8_NUM_SHOWN_ARROWS = 12
 SECTION8_NUM_ARROWS = 12
-SECTION9_TILE_NUM_ZZ2_VALS = 2
-SECTION9_TILE_NUM_ZZ3_VALS = 4
-SECTION9_TILE_NUM_ZZ4_VALS = 3
+SECTION9_PAL_NUM_COLORS = 6
+SECTION9_PAL_COLOR_MASK = 0b11111
+SECTION9_PAL_COLOR_A_SHIFT = 15 # A = Alpha = Transparency
+SECTION9_PAL_COLOR_B_SHIFT = 10 # B = Blue
+SECTION9_PAL_COLOR_G_SHIFT = 5  # G = Green
+SECTION9_PAL_COLOR_R_SHIFT = 0  # R = Red
 STRING_TERMINATOR = b'\xff'
 
 # OP codes
@@ -243,33 +246,64 @@ SIZE = {
     'SECTION8-ARROW_TYPE':             4, # Section 8 Arrow: Type
 
     # Section 9 (Background)
-    'SECTION9_UNKNOWN1':               2, # Section 9: Unknown 1 (seems to always be 0)
-    'SECTION9_DEPTH':                  2, # Section 9: Depth (almost always 1, but I saw a file with it as 2)
-    'SECTION9_UNKNOWN2':               1, # Section 9: Unknown 2 (seems to always be 1)
+    'SECTION9-HEADER_UNKNOWN1':        2, # Section 9: Unknown 1 (seems to always be 0)
+    'SECTION9-HEADER_DEPTH':           2, # Section 9: Depth (almost always 1, but I saw a file with it as 2)
+    'SECTION9-HEADER_UNKNOWN2':        1, # Section 9: Unknown 2 (seems to always be 1)
     'SECTION9-PAL_TITLE':              7, # Section 9 Palette: Title (the string "PALETTE")
-    'SECTION9-PAL_DATA':              24, # Section 9 Palette: Data (TODO need to figure out how to interpret this)
+    'SECTION9-PAL_SIZE':               4, # Section 9 Palette: Size
+    'SECTION9-PAL_PALX':               2, # Section 9 Palette: PalX
+    'SECTION9-PAL_PALY':               2, # Section 9 Palette: PalY
+    'SECTION9-PAL_WIDTH':              2, # Section 9 Palette: Width
+    'SECTION9-PAL_HEIGHT':             2, # Section 9 Palette: Height
+    'SECTION9-PAL_COLOR':              2, # Section 9 Palette: Color
     'SECTION9-BACK_TITLE':             4, # Section 9 Background: Title (the string "BACK")
-    'SECTION9-BACK_WIDTH':             2, # Section 9 Background: Width
-    'SECTION9-BACK_HEIGHT':            2, # Section 9 Background: Height
-    'SECTION9-BACK_NUM-TILES':         2, # Section 9 Background: Number of Layer 1 Tiles
-    'SECTION9-BACK-TILE_ZZ1':          2, # Section 9 Background Tile: ZZ1
-    'SECTION9-BACK-TILE_X':            2, # Section 9 Background Tile: X
-    'SECTION9-BACK-TILE_Y':            2, # Section 9 Background Tile: Y
-    'SECTION9-BACK-TILE_ZZ2-VAL':      2, # Section 9 Background Tile: ZZ2 Value
-    'SECTION9-BACK-TILE_SRC-X':        2, # Section 9 Background Tile: Source X
-    'SECTION9-BACK-TILE_SRC-Y':        2, # Section 9 Background Tile: Source Y
-    'SECTION9-BACK-TILE_ZZ3-VAL':      2, # Section 9 Background Tile: ZZ3 Value
-    'SECTION9-BACK-TILE_PAL':          2, # Section 9 Background Tile: Palette
-    'SECTION9-BACK-TILE_FLAGS':        2, # Section 9 Background Tile: Flags
-    'SECTION9-BACK-TILE_ZZ4-VAL':      2, # Section 9 Background Tile: ZZ4 Value
-    'SECTION9-BACK-TILE_PAGE':         2, # Section 9 Background Tile: Page
-    'SECTION9-BACK-TILE_SFX':          2, # Section 9 Background Tile: SFX
-    'SECTION9-BACK-TILE_NA':           4, # Section 9 Background Tile: NA
-    'SECTION9-BACK-TILE_ZZ5':          2, # Section 9 Background Tile: ZZ5
-    'SECTION9-BACK-TILE_OFF-X':        4, # Section 9 Background Tile: Offset X
-    'SECTION9-BACK-TILE_OFF-Y':        4, # Section 9 Background Tile: Offset Y
-    'SECTION9-BACK-TILE_ZZ6':          2, # Section 9 Background Tile: ZZ6
-    'SECTION9-BACK_NUM-TILES-2':       2, # Section 9 Background: Number of Layer 2 Tiles
+    'SECTION9-BACK-L1_WIDTH':          2, # Section 9 Background Layer 1: Width
+    'SECTION9-BACK-L1_HEIGHT':         2, # Section 9 Background Layer 1: Height
+    'SECTION9-BACK-L1_NUM-TILES':      2, # Section 9 Background Layer 1: Number of Tiles
+    'SECTION9-BACK-L1_DEPTH':          2, # Section 9 Background Layer 1: Depth
+    'SECTION9-BACK-L1_BLANK':          2, # Section 9 Background Layer 1: Blank
+    'SECTION9-BACK-L1_BLANK-2':        2, # Section 9 Background Layer 1: Blank 2
+    'SECTION9-BACK-L2_FLAG':           1, # Section 9 Background Layer 2: Flag
+    'SECTION9-BACK-L2_WIDTH':          2, # Section 9 Background Layer 2: Width
+    'SECTION9-BACK-L2_HEIGHT':         2, # Section 9 Background Layer 2: Height
+    'SECTION9-BACK-L2_NUM-TILES':      2, # Section 9 Background Layer 2: Number of Tiles
+    'SECTION9-BACK-L2_UNKNOWN':       16, # Section 9 Background Layer 2: Unknown (unused)
+    'SECTION9-BACK-L2_BLANK':          2, # Section 9 Background Layer 2: Blank
+    'SECTION9-BACK-L2_BLANK-2':        2, # Section 9 Background Layer 2: Blank 2
+    'SECTION9-BACK-L3_FLAG':           1, # Section 9 Background Layer 3: Flag
+    'SECTION9-BACK-TILE_BLANK':        2, # Section 9 Background Tile: Blank
+    'SECTION9-BACK-TILE_DST-X':        2, # Section 9 Background Tile: Destination X
+    'SECTION9-BACK-TILE_DST-Y':        2, # Section 9 Background Tile: Destination Y
+    'SECTION9-BACK-TILE_UNKNOWN-1':    4, # Section 9 Background Tile: Unknown 1
+    'SECTION9-BACK-TILE_SRC-X':        1, # Section 9 Background Tile: Source X
+    'SECTION9-BACK-TILE_UNKNOWN-2':    1, # Section 9 Background Tile: Unknown 2
+    'SECTION9-BACK-TILE_SRC-Y':        1, # Section 9 Background Tile: Source Y
+    'SECTION9-BACK-TILE_UNKNOWN-3':    1, # Section 9 Background Tile: Unknown 3
+    'SECTION9-BACK-TILE_SRC-X2':       1, # Section 9 Background Tile: Source X2
+    'SECTION9-BACK-TILE_UNKNOWN-4':    1, # Section 9 Background Tile: Unknown 4
+    'SECTION9-BACK-TILE_SRC-Y2':       1, # Section 9 Background Tile: Source Y2
+    'SECTION9-BACK-TILE_UNKNOWN-5':    1, # Section 9 Background Tile: Unknown 5
+    'SECTION9-BACK-TILE_WIDTH':        2, # Section 9 Background Tile: Width (normally unused)
+    'SECTION9-BACK-TILE_HEIGHT':       2, # Section 9 Background Tile: Height (normally unused)
+    'SECTION9-BACK-TILE_PALETTE-ID':   1, # Section 9 Background Tile: Palette ID
+    'SECTION9-BACK-TILE_UNKNOWN-6':    1, # Section 9 Background Tile: Unknown 6
+    'SECTION9-BACK-TILE_ID':           2, # Section 9 Background Tile: ID
+    'SECTION9-BACK-TILE_PARAM':        1, # Section 9 Background Tile: Param
+    'SECTION9-BACK-TILE_STATE':        1, # Section 9 Background Tile: State
+    'SECTION9-BACK-TILE_BLENDING':     1, # Section 9 Background Tile: Blending
+    'SECTION9-BACK-TILE_UNKNOWN-7':    1, # Section 9 Background Tile: Unknown 7
+    'SECTION9-BACK-TILE_TYPE-TRANS':   1, # Section 9 Background Tile: Type Trans
+    'SECTION9-BACK-TILE_UNKNOWN-8':    1, # Section 9 Background Tile: Unknown 8
+    'SECTION9-BACK-TILE_TEXTURE-ID':   1, # Section 9 Background Tile: Texture ID
+    'SECTION9-BACK-TILE_UNKNOWN-9':    1, # Section 9 Background Tile: Unknown 9
+    'SECTION9-BACK-TILE_TEXTURE-ID2':  1, # Section 9 Background Tile: Texture ID 2
+    'SECTION9-BACK-TILE_UNKNOWN-10':   1, # Section 9 Background Tile: Unknown 10
+    'SECTION9-BACK-TILE_DEPTH':        1, # Section 9 Background Tile: Depth (normally unused)
+    'SECTION9-BACK-TILE_UNKNOWN-11':   1, # Section 9 Background Tile: Unknown 11
+    'SECTION9-BACK-TILE_ID-BIG':       4, # Section 9 Background Tile: ID Big
+    'SECTION9-BACK-TILE_SRC-X-BIG':    4, # Section 9 Background Tile: Source X Big
+    'SECTION9-BACK-TILE_SRC-Y-BIG':    4, # Section 9 Background Tile: Source Y Big
+    'SECTION9-BACK-TILE_BLANK-2':      2, # Section 9 Background Tile: Blank 2
 }
 SIZE['SECTION2-ENTRY'] = len(SECTION2_AXES)*SECTION2_NUM_DIMENSIONS*SIZE['SECTION2-ENTRY_VECTOR-VALUE'] + SIZE['SECTION2-ENTRY_VECTOR-VALUE'] + len(SECTION2_AXES)*SIZE['SECTION2-ENTRY_SPACE-POSITION'] + SIZE['SECTION2-ENTRY_BLANK'] + SIZE['SECTION2-ENTRY_ZOOM']
 
@@ -593,13 +627,13 @@ class Palette:
         num_pages = unpack('H', data[ind:ind+SIZE['SECTION4-HEADER_NUM-PAGES']])[0]; ind += SIZE['SECTION4-HEADER_NUM-PAGES']
         while ind < len(data):
             color = unpack('H', data[ind:ind+SIZE['SECTION4_COLOR']])[0]; ind += SIZE['SECTION4_COLOR']
-            color_a = (color >> SECTION4_COLOR_A_SHIFT) & SECTION4_COLOR_MASK
             color_r = (color >> SECTION4_COLOR_R_SHIFT) & SECTION4_COLOR_MASK
             color_g = (color >> SECTION4_COLOR_G_SHIFT) & SECTION4_COLOR_MASK
             color_b = (color >> SECTION4_COLOR_B_SHIFT) & SECTION4_COLOR_MASK
+            color_a = (color >> SECTION4_COLOR_A_SHIFT) & SECTION4_COLOR_MASK
             if len(self.color_pages) == 0 or len(self.color_pages[-1]) == colors_per_page:
                 self.color_pages.append(list())
-            self.color_pages[-1].append([color_a, color_r, color_g, color_b]) # I read them as A BGR, but I like saving them as A RGB
+            self.color_pages[-1].append([color_r, color_g, color_b, color_a]) # I read them as ABGR, but I like saving them as RGBA
 
     def __eq__(self, other):
         return isinstance(other,Palette) and self.palX == other.palX and self.palY == other.palY and self.colors_per_page == other.colors_per_page and self.colors == other.colors
@@ -626,7 +660,7 @@ class Palette:
         data += pack('H', self.get_num_color_pages())
         for p in self.color_pages:
             for c in p:
-                data += pack('H', (c[0] << SECTION4_COLOR_A_SHIFT) | (c[1] << SECTION4_COLOR_R_SHIFT) | (c[2] << SECTION4_COLOR_G_SHIFT) | (c[3] << SECTION4_COLOR_B_SHIFT))
+                data += pack('H', (c[0] << SECTION4_COLOR_R_SHIFT) | (c[1] << SECTION4_COLOR_G_SHIFT) | (c[2] << SECTION4_COLOR_B_SHIFT) | (c[3] << SECTION4_COLOR_A_SHIFT))
         data = pack('I', SIZE['SECTION4-HEADER_LENGTH']+len(data)) + data
         return data
 
@@ -729,92 +763,17 @@ def parse_sec6_param(raw):
     return entry
 
 class TileMap:
-    '''Tile Map (Section 6) class'''
+    '''Tile Map (Section 6) class (it's unused, so just save the data)'''
     def __init__(self, data):
         '''``TileMap`` constructor
 
         Args:
             ``data`` (``bytes``): The Tile Map (Section 6) data
         '''
-        if len(data) == 0:
-            return
-        ind = 0
+        self.data = data
 
-        # read subsection offsets from header
-        subsection_2_offset = unpack('I', data[ind:ind+SIZE['SECTION6-HEADER_OFFSET']])[0]; ind += SIZE['SECTION6-HEADER_OFFSET']
-        subsection_3_offset = unpack('I', data[ind:ind+SIZE['SECTION6-HEADER_OFFSET']])[0]; ind += SIZE['SECTION6-HEADER_OFFSET']
-        subsection_4_offset = unpack('I', data[ind:ind+SIZE['SECTION6-HEADER_OFFSET']])[0]; ind += SIZE['SECTION6-HEADER_OFFSET']
-        subsection_5_offset = unpack('I', data[ind:ind+SIZE['SECTION6-HEADER_OFFSET']])[0]; ind += SIZE['SECTION6-HEADER_OFFSET']
-
-        # read subsection 1
-        self.sub1_bytes = data[ind:subsection_2_offset] # for now, idk how to regenerate this, so just save it for get_bytes
-        tile_pos = 0; tile_count = 0; layer_ID = 0; self.sub1_tiles_tex = list(); self.sub1_tiles_layer = list()
-        ind = subsection_2_offset # TODO FIX: for now, I'm just ignoring this section
-        '''
-        while ind < subsection_2_offset:
-            curr_type = unpack('H', data[ind:ind+SIZE['SECTION6-SUB1_TYPE']])[0]
-            if curr_type == SECTION6_SUB1_END_OF_LAYER_TYPE:
-                self.sub1_tiles_layer.append(tile_pos + tile_count)
-            else:
-                if curr_type == SECTION6_SUB1_SPRITE_TYPE:
-                    tile_pos = unpack('H', data[ind-4:ind-2])[0]; tile_count = unpack('H', data[ind-2:ind])[0]; self.sub1_tiles_tex.append(tile_pos + tile_count)
-                else:
-                    tile_pos = unpack('H', data[ind+2:ind+4])[0]; tile_count = unpack('H', data[ind+4:ind+6])[0]
-                ind += 4
-            ind += 2
-        '''
-
-        # read subsection 2
-        self.sub2_tiles = list()
-        while ind < subsection_3_offset:
-            tile = dict()
-            tile['destination_x'] = unpack('h', data[ind:ind+SIZE['SECTION6-SUB2_DEST-X']])[0]; ind += SIZE['SECTION6-SUB2_DEST-X']
-            tile['destination_y'] = unpack('h', data[ind:ind+SIZE['SECTION6-SUB2_DEST-Y']])[0]; ind += SIZE['SECTION6-SUB2_DEST-Y']
-            tile['tex_pg_src_x'] = unpack('B', data[ind:ind+SIZE['SECTION6-SUB2_TEX-PG-SRC-X']])[0]; ind += SIZE['SECTION6-SUB2_TEX-PG-SRC-X']
-            tile['tex_pg_src_y'] = unpack('B', data[ind:ind+SIZE['SECTION6-SUB2_TEX-PG-SRC-Y']])[0]; ind += SIZE['SECTION6-SUB2_TEX-PG-SRC-Y']
-            tile['tile_clut'] = parse_sec6_tile_clut(unpack('H', data[ind:ind+SIZE['SECTION6-SUB2_TILE-CLUT']])[0]); ind += SIZE['SECTION6-SUB2_TILE-CLUT']
-            self.sub2_tiles.append(tile)
-
-        # read subsection 3
-        self.sub3_sprite_tp_blends = list()
-        while ind < subsection_4_offset:
-            self.sub3_sprite_tp_blends.append(parse_sec6_sprite_tp_blend(unpack('H', data[ind:ind+SIZE['SECTION6-SUB3_ENTRY']])[0])); ind += SIZE['SECTION6-SUB3_ENTRY']
-
-        # read subsection 4
-        self.sub4_sprite_tiles = list()
-        while ind < subsection_5_offset:
-            tile = dict()
-            tile['destination_x'] = unpack('h', data[ind:ind+SIZE['SECTION6-SUB4_DEST-X']])[0]; ind += SIZE['SECTION6-SUB4_DEST-X']
-            tile['destination_y'] = unpack('h', data[ind:ind+SIZE['SECTION6-SUB4_DEST-Y']])[0]; ind += SIZE['SECTION6-SUB4_DEST-Y']
-            tile['tex_pg_src_x'] = unpack('B', data[ind:ind+SIZE['SECTION6-SUB4_TEX-PG-SRC-X']])[0]; ind += SIZE['SECTION6-SUB4_TEX-PG-SRC-X']
-            tile['tex_pg_src_y'] = unpack('B', data[ind:ind+SIZE['SECTION6-SUB4_TEX-PG-SRC-Y']])[0]; ind += SIZE['SECTION6-SUB4_TEX-PG-SRC-Y']
-            tile['tile_clut'] = parse_sec6_tile_clut(unpack('H', data[ind:ind+SIZE['SECTION6-SUB4_TILE-CLUT']])[0]); ind += SIZE['SECTION6-SUB4_TILE-CLUT']
-            tile['sprite_tp_blend'] = parse_sec6_sprite_tp_blend(unpack('H', data[ind:ind+SIZE['SECTION6-SUB4_SPRITE-TP-BLEND']])[0]); ind += SIZE['SECTION6-SUB4_SPRITE-TP-BLEND']
-            tile['group'] = unpack('H', data[ind:ind+SIZE['SECTION6-SUB4_GROUP']])[0]; ind += SIZE['SECTION6-SUB4_GROUP']
-            tile['param'] = parse_sec6_param(unpack('B', data[ind:ind+SIZE['SECTION6-SUB4_PARAM']])[0]); ind += SIZE['SECTION6-SUB4_PARAM']
-            tile['state'] = unpack('B', data[ind:ind+SIZE['SECTION6-SUB4_STATE']])[0]; ind += SIZE['SECTION6-SUB4_STATE']
-            self.sub4_sprite_tiles.append(tile)
-
-        # read subsection 5 (if it exists)
-        self.sub5_sprite_tiles = list()
-        while ind < len(data):
-            tile = dict()
-            tile['destination_x'] = unpack('h', data[ind:ind+SIZE['SECTION6-SUB5_DEST-X']])[0]; ind += SIZE['SECTION6-SUB5_DEST-X']
-            tile['destination_y'] = unpack('h', data[ind:ind+SIZE['SECTION6-SUB5_DEST-Y']])[0]; ind += SIZE['SECTION6-SUB5_DEST-Y']
-            tile['tex_pg_src_x'] = unpack('B', data[ind:ind+SIZE['SECTION6-SUB5_TEX-PG-SRC-X']])[0]; ind += SIZE['SECTION6-SUB5_TEX-PG-SRC-X']
-            tile['tex_pg_src_y'] = unpack('B', data[ind:ind+SIZE['SECTION6-SUB5_TEX-PG-SRC-Y']])[0]; ind += SIZE['SECTION6-SUB5_TEX-PG-SRC-Y']
-            tile['tile_clut'] = parse_sec6_tile_clut(unpack('H', data[ind:ind+SIZE['SECTION6-SUB5_TILE-CLUT']])[0]); ind += SIZE['SECTION6-SUB5_TILE-CLUT']
-            tile['param'] = parse_sec6_param(unpack('B', data[ind:ind+SIZE['SECTION6-SUB5_PARAM']])[0]); ind += SIZE['SECTION6-SUB5_PARAM']
-            tile['state'] = unpack('B', data[ind:ind+SIZE['SECTION6-SUB5_STATE']])[0]; ind += SIZE['SECTION6-SUB5_STATE']
-            self.sub5_sprite_tiles.append(tile)
-
-    def empty(self):
-        '''Check if this Tile Map is empty
-
-        Returns:
-            ``bool``: ``True`` if this Tile Map is empty, otherwise ``False``
-        '''
-        return hasattr(self, "sub5_sprite_tiles")
+    def __len__(self):
+        return len(self.data)
 
     def get_bytes(self):
         '''Return the bytes encoding this Tile Map to repack into a Field File
@@ -822,58 +781,7 @@ class TileMap:
         Returns:
             ``bytes``: The data to repack into a Field File
         '''
-        data = bytearray()
-        if self.empty():
-            return data
-
-        # encode subsection 1
-        data += self.sub1_bytes # TODO FIX: for now, idk how to regenerate this, so just use the one I saved
-
-        # encode subsection 2
-        subsection_2_offset = len(data) + 4*SIZE['SECTION6-HEADER_OFFSET']
-        for tile in self.sub2_tiles:
-            data += pack('h', tile['destination_x'])
-            data += pack('h', tile['destination_y'])
-            data += pack('B', tile['tex_pg_src_x'])
-            data += pack('B', tile['tex_pg_src_y'])
-            data += pack('H', (tile['tile_clut']['zz1'] << SECTION6_TILE_CLUT_ZZ1_SHIFT) | (tile['tile_clut']['clut_num'] << SECTION6_TILE_CLUT_CLUT_NUM_SHIFT) | (tile['tile_clut']['zz2'] << SECTION6_TILE_CLUT_ZZ2_SHIFT))
-
-        # encode subsection 3
-        subsection_3_offset = len(data) + 4*SIZE['SECTION6-HEADER_OFFSET']
-        for sprite_tp_blend in self.sub3_sprite_tp_blends:
-            data += pack('H', (sprite_tp_blend['zz'] << SECTION6_SPRITE_TP_BLEND_ZZ_SHIFT) | (sprite_tp_blend['deph'] << SECTION6_SPRITE_TP_BLEND_DEPH_SHIFT) | (sprite_tp_blend['blending_mode'] << SECTION6_SPRITE_TP_BLEND_BLEND_MODE_SHIFT) | (sprite_tp_blend['page_y'] << SECTION6_SPRITE_TP_BLEND_PAGE_Y_SHIFT) | (sprite_tp_blend['page_x'] << SECTION6_SPRITE_TP_BLEND_PAGE_X_SHIFT))
-
-        # encode subsection 4
-        subsection_4_offset = len(data) + 4*SIZE['SECTION6-HEADER_OFFSET']
-        for tile in self.sub4_sprite_tiles:
-            data += pack('h', tile['destination_x'])
-            data += pack('h', tile['destination_y'])
-            data += pack('B', tile['tex_pg_src_x'])
-            data += pack('B', tile['tex_pg_src_y'])
-            data += pack('H', (tile['tile_clut']['zz1'] << SECTION6_TILE_CLUT_ZZ1_SHIFT) | (tile['tile_clut']['clut_num'] << SECTION6_TILE_CLUT_CLUT_NUM_SHIFT) | (tile['tile_clut']['zz2'] << SECTION6_TILE_CLUT_ZZ2_SHIFT))
-            data += pack('H', (tile['sprite_tp_blend']['zz'] << SECTION6_SPRITE_TP_BLEND_ZZ_SHIFT) | (tile['sprite_tp_blend']['deph'] << SECTION6_SPRITE_TP_BLEND_DEPH_SHIFT) | (tile['sprite_tp_blend']['blending_mode'] << SECTION6_SPRITE_TP_BLEND_BLEND_MODE_SHIFT) | (tile['sprite_tp_blend']['page_y'] << SECTION6_SPRITE_TP_BLEND_PAGE_Y_SHIFT) | (tile['sprite_tp_blend']['page_x'] << SECTION6_SPRITE_TP_BLEND_PAGE_X_SHIFT))
-            data += pack('H', tile['group'])
-            data += pack('B', (tile['param']['blending'] << SECTION6_PARAM_BLENDING_SHIFT) | (tile['param']['ID'] << SECTION6_PARAM_ID_SHIFT))
-            data += pack('B', tile['state'])
-
-        # encode subsection 5
-        subsection_5_offset = len(data) + 4*SIZE['SECTION6-HEADER_OFFSET']
-        for tile in self.sub5_sprite_tiles:
-            data += pack('h', tile['destination_x'])
-            data += pack('h', tile['destination_y'])
-            data += pack('B', tile['tex_pg_src_x'])
-            data += pack('B', tile['tex_pg_src_y'])
-            data += pack('H', (tile['tile_clut']['zz1'] << SECTION6_TILE_CLUT_ZZ1_SHIFT) | (tile['tile_clut']['clut_num'] << SECTION6_TILE_CLUT_CLUT_NUM_SHIFT) | (tile['tile_clut']['zz2'] << SECTION6_TILE_CLUT_ZZ2_SHIFT))
-            data += pack('B', (tile['param']['blending'] << SECTION6_PARAM_BLENDING_SHIFT) | (tile['param']['ID'] << SECTION6_PARAM_ID_SHIFT))
-            data += pack('B', tile['state'])
-
-        # add header (subsection offsets)
-        header = bytearray()
-        header += pack('I', subsection_2_offset)
-        header += pack('I', subsection_3_offset)
-        header += pack('I', subsection_4_offset)
-        header += pack('I', subsection_5_offset)
-        return header + data
+        return self.data
 
 class Encounter:
     '''Encounter (Section 7) class'''
@@ -1021,75 +929,138 @@ class Background:
             ``data`` (``bytes``): The Background (Section 9) data
         '''
         ind = 0
-        self.unknown1 = unpack('H', data[ind:ind+SIZE['SECTION9_UNKNOWN1']])[0]; ind += SIZE['SECTION9_UNKNOWN1']
-        self.depth = unpack('H', data[ind:ind+SIZE['SECTION9_DEPTH']])[0]; ind += SIZE['SECTION9_DEPTH']
-        self.unknown2 = unpack('B', data[ind:ind+SIZE['SECTION9_UNKNOWN2']])[0]; ind += SIZE['SECTION9_UNKNOWN2']
-        palette_title = data[ind:ind+SIZE['SECTION9-PAL_TITLE']].decode(); ind += SIZE['SECTION9-PAL_TITLE'] # the string "PALETTE"
-        self.palette_data = data[ind:ind+SIZE['SECTION9-PAL_DATA']]; ind += SIZE['SECTION9-PAL_DATA'] # TODO figure out how to parse this
-        back_title = data[ind:ind+SIZE['SECTION9-BACK_TITLE']].decode(); ind += SIZE['SECTION9-BACK_TITLE']
+
+        # read header
+        self.header = dict()
+        self.header['unknown1'] = unpack('H', data[ind:ind+SIZE['SECTION9-HEADER_UNKNOWN1']])[0]; ind += SIZE['SECTION9-HEADER_UNKNOWN1']
+        self.header['depth'] = unpack('H', data[ind:ind+SIZE['SECTION9-HEADER_DEPTH']])[0]; ind += SIZE['SECTION9-HEADER_DEPTH']
+        self.header['unknown2'] = unpack('B', data[ind:ind+SIZE['SECTION9-HEADER_UNKNOWN2']])[0]; ind += SIZE['SECTION9-HEADER_UNKNOWN2']
+
+        # read palette
+        self.palette = dict()
+        self.palette['title'] = data[ind:ind+SIZE['SECTION9-PAL_TITLE']].decode(); ind += SIZE['SECTION9-PAL_TITLE'] # the string "PALETTE"
+        self.palette['size'] = unpack('I', data[ind:ind+SIZE['SECTION9-PAL_SIZE']])[0]; ind += SIZE['SECTION9-PAL_SIZE']
+        self.palette['palX'] = unpack('H', data[ind:ind+SIZE['SECTION9-PAL_PALX']])[0]; ind += SIZE['SECTION9-PAL_PALX']
+        self.palette['palY'] = unpack('H', data[ind:ind+SIZE['SECTION9-PAL_PALY']])[0]; ind += SIZE['SECTION9-PAL_PALY']
+        self.palette['width'] = unpack('H', data[ind:ind+SIZE['SECTION9-PAL_WIDTH']])[0]; ind += SIZE['SECTION9-PAL_WIDTH']
+        self.palette['height'] = unpack('H', data[ind:ind+SIZE['SECTION9-PAL_HEIGHT']])[0]; ind += SIZE['SECTION9-PAL_HEIGHT']
+        self.palette['colors'] = list()
+        for _ in range(SECTION9_PAL_NUM_COLORS):
+            color = unpack('H', data[ind:ind+SIZE['SECTION9-PAL_COLOR']])[0]; ind += SIZE['SECTION9-PAL_COLOR'] # TODO CONTINUE
+            color_r = (color >> SECTION9_PAL_COLOR_R_SHIFT) & SECTION9_PAL_COLOR_MASK
+            color_g = (color >> SECTION9_PAL_COLOR_G_SHIFT) & SECTION9_PAL_COLOR_MASK
+            color_b = (color >> SECTION9_PAL_COLOR_B_SHIFT) & SECTION9_PAL_COLOR_MASK
+            color_a = (color >> SECTION9_PAL_COLOR_A_SHIFT) & SECTION9_PAL_COLOR_MASK
+            self.palette['colors'].append([color_r, color_g, color_b, color_a]) # I read them as ABGR, but I like saving them as RGBA
+
+        # read background tiles
         self.back = dict()
-        self.back['width'] = unpack('H', data[ind:ind+SIZE['SECTION9-BACK_WIDTH']])[0]; ind += SIZE['SECTION9-BACK_WIDTH']
-        self.back['height'] = unpack('H', data[ind:ind+SIZE['SECTION9-BACK_HEIGHT']])[0]; ind += SIZE['SECTION9-BACK_HEIGHT']
-        num_back_tiles = unpack('H', data[ind:ind+SIZE['SECTION9-BACK_NUM-TILES']])[0]; ind += SIZE['SECTION9-BACK_NUM-TILES']
-        self.back['tiles_layer_1'] = list()
-        for _ in range(num_back_tiles):
+        self.back['title'] = data[ind:ind+SIZE['SECTION9-BACK_TITLE']].decode(); ind += SIZE['SECTION9-BACK_TITLE']
+
+        # read layer 1
+        self.back['layer_1'] = dict()
+        self.back['layer_1']['width'] = unpack('H', data[ind:ind+SIZE['SECTION9-BACK-L1_WIDTH']])[0]; ind += SIZE['SECTION9-BACK-L1_WIDTH']
+        self.back['layer_1']['height'] = unpack('H', data[ind:ind+SIZE['SECTION9-BACK-L1_HEIGHT']])[0]; ind += SIZE['SECTION9-BACK-L1_HEIGHT']
+        num_l1_tiles = unpack('H', data[ind:ind+SIZE['SECTION9-BACK-L1_NUM-TILES']])[0]; ind += SIZE['SECTION9-BACK-L1_NUM-TILES']
+        self.back['layer_1']['depth'] = unpack('H', data[ind:ind+SIZE['SECTION9-BACK-L1_DEPTH']])[0]; ind += SIZE['SECTION9-BACK-L1_DEPTH']
+        blank = unpack('H', data[ind:ind+SIZE['SECTION9-BACK-L1_BLANK']])[0]; ind += SIZE['SECTION9-BACK-L1_BLANK']
+        self.back['layer_1']['tiles'] = list()
+        for _ in range(num_l1_tiles):
             tile = dict()
-            tile['zz1'] = unpack('h', data[ind:ind+SIZE['SECTION9-BACK-TILE_ZZ1']])[0]; ind += SIZE['SECTION9-BACK-TILE_ZZ1']
-            tile['x'] = unpack('h', data[ind:ind+SIZE['SECTION9-BACK-TILE_X']])[0]; ind += SIZE['SECTION9-BACK-TILE_X']
-            tile['y'] = unpack('h', data[ind:ind+SIZE['SECTION9-BACK-TILE_Y']])[0]; ind += SIZE['SECTION9-BACK-TILE_Y']
-            tile['zz2'] = list()
-            for __ in range(SECTION9_TILE_NUM_ZZ2_VALS):
-                tile['zz2'].append(unpack('h', data[ind:ind+SIZE['SECTION9-BACK-TILE_ZZ2-VAL']])[0]); ind += SIZE['SECTION9-BACK-TILE_ZZ2-VAL']
-            tile['src_x'] = unpack('h', data[ind:ind+SIZE['SECTION9-BACK-TILE_SRC-X']])[0]; ind += SIZE['SECTION9-BACK-TILE_SRC-X']
-            tile['src_y'] = unpack('h', data[ind:ind+SIZE['SECTION9-BACK-TILE_SRC-Y']])[0]; ind += SIZE['SECTION9-BACK-TILE_SRC-Y']
-            tile['zz3'] = list()
-            for __ in range(SECTION9_TILE_NUM_ZZ3_VALS):
-                tile['zz3'].append(unpack('h', data[ind:ind+SIZE['SECTION9-BACK-TILE_ZZ3-VAL']])[0]); ind += SIZE['SECTION9-BACK-TILE_ZZ3-VAL']
-            tile['palette'] = unpack('h', data[ind:ind+SIZE['SECTION9-BACK-TILE_PAL']])[0]; ind += SIZE['SECTION9-BACK-TILE_PAL']
-            tile['flags'] = unpack('H', data[ind:ind+SIZE['SECTION9-BACK-TILE_FLAGS']])[0]; ind += SIZE['SECTION9-BACK-TILE_FLAGS']
-            tile['zz4'] = list()
-            for __ in range(SECTION9_TILE_NUM_ZZ4_VALS):
-                tile['zz4'].append(unpack('h', data[ind:ind+SIZE['SECTION9-BACK-TILE_ZZ4-VAL']])[0]); ind += SIZE['SECTION9-BACK-TILE_ZZ4-VAL']
-            tile['page'] = unpack('h', data[ind:ind+SIZE['SECTION9-BACK-TILE_PAGE']])[0]; ind += SIZE['SECTION9-BACK-TILE_PAGE']
-            tile['sfx'] = unpack('h', data[ind:ind+SIZE['SECTION9-BACK-TILE_SFX']])[0]; ind += SIZE['SECTION9-BACK-TILE_SFX']
-            tile['NA'] = unpack('i', data[ind:ind+SIZE['SECTION9-BACK-TILE_NA']])[0]; ind += SIZE['SECTION9-BACK-TILE_NA']
-            tile['zz5'] = unpack('h', data[ind:ind+SIZE['SECTION9-BACK-TILE_ZZ5']])[0]; ind += SIZE['SECTION9-BACK-TILE_ZZ5']
-            tile['off_x'] = unpack('i', data[ind:ind+SIZE['SECTION9-BACK-TILE_OFF-X']])[0]; ind += SIZE['SECTION9-BACK-TILE_OFF-X']
-            tile['off_y'] = unpack('i', data[ind:ind+SIZE['SECTION9-BACK-TILE_OFF-Y']])[0]; ind += SIZE['SECTION9-BACK-TILE_OFF-Y']
-            tile['zz6'] = unpack('h', data[ind:ind+SIZE['SECTION9-BACK-TILE_ZZ6']])[0]; ind += SIZE['SECTION9-BACK-TILE_ZZ6']
-            self.back['tiles_layer_1'].append(tile)
-        num_back_tiles_2 = unpack('H', data[ind:ind+SIZE['SECTION9-BACK_NUM-TILES-2']])[0]; ind += SIZE['SECTION9-BACK_NUM-TILES-2']
-        self.back['tiles_layer_2'] = list()
-        for _ in range(num_back_tiles_2):
-            tile = dict()
-            tile['zz1'] = unpack('h', data[ind:ind+SIZE['SECTION9-BACK-TILE_ZZ1']])[0]; ind += SIZE['SECTION9-BACK-TILE_ZZ1']
-            tile['x'] = unpack('h', data[ind:ind+SIZE['SECTION9-BACK-TILE_X']])[0]; ind += SIZE['SECTION9-BACK-TILE_X']
-            tile['y'] = unpack('h', data[ind:ind+SIZE['SECTION9-BACK-TILE_Y']])[0]; ind += SIZE['SECTION9-BACK-TILE_Y']
-            tile['zz2'] = list()
-            for __ in range(SECTION9_TILE_NUM_ZZ2_VALS):
-                tile['zz2'].append(unpack('h', data[ind:ind+SIZE['SECTION9-BACK-TILE_ZZ2-VAL']])[0]); ind += SIZE['SECTION9-BACK-TILE_ZZ2-VAL']
-            tile['src_x'] = unpack('h', data[ind:ind+SIZE['SECTION9-BACK-TILE_SRC-X']])[0]; ind += SIZE['SECTION9-BACK-TILE_SRC-X']
-            tile['src_y'] = unpack('h', data[ind:ind+SIZE['SECTION9-BACK-TILE_SRC-Y']])[0]; ind += SIZE['SECTION9-BACK-TILE_SRC-Y']
-            tile['zz3'] = list()
-            for __ in range(SECTION9_TILE_NUM_ZZ3_VALS):
-                tile['zz3'].append(unpack('h', data[ind:ind+SIZE['SECTION9-BACK-TILE_ZZ3-VAL']])[0]); ind += SIZE['SECTION9-BACK-TILE_ZZ3-VAL']
-            tile['palette'] = unpack('h', data[ind:ind+SIZE['SECTION9-BACK-TILE_PAL']])[0]; ind += SIZE['SECTION9-BACK-TILE_PAL']
-            tile['flags'] = unpack('H', data[ind:ind+SIZE['SECTION9-BACK-TILE_FLAGS']])[0]; ind += SIZE['SECTION9-BACK-TILE_FLAGS']
-            tile['zz4'] = list()
-            for __ in range(SECTION9_TILE_NUM_ZZ4_VALS):
-                tile['zz4'].append(unpack('h', data[ind:ind+SIZE['SECTION9-BACK-TILE_ZZ4-VAL']])[0]); ind += SIZE['SECTION9-BACK-TILE_ZZ4-VAL']
-            tile['page'] = unpack('h', data[ind:ind+SIZE['SECTION9-BACK-TILE_PAGE']])[0]; ind += SIZE['SECTION9-BACK-TILE_PAGE']
-            tile['sfx'] = unpack('h', data[ind:ind+SIZE['SECTION9-BACK-TILE_SFX']])[0]; ind += SIZE['SECTION9-BACK-TILE_SFX']
-            tile['NA'] = unpack('i', data[ind:ind+SIZE['SECTION9-BACK-TILE_NA']])[0]; ind += SIZE['SECTION9-BACK-TILE_NA']
-            tile['zz5'] = unpack('h', data[ind:ind+SIZE['SECTION9-BACK-TILE_ZZ5']])[0]; ind += SIZE['SECTION9-BACK-TILE_ZZ5']
-            tile['off_x'] = unpack('i', data[ind:ind+SIZE['SECTION9-BACK-TILE_OFF-X']])[0]; ind += SIZE['SECTION9-BACK-TILE_OFF-X']
-            tile['off_y'] = unpack('i', data[ind:ind+SIZE['SECTION9-BACK-TILE_OFF-Y']])[0]; ind += SIZE['SECTION9-BACK-TILE_OFF-Y']
-            tile['zz6'] = unpack('h', data[ind:ind+SIZE['SECTION9-BACK-TILE_ZZ6']])[0]; ind += SIZE['SECTION9-BACK-TILE_ZZ6']
-            self.back['tiles_layer_2'].append(tile)
-        print(ind); print(len(data))
-        print(data[ind:ind+100])
-        exit()
-        pass
+            blank = unpack('H', data[ind:ind+SIZE['SECTION9-BACK-TILE_BLANK']])[0]; ind += SIZE['SECTION9-BACK-TILE_BLANK']
+            tile['dst_x'] = unpack('h', data[ind:ind+SIZE['SECTION9-BACK-TILE_DST-X']])[0]; ind += SIZE['SECTION9-BACK-TILE_DST-X']
+            tile['dst_y'] = unpack('h', data[ind:ind+SIZE['SECTION9-BACK-TILE_DST-Y']])[0]; ind += SIZE['SECTION9-BACK-TILE_DST-Y']
+            tile['unknown_1'] = data[ind:ind+SIZE['SECTION9-BACK-TILE_UNKNOWN-1']]; ind += SIZE['SECTION9-BACK-TILE_UNKNOWN-1']
+            tile['src_x'] = unpack('B', data[ind:ind+SIZE['SECTION9-BACK-TILE_SRC-X']])[0]; ind += SIZE['SECTION9-BACK-TILE_SRC-X']
+            tile['unknown_2'] = data[ind:ind+SIZE['SECTION9-BACK-TILE_UNKNOWN-2']]; ind += SIZE['SECTION9-BACK-TILE_UNKNOWN-2']
+            tile['src_y'] = unpack('B', data[ind:ind+SIZE['SECTION9-BACK-TILE_SRC-Y']])[0]; ind += SIZE['SECTION9-BACK-TILE_SRC-Y']
+            tile['unknown_3'] = data[ind:ind+SIZE['SECTION9-BACK-TILE_UNKNOWN-3']]; ind += SIZE['SECTION9-BACK-TILE_UNKNOWN-3']
+            tile['src_x2'] = unpack('B', data[ind:ind+SIZE['SECTION9-BACK-TILE_SRC-X2']])[0]; ind += SIZE['SECTION9-BACK-TILE_SRC-X2']
+            tile['unknown_4'] = data[ind:ind+SIZE['SECTION9-BACK-TILE_UNKNOWN-4']]; ind += SIZE['SECTION9-BACK-TILE_UNKNOWN-4']
+            tile['src_y2'] = unpack('B', data[ind:ind+SIZE['SECTION9-BACK-TILE_SRC-Y2']])[0]; ind += SIZE['SECTION9-BACK-TILE_SRC-Y2']
+            tile['unknown_5'] = data[ind:ind+SIZE['SECTION9-BACK-TILE_UNKNOWN-5']]; ind += SIZE['SECTION9-BACK-TILE_UNKNOWN-5']
+            tile['width'] = unpack('H', data[ind:ind+SIZE['SECTION9-BACK-TILE_WIDTH']])[0]; ind += SIZE['SECTION9-BACK-TILE_WIDTH']
+            tile['height'] = unpack('H', data[ind:ind+SIZE['SECTION9-BACK-TILE_HEIGHT']])[0]; ind += SIZE['SECTION9-BACK-TILE_HEIGHT']
+            tile['palette_ID'] = unpack('B', data[ind:ind+SIZE['SECTION9-BACK-TILE_PALETTE-ID']])[0]; ind += SIZE['SECTION9-BACK-TILE_PALETTE-ID']
+            tile['unknown_6'] = data[ind:ind+SIZE['SECTION9-BACK-TILE_UNKNOWN-6']]; ind += SIZE['SECTION9-BACK-TILE_UNKNOWN-6']
+            tile['ID'] = unpack('H', data[ind:ind+SIZE['SECTION9-BACK-TILE_ID']])[0]; ind += SIZE['SECTION9-BACK-TILE_ID']
+            tile['param'] = unpack('B', data[ind:ind+SIZE['SECTION9-BACK-TILE_PARAM']])[0]; ind += SIZE['SECTION9-BACK-TILE_PARAM']
+            tile['state'] = unpack('B', data[ind:ind+SIZE['SECTION9-BACK-TILE_STATE']])[0]; ind += SIZE['SECTION9-BACK-TILE_STATE']
+            tile['blending'] = unpack('B', data[ind:ind+SIZE['SECTION9-BACK-TILE_BLENDING']])[0]; ind += SIZE['SECTION9-BACK-TILE_BLENDING']
+            tile['unknown_7'] = data[ind:ind+SIZE['SECTION9-BACK-TILE_UNKNOWN-7']]; ind += SIZE['SECTION9-BACK-TILE_UNKNOWN-7']
+            tile['type_trans'] = unpack('B', data[ind:ind+SIZE['SECTION9-BACK-TILE_TYPE-TRANS']])[0]; ind += SIZE['SECTION9-BACK-TILE_TYPE-TRANS']
+            tile['unknown_8'] = data[ind:ind+SIZE['SECTION9-BACK-TILE_UNKNOWN-8']]; ind += SIZE['SECTION9-BACK-TILE_UNKNOWN-8']
+            tile['texture_id'] = unpack('B', data[ind:ind+SIZE['SECTION9-BACK-TILE_TEXTURE-ID']])[0]; ind += SIZE['SECTION9-BACK-TILE_TEXTURE-ID']
+            tile['unknown_9'] = data[ind:ind+SIZE['SECTION9-BACK-TILE_UNKNOWN-9']]; ind += SIZE['SECTION9-BACK-TILE_UNKNOWN-9']
+            tile['texture_id2'] = unpack('B', data[ind:ind+SIZE['SECTION9-BACK-TILE_TEXTURE-ID2']])[0]; ind += SIZE['SECTION9-BACK-TILE_TEXTURE-ID2']
+            tile['unknown_10'] = data[ind:ind+SIZE['SECTION9-BACK-TILE_UNKNOWN-10']]; ind += SIZE['SECTION9-BACK-TILE_UNKNOWN-10']
+            tile['depth'] = unpack('B', data[ind:ind+SIZE['SECTION9-BACK-TILE_DEPTH']])[0]; ind += SIZE['SECTION9-BACK-TILE_DEPTH']
+            tile['unknown_11'] = data[ind:ind+SIZE['SECTION9-BACK-TILE_UNKNOWN-11']]; ind += SIZE['SECTION9-BACK-TILE_UNKNOWN-11']
+            tile['ID_big'] = unpack('I', data[ind:ind+SIZE['SECTION9-BACK-TILE_ID-BIG']])[0]; ind += SIZE['SECTION9-BACK-TILE_ID-BIG']
+            src_x_big = unpack('I', data[ind:ind+SIZE['SECTION9-BACK-TILE_SRC-X-BIG']])[0]; ind += SIZE['SECTION9-BACK-TILE_SRC-X-BIG']
+            src_y_big = unpack('I', data[ind:ind+SIZE['SECTION9-BACK-TILE_SRC-Y-BIG']])[0]; ind += SIZE['SECTION9-BACK-TILE_SRC-Y-BIG']
+            blank = unpack('H', data[ind:ind+SIZE['SECTION9-BACK-TILE_BLANK-2']])[0]; ind += SIZE['SECTION9-BACK-TILE_BLANK-2']
+            self.back['layer_1']['tiles'].append(tile)
+        blank = unpack('H', data[ind:ind+SIZE['SECTION9-BACK-L1_BLANK-2']])[0]; ind += SIZE['SECTION9-BACK-L1_BLANK-2']
+
+        # read layer 2
+        l2_flag = unpack('B', data[ind:ind+SIZE['SECTION9-BACK-L2_FLAG']])[0]; ind += SIZE['SECTION9-BACK-L2_FLAG']
+        self.back['layer_2'] = dict()
+        if l2_flag != 0:
+            if l2_flag != 1:
+                raise ValueError(ERROR_INVALID_FIELD_FILE)
+            self.back['layer_2']['width'] = unpack('H', data[ind:ind+SIZE['SECTION9-BACK-L2_WIDTH']])[0]; ind += SIZE['SECTION9-BACK-L2_WIDTH']
+            self.back['layer_2']['height'] = unpack('H', data[ind:ind+SIZE['SECTION9-BACK-L2_HEIGHT']])[0]; ind += SIZE['SECTION9-BACK-L2_HEIGHT']
+            num_l2_tiles = unpack('H', data[ind:ind+SIZE['SECTION9-BACK-L2_NUM-TILES']])[0]; ind += SIZE['SECTION9-BACK-L2_NUM-TILES']
+            self.back['layer_2']['unknown'] = data[ind:ind+SIZE['SECTION9-BACK-L2_UNKNOWN']]; ind += SIZE['SECTION9-BACK-L2_UNKNOWN']
+            blank = unpack('H', data[ind:ind+SIZE['SECTION9-BACK-L2_BLANK']])[0]; ind += SIZE['SECTION9-BACK-L2_BLANK']
+            self.back['layer_2']['tiles'] = list()
+            for _ in range(num_l2_tiles):
+                tile = dict()
+                blank = unpack('H', data[ind:ind+SIZE['SECTION9-BACK-TILE_BLANK']])[0]; ind += SIZE['SECTION9-BACK-TILE_BLANK']
+                tile['dst_x'] = unpack('h', data[ind:ind+SIZE['SECTION9-BACK-TILE_DST-X']])[0]; ind += SIZE['SECTION9-BACK-TILE_DST-X']
+                tile['dst_y'] = unpack('h', data[ind:ind+SIZE['SECTION9-BACK-TILE_DST-Y']])[0]; ind += SIZE['SECTION9-BACK-TILE_DST-Y']
+                tile['unknown_1'] = data[ind:ind+SIZE['SECTION9-BACK-TILE_UNKNOWN-1']]; ind += SIZE['SECTION9-BACK-TILE_UNKNOWN-1']
+                tile['src_x'] = unpack('B', data[ind:ind+SIZE['SECTION9-BACK-TILE_SRC-X']])[0]; ind += SIZE['SECTION9-BACK-TILE_SRC-X']
+                tile['unknown_2'] = data[ind:ind+SIZE['SECTION9-BACK-TILE_UNKNOWN-2']]; ind += SIZE['SECTION9-BACK-TILE_UNKNOWN-2']
+                tile['src_y'] = unpack('B', data[ind:ind+SIZE['SECTION9-BACK-TILE_SRC-Y']])[0]; ind += SIZE['SECTION9-BACK-TILE_SRC-Y']
+                tile['unknown_3'] = data[ind:ind+SIZE['SECTION9-BACK-TILE_UNKNOWN-3']]; ind += SIZE['SECTION9-BACK-TILE_UNKNOWN-3']
+                tile['src_x2'] = unpack('B', data[ind:ind+SIZE['SECTION9-BACK-TILE_SRC-X2']])[0]; ind += SIZE['SECTION9-BACK-TILE_SRC-X2']
+                tile['unknown_4'] = data[ind:ind+SIZE['SECTION9-BACK-TILE_UNKNOWN-4']]; ind += SIZE['SECTION9-BACK-TILE_UNKNOWN-4']
+                tile['src_y2'] = unpack('B', data[ind:ind+SIZE['SECTION9-BACK-TILE_SRC-Y2']])[0]; ind += SIZE['SECTION9-BACK-TILE_SRC-Y2']
+                tile['unknown_5'] = data[ind:ind+SIZE['SECTION9-BACK-TILE_UNKNOWN-5']]; ind += SIZE['SECTION9-BACK-TILE_UNKNOWN-5']
+                tile['width'] = unpack('H', data[ind:ind+SIZE['SECTION9-BACK-TILE_WIDTH']])[0]; ind += SIZE['SECTION9-BACK-TILE_WIDTH']
+                tile['height'] = unpack('H', data[ind:ind+SIZE['SECTION9-BACK-TILE_HEIGHT']])[0]; ind += SIZE['SECTION9-BACK-TILE_HEIGHT']
+                tile['palette_ID'] = unpack('B', data[ind:ind+SIZE['SECTION9-BACK-TILE_PALETTE-ID']])[0]; ind += SIZE['SECTION9-BACK-TILE_PALETTE-ID']
+                tile['unknown_6'] = data[ind:ind+SIZE['SECTION9-BACK-TILE_UNKNOWN-6']]; ind += SIZE['SECTION9-BACK-TILE_UNKNOWN-6']
+                tile['ID'] = unpack('H', data[ind:ind+SIZE['SECTION9-BACK-TILE_ID']])[0]; ind += SIZE['SECTION9-BACK-TILE_ID']
+                tile['param'] = unpack('B', data[ind:ind+SIZE['SECTION9-BACK-TILE_PARAM']])[0]; ind += SIZE['SECTION9-BACK-TILE_PARAM']
+                tile['state'] = unpack('B', data[ind:ind+SIZE['SECTION9-BACK-TILE_STATE']])[0]; ind += SIZE['SECTION9-BACK-TILE_STATE']
+                tile['blending'] = unpack('B', data[ind:ind+SIZE['SECTION9-BACK-TILE_BLENDING']])[0]; ind += SIZE['SECTION9-BACK-TILE_BLENDING']
+                tile['unknown_7'] = data[ind:ind+SIZE['SECTION9-BACK-TILE_UNKNOWN-7']]; ind += SIZE['SECTION9-BACK-TILE_UNKNOWN-7']
+                tile['type_trans'] = unpack('B', data[ind:ind+SIZE['SECTION9-BACK-TILE_TYPE-TRANS']])[0]; ind += SIZE['SECTION9-BACK-TILE_TYPE-TRANS']
+                tile['unknown_8'] = data[ind:ind+SIZE['SECTION9-BACK-TILE_UNKNOWN-8']]; ind += SIZE['SECTION9-BACK-TILE_UNKNOWN-8']
+                tile['texture_id'] = unpack('B', data[ind:ind+SIZE['SECTION9-BACK-TILE_TEXTURE-ID']])[0]; ind += SIZE['SECTION9-BACK-TILE_TEXTURE-ID']
+                tile['unknown_9'] = data[ind:ind+SIZE['SECTION9-BACK-TILE_UNKNOWN-9']]; ind += SIZE['SECTION9-BACK-TILE_UNKNOWN-9']
+                tile['texture_id2'] = unpack('B', data[ind:ind+SIZE['SECTION9-BACK-TILE_TEXTURE-ID2']])[0]; ind += SIZE['SECTION9-BACK-TILE_TEXTURE-ID2']
+                tile['unknown_10'] = data[ind:ind+SIZE['SECTION9-BACK-TILE_UNKNOWN-10']]; ind += SIZE['SECTION9-BACK-TILE_UNKNOWN-10']
+                tile['depth'] = unpack('B', data[ind:ind+SIZE['SECTION9-BACK-TILE_DEPTH']])[0]; ind += SIZE['SECTION9-BACK-TILE_DEPTH']
+                tile['unknown_11'] = data[ind:ind+SIZE['SECTION9-BACK-TILE_UNKNOWN-11']]; ind += SIZE['SECTION9-BACK-TILE_UNKNOWN-11']
+                tile['ID_big'] = unpack('I', data[ind:ind+SIZE['SECTION9-BACK-TILE_ID-BIG']])[0]; ind += SIZE['SECTION9-BACK-TILE_ID-BIG']
+                src_x_big = unpack('I', data[ind:ind+SIZE['SECTION9-BACK-TILE_SRC-X-BIG']])[0]; ind += SIZE['SECTION9-BACK-TILE_SRC-X-BIG']
+                src_y_big = unpack('I', data[ind:ind+SIZE['SECTION9-BACK-TILE_SRC-Y-BIG']])[0]; ind += SIZE['SECTION9-BACK-TILE_SRC-Y-BIG']
+                blank = unpack('H', data[ind:ind+SIZE['SECTION9-BACK-TILE_BLANK-2']])[0]; ind += SIZE['SECTION9-BACK-TILE_BLANK-2']
+                self.back['layer_2']['tiles'].append(tile)
+            blank = unpack('H', data[ind:ind+SIZE['SECTION9-BACK-L2_BLANK-2']])[0]; ind += SIZE['SECTION9-BACK-L2_BLANK-2']
+
+        # read layer 3
+        l3_flag = unpack('B', data[ind:ind+SIZE['SECTION9-BACK-L3_FLAG']])[0]; ind += SIZE['SECTION9-BACK-L3_FLAG']
+        self.back['layer_3'] = dict()
+        if l3_flag != 0:
+            if l3_flag != 1:
+                raise ValueError(ERROR_INVALID_FIELD_FILE)
+            return # TODO IMPLEMENT LAYER 3
+        return
 
 class FieldFile:
     '''Field File class'''
@@ -1123,5 +1094,5 @@ class FieldFile:
         self.tile_map = TileMap(data[starts[5]+SIZE['SECTION-LENGTH']:starts[6]])
         self.encounter = Encounter(data[starts[6]+SIZE['SECTION-LENGTH']:starts[7]])
         self.triggers = Triggers(data[starts[7]+SIZE['SECTION-LENGTH']:starts[8]])
-        return
         self.background = Background(data[starts[8]+SIZE['SECTION-LENGTH']:])
+        return
