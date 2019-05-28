@@ -166,16 +166,22 @@ def print_sec9(ff):
     for i,tile in enumerate(ff.background.back['layer_1']['tiles']):
         print("        * Tile %d:" % (i+1))
         print_sec9_tile(tile)
-    if len(ff.background.back['layer_2']) != 0:
-        print("    * Layer 2:")
-        print("      * Width: %d" % ff.background.back['layer_2']['width'])
-        print("      * Height: %d" % ff.background.back['layer_2']['height'])
-        print("      * Number of Tiles: %d" % len(ff.background.back['layer_2']['tiles']))
-        for i,tile in enumerate(ff.background.back['layer_2']['tiles']):
-            print("        * Tile %d:" % (i+1))
-            print_sec9_tile(tile)
-    if len(ff.background.back['layer_3']) != 0:
-        print("    * Layer 3:") # TODO IMPLEMENT LAYER 3
+    for k in ['layer_2','layer_3','layer_4']:
+        if len(ff.background.back[k]) != 0:
+            print("    * %s:" % k.replace('_',' ').title())
+            print("      * Width: %d" % ff.background.back[k]['width'])
+            print("      * Height: %d" % ff.background.back[k]['height'])
+            print("      * Number of Tiles: %d" % len(ff.background.back[k]['tiles']))
+            for i,tile in enumerate(ff.background.back[k]['tiles']):
+                print("        * Tile %d:" % (i+1))
+                print_sec9_tile(tile)
+    print("  * Number of Textures: %d" % sum(tex is not None for tex in ff.background.textures))
+    for i,tex in enumerate(ff.background.textures):
+        if tex is not None:
+            print("    * Texture %d:" % (i+1))
+            print("      * Size: %d" % tex['size'])
+            print("      * Depth: %d" % tex['depth'])
+            print("      * Data: %d bytes" % len(tex['data']))
 
 if __name__ == "__main__":
     if len(argv) != 2 or argv[1] == '-h' or argv[1] == '--help':

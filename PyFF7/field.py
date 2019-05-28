@@ -76,6 +76,11 @@ SECTION9_PAL_COLOR_B_SHIFT = 10 # B = Blue
 SECTION9_PAL_COLOR_G_SHIFT = 5  # G = Green
 SECTION9_PAL_COLOR_R_SHIFT = 0  # R = Red
 SECTION9_BACK_TITLE = "BACK"
+SECTION9_TEX_TITLE = "TEXTURE"
+SECTION9_TEX_MAX_NUM = 42
+SECTION9_TEX_BYTES_PER_DEPTH = 65536
+EOF_END_STRING = "END"
+EOF_FILE_TERMINATOR = "FINAL FANTASY7"
 STRING_TERMINATOR = b'\xff'
 
 # OP codes
@@ -273,6 +278,19 @@ SIZE = {
     'SECTION9-BACK-L2_BLANK':          2, # Section 9 Background Layer 2: Blank
     'SECTION9-BACK-L2_BLANK-2':        2, # Section 9 Background Layer 2: Blank 2
     'SECTION9-BACK-L3_FLAG':           1, # Section 9 Background Layer 3: Flag
+    'SECTION9-BACK-L3_WIDTH':          2, # Section 9 Background Layer 3: Width
+    'SECTION9-BACK-L3_HEIGHT':         2, # Section 9 Background Layer 3: Height
+    'SECTION9-BACK-L3_NUM-TILES':      2, # Section 9 Background Layer 3: Number of Tiles
+    'SECTION9-BACK-L3_UNKNOWN':       10, # Section 9 Background Layer 3: Unknown (unused)
+    'SECTION9-BACK-L3_BLANK':          2, # Section 9 Background Layer 3: Blank
+    'SECTION9-BACK-L3_BLANK-2':        2, # Section 9 Background Layer 3: Blank 2
+    'SECTION9-BACK-L4_FLAG':           1, # Section 9 Background Layer 4: Flag
+    'SECTION9-BACK-L4_WIDTH':          2, # Section 9 Background Layer 4: Width
+    'SECTION9-BACK-L4_HEIGHT':         2, # Section 9 Background Layer 4: Height
+    'SECTION9-BACK-L4_NUM-TILES':      2, # Section 9 Background Layer 4: Number of Tiles
+    'SECTION9-BACK-L4_UNKNOWN':       10, # Section 9 Background Layer 4: Unknown (unused)
+    'SECTION9-BACK-L4_BLANK':          2, # Section 9 Background Layer 4: Blank
+    'SECTION9-BACK-L4_BLANK-2':        2, # Section 9 Background Layer 4: Blank 2
     'SECTION9-BACK-TILE_BLANK':        2, # Section 9 Background Tile: Blank
     'SECTION9-BACK-TILE_DST-X':        2, # Section 9 Background Tile: Destination X
     'SECTION9-BACK-TILE_DST-Y':        2, # Section 9 Background Tile: Destination Y
@@ -306,6 +324,14 @@ SIZE = {
     'SECTION9-BACK-TILE_SRC-X-BIG':    4, # Section 9 Background Tile: Source X Big
     'SECTION9-BACK-TILE_SRC-Y-BIG':    4, # Section 9 Background Tile: Source Y Big
     'SECTION9-BACK-TILE_BLANK-2':      2, # Section 9 Background Tile: Blank 2
+    'SECTION9-TEX_TITLE':              7, # Section 9 Textures: Title (the string "TEXTURE")
+    'SECTION9-TEX_TEX-EXISTS':         2, # Section 9 Textures Texture: Exists
+    'SECTION9-TEX_TEX-SIZE':           2, # Section 9 Textures Texture: Size
+    'SECTION9-TEX_TEX-DEPTH':          2, # Section 9 Textures Texture: Depth
+
+    # End of File
+    'EOF_END-STRING':                  3, # End of File: End String (the string "END")
+    'EOF_FILE-TERMINATOR':            14, # End of File: File Terminator (the string "FINAL FANTASY7")
 }
 SIZE['SECTION2-ENTRY'] = len(SECTION2_AXES)*SECTION2_NUM_DIMENSIONS*SIZE['SECTION2-ENTRY_VECTOR-VALUE'] + SIZE['SECTION2-ENTRY_VECTOR-VALUE'] + len(SECTION2_AXES)*SIZE['SECTION2-ENTRY_SPACE-POSITION'] + SIZE['SECTION2-ENTRY_BLANK'] + SIZE['SECTION2-ENTRY_ZOOM']
 
@@ -1065,7 +1091,126 @@ class Background:
         if l3_flag != 0:
             if l3_flag != 1:
                 raise ValueError(ERROR_INVALID_FIELD_FILE)
-            return # TODO IMPLEMENT LAYER 3
+            self.back['layer_3']['width'] = unpack('H', data[ind:ind+SIZE['SECTION9-BACK-L3_WIDTH']])[0]; ind += SIZE['SECTION9-BACK-L3_WIDTH']
+            self.back['layer_3']['height'] = unpack('H', data[ind:ind+SIZE['SECTION9-BACK-L3_HEIGHT']])[0]; ind += SIZE['SECTION9-BACK-L3_HEIGHT']
+            num_l3_tiles = unpack('H', data[ind:ind+SIZE['SECTION9-BACK-L3_NUM-TILES']])[0]; ind += SIZE['SECTION9-BACK-L3_NUM-TILES']
+            self.back['layer_3']['unknown'] = data[ind:ind+SIZE['SECTION9-BACK-L3_UNKNOWN']]; ind += SIZE['SECTION9-BACK-L3_UNKNOWN']
+            blank = unpack('H', data[ind:ind+SIZE['SECTION9-BACK-L3_BLANK']])[0]; ind += SIZE['SECTION9-BACK-L3_BLANK']
+            self.back['layer_3']['tiles'] = list()
+            for _ in range(num_l3_tiles):
+                tile = dict()
+                blank = unpack('H', data[ind:ind+SIZE['SECTION9-BACK-TILE_BLANK']])[0]; ind += SIZE['SECTION9-BACK-TILE_BLANK']
+                tile['dst_x'] = unpack('h', data[ind:ind+SIZE['SECTION9-BACK-TILE_DST-X']])[0]; ind += SIZE['SECTION9-BACK-TILE_DST-X']
+                tile['dst_y'] = unpack('h', data[ind:ind+SIZE['SECTION9-BACK-TILE_DST-Y']])[0]; ind += SIZE['SECTION9-BACK-TILE_DST-Y']
+                tile['unknown_1'] = data[ind:ind+SIZE['SECTION9-BACK-TILE_UNKNOWN-1']]; ind += SIZE['SECTION9-BACK-TILE_UNKNOWN-1']
+                tile['src_x'] = unpack('B', data[ind:ind+SIZE['SECTION9-BACK-TILE_SRC-X']])[0]; ind += SIZE['SECTION9-BACK-TILE_SRC-X']
+                tile['unknown_2'] = data[ind:ind+SIZE['SECTION9-BACK-TILE_UNKNOWN-2']]; ind += SIZE['SECTION9-BACK-TILE_UNKNOWN-2']
+                tile['src_y'] = unpack('B', data[ind:ind+SIZE['SECTION9-BACK-TILE_SRC-Y']])[0]; ind += SIZE['SECTION9-BACK-TILE_SRC-Y']
+                tile['unknown_3'] = data[ind:ind+SIZE['SECTION9-BACK-TILE_UNKNOWN-3']]; ind += SIZE['SECTION9-BACK-TILE_UNKNOWN-3']
+                tile['src_x2'] = unpack('B', data[ind:ind+SIZE['SECTION9-BACK-TILE_SRC-X2']])[0]; ind += SIZE['SECTION9-BACK-TILE_SRC-X2']
+                tile['unknown_4'] = data[ind:ind+SIZE['SECTION9-BACK-TILE_UNKNOWN-4']]; ind += SIZE['SECTION9-BACK-TILE_UNKNOWN-4']
+                tile['src_y2'] = unpack('B', data[ind:ind+SIZE['SECTION9-BACK-TILE_SRC-Y2']])[0]; ind += SIZE['SECTION9-BACK-TILE_SRC-Y2']
+                tile['unknown_5'] = data[ind:ind+SIZE['SECTION9-BACK-TILE_UNKNOWN-5']]; ind += SIZE['SECTION9-BACK-TILE_UNKNOWN-5']
+                tile['width'] = unpack('H', data[ind:ind+SIZE['SECTION9-BACK-TILE_WIDTH']])[0]; ind += SIZE['SECTION9-BACK-TILE_WIDTH']
+                tile['height'] = unpack('H', data[ind:ind+SIZE['SECTION9-BACK-TILE_HEIGHT']])[0]; ind += SIZE['SECTION9-BACK-TILE_HEIGHT']
+                tile['palette_ID'] = unpack('B', data[ind:ind+SIZE['SECTION9-BACK-TILE_PALETTE-ID']])[0]; ind += SIZE['SECTION9-BACK-TILE_PALETTE-ID']
+                tile['unknown_6'] = data[ind:ind+SIZE['SECTION9-BACK-TILE_UNKNOWN-6']]; ind += SIZE['SECTION9-BACK-TILE_UNKNOWN-6']
+                tile['ID'] = unpack('H', data[ind:ind+SIZE['SECTION9-BACK-TILE_ID']])[0]; ind += SIZE['SECTION9-BACK-TILE_ID']
+                tile['param'] = unpack('B', data[ind:ind+SIZE['SECTION9-BACK-TILE_PARAM']])[0]; ind += SIZE['SECTION9-BACK-TILE_PARAM']
+                tile['state'] = unpack('B', data[ind:ind+SIZE['SECTION9-BACK-TILE_STATE']])[0]; ind += SIZE['SECTION9-BACK-TILE_STATE']
+                tile['blending'] = unpack('B', data[ind:ind+SIZE['SECTION9-BACK-TILE_BLENDING']])[0]; ind += SIZE['SECTION9-BACK-TILE_BLENDING']
+                tile['unknown_7'] = data[ind:ind+SIZE['SECTION9-BACK-TILE_UNKNOWN-7']]; ind += SIZE['SECTION9-BACK-TILE_UNKNOWN-7']
+                tile['type_trans'] = unpack('B', data[ind:ind+SIZE['SECTION9-BACK-TILE_TYPE-TRANS']])[0]; ind += SIZE['SECTION9-BACK-TILE_TYPE-TRANS']
+                tile['unknown_8'] = data[ind:ind+SIZE['SECTION9-BACK-TILE_UNKNOWN-8']]; ind += SIZE['SECTION9-BACK-TILE_UNKNOWN-8']
+                tile['texture_id'] = unpack('B', data[ind:ind+SIZE['SECTION9-BACK-TILE_TEXTURE-ID']])[0]; ind += SIZE['SECTION9-BACK-TILE_TEXTURE-ID']
+                tile['unknown_9'] = data[ind:ind+SIZE['SECTION9-BACK-TILE_UNKNOWN-9']]; ind += SIZE['SECTION9-BACK-TILE_UNKNOWN-9']
+                tile['texture_id2'] = unpack('B', data[ind:ind+SIZE['SECTION9-BACK-TILE_TEXTURE-ID2']])[0]; ind += SIZE['SECTION9-BACK-TILE_TEXTURE-ID2']
+                tile['unknown_10'] = data[ind:ind+SIZE['SECTION9-BACK-TILE_UNKNOWN-10']]; ind += SIZE['SECTION9-BACK-TILE_UNKNOWN-10']
+                tile['depth'] = unpack('B', data[ind:ind+SIZE['SECTION9-BACK-TILE_DEPTH']])[0]; ind += SIZE['SECTION9-BACK-TILE_DEPTH']
+                tile['unknown_11'] = data[ind:ind+SIZE['SECTION9-BACK-TILE_UNKNOWN-11']]; ind += SIZE['SECTION9-BACK-TILE_UNKNOWN-11']
+                tile['ID_big'] = unpack('I', data[ind:ind+SIZE['SECTION9-BACK-TILE_ID-BIG']])[0]; ind += SIZE['SECTION9-BACK-TILE_ID-BIG']
+                src_x_big = unpack('I', data[ind:ind+SIZE['SECTION9-BACK-TILE_SRC-X-BIG']])[0]; ind += SIZE['SECTION9-BACK-TILE_SRC-X-BIG']
+                src_y_big = unpack('I', data[ind:ind+SIZE['SECTION9-BACK-TILE_SRC-Y-BIG']])[0]; ind += SIZE['SECTION9-BACK-TILE_SRC-Y-BIG']
+                blank = unpack('H', data[ind:ind+SIZE['SECTION9-BACK-TILE_BLANK-2']])[0]; ind += SIZE['SECTION9-BACK-TILE_BLANK-2']
+                self.back['layer_3']['tiles'].append(tile)
+            blank = unpack('H', data[ind:ind+SIZE['SECTION9-BACK-L3_BLANK-2']])[0]; ind += SIZE['SECTION9-BACK-L3_BLANK-2']
+
+        # read layer 4
+        l4_flag = unpack('B', data[ind:ind+SIZE['SECTION9-BACK-L4_FLAG']])[0]; ind += SIZE['SECTION9-BACK-L4_FLAG']
+        self.back['layer_4'] = dict()
+        if l4_flag != 0:
+            if l4_flag != 1:
+                raise ValueError(ERROR_INVALID_FIELD_FILE)
+            self.back['layer_4']['width'] = unpack('H', data[ind:ind+SIZE['SECTION9-BACK-L4_WIDTH']])[0]; ind += SIZE['SECTION9-BACK-L4_WIDTH']
+            self.back['layer_4']['height'] = unpack('H', data[ind:ind+SIZE['SECTION9-BACK-L4_HEIGHT']])[0]; ind += SIZE['SECTION9-BACK-L4_HEIGHT']
+            num_l4_tiles = unpack('H', data[ind:ind+SIZE['SECTION9-BACK-L4_NUM-TILES']])[0]; ind += SIZE['SECTION9-BACK-L4_NUM-TILES']
+            self.back['layer_4']['unknown'] = data[ind:ind+SIZE['SECTION9-BACK-L4_UNKNOWN']]; ind += SIZE['SECTION9-BACK-L4_UNKNOWN']
+            blank = unpack('H', data[ind:ind+SIZE['SECTION9-BACK-L4_BLANK']])[0]; ind += SIZE['SECTION9-BACK-L4_BLANK']
+            self.back['layer_4']['tiles'] = list()
+            for _ in range(num_l4_tiles):
+                tile = dict()
+                blank = unpack('H', data[ind:ind+SIZE['SECTION9-BACK-TILE_BLANK']])[0]; ind += SIZE['SECTION9-BACK-TILE_BLANK']
+                tile['dst_x'] = unpack('h', data[ind:ind+SIZE['SECTION9-BACK-TILE_DST-X']])[0]; ind += SIZE['SECTION9-BACK-TILE_DST-X']
+                tile['dst_y'] = unpack('h', data[ind:ind+SIZE['SECTION9-BACK-TILE_DST-Y']])[0]; ind += SIZE['SECTION9-BACK-TILE_DST-Y']
+                tile['unknown_1'] = data[ind:ind+SIZE['SECTION9-BACK-TILE_UNKNOWN-1']]; ind += SIZE['SECTION9-BACK-TILE_UNKNOWN-1']
+                tile['src_x'] = unpack('B', data[ind:ind+SIZE['SECTION9-BACK-TILE_SRC-X']])[0]; ind += SIZE['SECTION9-BACK-TILE_SRC-X']
+                tile['unknown_2'] = data[ind:ind+SIZE['SECTION9-BACK-TILE_UNKNOWN-2']]; ind += SIZE['SECTION9-BACK-TILE_UNKNOWN-2']
+                tile['src_y'] = unpack('B', data[ind:ind+SIZE['SECTION9-BACK-TILE_SRC-Y']])[0]; ind += SIZE['SECTION9-BACK-TILE_SRC-Y']
+                tile['unknown_3'] = data[ind:ind+SIZE['SECTION9-BACK-TILE_UNKNOWN-3']]; ind += SIZE['SECTION9-BACK-TILE_UNKNOWN-3']
+                tile['src_x2'] = unpack('B', data[ind:ind+SIZE['SECTION9-BACK-TILE_SRC-X2']])[0]; ind += SIZE['SECTION9-BACK-TILE_SRC-X2']
+                tile['unknown_4'] = data[ind:ind+SIZE['SECTION9-BACK-TILE_UNKNOWN-4']]; ind += SIZE['SECTION9-BACK-TILE_UNKNOWN-4']
+                tile['src_y2'] = unpack('B', data[ind:ind+SIZE['SECTION9-BACK-TILE_SRC-Y2']])[0]; ind += SIZE['SECTION9-BACK-TILE_SRC-Y2']
+                tile['unknown_5'] = data[ind:ind+SIZE['SECTION9-BACK-TILE_UNKNOWN-5']]; ind += SIZE['SECTION9-BACK-TILE_UNKNOWN-5']
+                tile['width'] = unpack('H', data[ind:ind+SIZE['SECTION9-BACK-TILE_WIDTH']])[0]; ind += SIZE['SECTION9-BACK-TILE_WIDTH']
+                tile['height'] = unpack('H', data[ind:ind+SIZE['SECTION9-BACK-TILE_HEIGHT']])[0]; ind += SIZE['SECTION9-BACK-TILE_HEIGHT']
+                tile['palette_ID'] = unpack('B', data[ind:ind+SIZE['SECTION9-BACK-TILE_PALETTE-ID']])[0]; ind += SIZE['SECTION9-BACK-TILE_PALETTE-ID']
+                tile['unknown_6'] = data[ind:ind+SIZE['SECTION9-BACK-TILE_UNKNOWN-6']]; ind += SIZE['SECTION9-BACK-TILE_UNKNOWN-6']
+                tile['ID'] = unpack('H', data[ind:ind+SIZE['SECTION9-BACK-TILE_ID']])[0]; ind += SIZE['SECTION9-BACK-TILE_ID']
+                tile['param'] = unpack('B', data[ind:ind+SIZE['SECTION9-BACK-TILE_PARAM']])[0]; ind += SIZE['SECTION9-BACK-TILE_PARAM']
+                tile['state'] = unpack('B', data[ind:ind+SIZE['SECTION9-BACK-TILE_STATE']])[0]; ind += SIZE['SECTION9-BACK-TILE_STATE']
+                tile['blending'] = unpack('B', data[ind:ind+SIZE['SECTION9-BACK-TILE_BLENDING']])[0]; ind += SIZE['SECTION9-BACK-TILE_BLENDING']
+                tile['unknown_7'] = data[ind:ind+SIZE['SECTION9-BACK-TILE_UNKNOWN-7']]; ind += SIZE['SECTION9-BACK-TILE_UNKNOWN-7']
+                tile['type_trans'] = unpack('B', data[ind:ind+SIZE['SECTION9-BACK-TILE_TYPE-TRANS']])[0]; ind += SIZE['SECTION9-BACK-TILE_TYPE-TRANS']
+                tile['unknown_8'] = data[ind:ind+SIZE['SECTION9-BACK-TILE_UNKNOWN-8']]; ind += SIZE['SECTION9-BACK-TILE_UNKNOWN-8']
+                tile['texture_id'] = unpack('B', data[ind:ind+SIZE['SECTION9-BACK-TILE_TEXTURE-ID']])[0]; ind += SIZE['SECTION9-BACK-TILE_TEXTURE-ID']
+                tile['unknown_9'] = data[ind:ind+SIZE['SECTION9-BACK-TILE_UNKNOWN-9']]; ind += SIZE['SECTION9-BACK-TILE_UNKNOWN-9']
+                tile['texture_id2'] = unpack('B', data[ind:ind+SIZE['SECTION9-BACK-TILE_TEXTURE-ID2']])[0]; ind += SIZE['SECTION9-BACK-TILE_TEXTURE-ID2']
+                tile['unknown_10'] = data[ind:ind+SIZE['SECTION9-BACK-TILE_UNKNOWN-10']]; ind += SIZE['SECTION9-BACK-TILE_UNKNOWN-10']
+                tile['depth'] = unpack('B', data[ind:ind+SIZE['SECTION9-BACK-TILE_DEPTH']])[0]; ind += SIZE['SECTION9-BACK-TILE_DEPTH']
+                tile['unknown_11'] = data[ind:ind+SIZE['SECTION9-BACK-TILE_UNKNOWN-11']]; ind += SIZE['SECTION9-BACK-TILE_UNKNOWN-11']
+                tile['ID_big'] = unpack('I', data[ind:ind+SIZE['SECTION9-BACK-TILE_ID-BIG']])[0]; ind += SIZE['SECTION9-BACK-TILE_ID-BIG']
+                src_x_big = unpack('I', data[ind:ind+SIZE['SECTION9-BACK-TILE_SRC-X-BIG']])[0]; ind += SIZE['SECTION9-BACK-TILE_SRC-X-BIG']
+                src_y_big = unpack('I', data[ind:ind+SIZE['SECTION9-BACK-TILE_SRC-Y-BIG']])[0]; ind += SIZE['SECTION9-BACK-TILE_SRC-Y-BIG']
+                blank = unpack('H', data[ind:ind+SIZE['SECTION9-BACK-TILE_BLANK-2']])[0]; ind += SIZE['SECTION9-BACK-TILE_BLANK-2']
+                self.back['layer_4']['tiles'].append(tile)
+            blank = unpack('H', data[ind:ind+SIZE['SECTION9-BACK-L4_BLANK-2']])[0]; ind += SIZE['SECTION9-BACK-L4_BLANK-2']
+
+        # read textures
+        self.textures = list()
+        title = data[ind:ind+SIZE['SECTION9-TEX_TITLE']].decode().strip(); ind += SIZE['SECTION9-TEX_TITLE']
+        if title != SECTION9_TEX_TITLE:
+            raise ValueError(ERROR_INVALID_FIELD_FILE)
+        for _ in range(SECTION9_TEX_MAX_NUM):
+            exists = unpack('H', data[ind:ind+SIZE['SECTION9-TEX_TEX-EXISTS']])[0]; ind += SIZE['SECTION9-TEX_TEX-EXISTS']
+            if bool(exists):
+                tex = dict()
+                tex['size'] = unpack('H', data[ind:ind+SIZE['SECTION9-TEX_TEX-SIZE']])[0]; ind += SIZE['SECTION9-TEX_TEX-SIZE']
+                tex['depth'] = unpack('H', data[ind:ind+SIZE['SECTION9-TEX_TEX-DEPTH']])[0]; ind += SIZE['SECTION9-TEX_TEX-DEPTH']
+                data_size = tex['depth'] * SECTION9_TEX_BYTES_PER_DEPTH
+                tex['data'] = data[ind:ind+tex['depth']*data_size]; ind += data_size
+                self.textures.append(tex)
+            else:
+                self.textures.append(None)
+
+        # read end of file
+        end = data[ind:ind+SIZE['EOF_END-STRING']].decode().strip(); ind += SIZE['EOF_END-STRING']
+        if end != EOF_END_STRING:
+            raise ValueError(ERROR_INVALID_FIELD_FILE)
+        terminator = data[ind:ind+SIZE['EOF_FILE-TERMINATOR']].decode().strip(); ind += SIZE['EOF_FILE-TERMINATOR']
+        if terminator != EOF_FILE_TERMINATOR:
+            raise ValueError(ERROR_INVALID_FIELD_FILE)
+        if ind != len(data):
+            raise ValueError(ERROR_INVALID_FIELD_FILE)
         return
 
 class FieldFile:
