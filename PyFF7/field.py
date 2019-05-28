@@ -68,12 +68,14 @@ SECTION8_NUM_GATEWAYS = 12
 SECTION8_NUM_TRIGGERS = 12
 SECTION8_NUM_SHOWN_ARROWS = 12
 SECTION8_NUM_ARROWS = 12
+SECTION9_PAL_TITLE = "PALETTE"
 SECTION9_PAL_NUM_COLORS = 6
 SECTION9_PAL_COLOR_MASK = 0b11111
 SECTION9_PAL_COLOR_A_SHIFT = 15 # A = Alpha = Transparency
 SECTION9_PAL_COLOR_B_SHIFT = 10 # B = Blue
 SECTION9_PAL_COLOR_G_SHIFT = 5  # G = Green
 SECTION9_PAL_COLOR_R_SHIFT = 0  # R = Red
+SECTION9_BACK_TITLE = "BACK"
 STRING_TERMINATOR = b'\xff'
 
 # OP codes
@@ -938,7 +940,9 @@ class Background:
 
         # read palette
         self.palette = dict()
-        self.palette['title'] = data[ind:ind+SIZE['SECTION9-PAL_TITLE']].decode(); ind += SIZE['SECTION9-PAL_TITLE'] # the string "PALETTE"
+        title = data[ind:ind+SIZE['SECTION9-PAL_TITLE']].decode().strip(); ind += SIZE['SECTION9-PAL_TITLE'] # the string "PALETTE"
+        if title != SECTION9_PAL_TITLE:
+            raise ValueError(ERROR_INVALID_FIELD_FILE)
         self.palette['size'] = unpack('I', data[ind:ind+SIZE['SECTION9-PAL_SIZE']])[0]; ind += SIZE['SECTION9-PAL_SIZE']
         self.palette['palX'] = unpack('H', data[ind:ind+SIZE['SECTION9-PAL_PALX']])[0]; ind += SIZE['SECTION9-PAL_PALX']
         self.palette['palY'] = unpack('H', data[ind:ind+SIZE['SECTION9-PAL_PALY']])[0]; ind += SIZE['SECTION9-PAL_PALY']
@@ -955,7 +959,9 @@ class Background:
 
         # read background tiles
         self.back = dict()
-        self.back['title'] = data[ind:ind+SIZE['SECTION9-BACK_TITLE']].decode(); ind += SIZE['SECTION9-BACK_TITLE']
+        title = data[ind:ind+SIZE['SECTION9-BACK_TITLE']].decode().strip(); ind += SIZE['SECTION9-BACK_TITLE']
+        if title != SECTION9_BACK_TITLE:
+            raise ValueError(ERROR_INVALID_FIELD_FILE)
 
         # read layer 1
         self.back['layer_1'] = dict()
