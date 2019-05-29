@@ -976,7 +976,7 @@ class Background:
         self.palette['height'] = unpack('H', data[ind:ind+SIZE['SECTION9-PAL_HEIGHT']])[0]; ind += SIZE['SECTION9-PAL_HEIGHT']
         self.palette['colors'] = list()
         for _ in range(SECTION9_PAL_NUM_COLORS):
-            color = unpack('H', data[ind:ind+SIZE['SECTION9-PAL_COLOR']])[0]; ind += SIZE['SECTION9-PAL_COLOR'] # TODO CONTINUE
+            color = unpack('H', data[ind:ind+SIZE['SECTION9-PAL_COLOR']])[0]; ind += SIZE['SECTION9-PAL_COLOR']
             color_r = (color >> SECTION9_PAL_COLOR_R_SHIFT) & SECTION9_PAL_COLOR_MASK
             color_g = (color >> SECTION9_PAL_COLOR_G_SHIFT) & SECTION9_PAL_COLOR_MASK
             color_b = (color >> SECTION9_PAL_COLOR_B_SHIFT) & SECTION9_PAL_COLOR_MASK
@@ -1503,3 +1503,56 @@ class FieldFile:
             return compress_lzss(data)
         else:
             return data
+
+    def get_bg_image(self):
+        '''Return a Pillow Image object of this Field file's Background
+
+        Returns:
+            ``Image``: A Pillow Image object of this Field file's Background
+        '''
+        from PIL import Image
+
+        # compute image width and height
+        min_width = 0; max_width = 0
+        min_height = 0; max_height = 0
+        for k in ['layer_1', 'layer_2', 'layer_3', 'layer_4']:
+            if 'tiles' not in self.background.back[k]:
+                continue
+            for tile in self.background.back[k]['tiles']:
+                if tile['dst_x'] >= 0 and tile['dst_x'] > max_width:
+                    max_width = tile['dst_x']
+                elif tile['dst_x'] < 0 and -tile['dst_x'] > min_width:
+                    min_width = -tile['dst_x']
+                if tile['dst_y'] >= 0 and tile['dst_y'] > max_height:
+                    max_height = tile['dst_y']
+                elif tile['dst_y'] < 0 and -tile['dst_y'] > min_height:
+                    min_height = -tile['dst_y']
+        width = min_width + max_width + 16
+        height = min_height + max_height + 16
+        center_x = int(width/2); center_y = int(height/2)
+
+        # build Pillow image
+        img = Image.new('RGB', (width,height), (0,0,0)); done = set()
+        for k in ['layer_1', 'layer_2', 'layer_3', 'layer_4']:
+            if 'tiles' not in self.background.back[k]:
+                continue
+            for tile in self.background.back[k]['tiles']:
+                color_page = self.palette.color_pages[tile['palette_ID']]
+                raw = self.background.textures[tile['texture_id']]['data']
+                if tile['width'] == 0:
+                    width = 16
+                else:
+                    width = tile['width']
+                if tile['height'] == 0:
+                    height = 16
+                else:
+                    height = tile['height']
+                for dx in range(0, width):
+                    for dy in range(0, height):
+                        color_ind = raw[(tile['src_y']+dy)*256 + tile['src_x'] + dx]
+                        color_raw = color_page[color_ind]
+                        img_x = tile['dst_x']+dx+center_x; img_y = tile['dst_y']+dy+center_y
+                        curr_color = img.getpixel((img_x,img_y))
+                        color = [min(255,curr_color[i]+color_raw[i]) for i in range(3)]
+                        img.putpixel((img_x,img_y), tuple(color)); done.add((img_x,img_y))
+        return img
