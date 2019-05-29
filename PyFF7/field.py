@@ -1548,21 +1548,14 @@ class FieldFile:
             for tile in self.background.back[k]['tiles']:
                 color_page = self.palette.color_pages[tile['palette_ID']]
                 raw = self.background.textures[tile['texture_id']]['data']
-                if tile['width'] == 0:
-                    width = 16
-                else:
-                    width = tile['width']
-                if tile['height'] == 0:
-                    height = 16
-                else:
-                    height = tile['height']
-                for dx in range(0, width):
-                    for dy in range(0, height):
+                for dx in range(0, 16):
+                    for dy in range(0, 16):
                         img_x = tile['dst_x']+dx+center_x; img_y = tile['dst_y']+dy+center_y
+                        curr_color = img.getpixel((img_x,img_y))
                         color_ind = raw[(tile['src_y']+dy)*256 + tile['src_x'] + dx]
                         color_raw = color_page[color_ind]
-                        curr_color = img.getpixel((img_x,img_y))
+                        if color_raw[:3] == [0,248,0]:
+                            continue
                         color = [min(255,curr_color[i]+color_raw[i]) for i in range(3)]
-                        if color[:3] != [0,248,0]:
-                            img.putpixel((img_x,img_y), tuple(color))
+                        img.putpixel((img_x,img_y), tuple(color))
         return img
