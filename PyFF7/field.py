@@ -1553,6 +1553,6 @@ class FieldFile:
                         color_raw = color_page[color_ind]
                         img_x = tile['dst_x']+dx+center_x; img_y = tile['dst_y']+dy+center_y
                         curr_color = img.getpixel((img_x,img_y))
-                        color = [min(255,curr_color[i]+color_raw[i]) for i in range(3)]
+                        color = [min(255,curr_color[i]+(color_raw[i] << 3)) for i in range(3)]
                         img.putpixel((img_x,img_y), tuple(color)); done.add((img_x,img_y))
         return img
