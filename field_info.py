@@ -5,7 +5,7 @@ Niema Moshiri 2019
 '''
 from PyFF7.field import FieldFile,SECTION_NAME
 from sys import argv,stderr
-USAGE = "USAGE: %s <field_file>" % argv[0]
+USAGE = "USAGE: %s <input_field_file>" % argv[0]
 
 def print_sec1(ff):
     print("* Section 1: %s" % SECTION_NAME[0])
