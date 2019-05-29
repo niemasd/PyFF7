@@ -1197,7 +1197,7 @@ class Background:
                 tex['size'] = unpack('H', data[ind:ind+SIZE['SECTION9-TEX_TEX-SIZE']])[0]; ind += SIZE['SECTION9-TEX_TEX-SIZE']
                 tex['depth'] = unpack('H', data[ind:ind+SIZE['SECTION9-TEX_TEX-DEPTH']])[0]; ind += SIZE['SECTION9-TEX_TEX-DEPTH']
                 data_size = tex['depth'] * SECTION9_TEX_BYTES_PER_DEPTH
-                tex['data'] = data[ind:ind+tex['depth']*data_size]; ind += data_size
+                tex['data'] = data[ind:ind+data_size]; ind += data_size
                 self.textures.append(tex)
             else:
                 self.textures.append(None)
@@ -1211,7 +1211,228 @@ class Background:
             raise ValueError(ERROR_INVALID_FIELD_FILE)
         if ind != len(data):
             raise ValueError(ERROR_INVALID_FIELD_FILE)
-        return
+
+    def get_bytes(self):
+        '''Return the bytes encoding this Background to repack into a Field File
+
+        Returns:
+            ``bytes``: The data to repack into a Field File
+        '''
+        data = bytearray()
+
+        # write header
+        data += pack('H', self.header['unknown1'])
+        data += pack('H', self.header['depth'])
+        data += pack('B', self.header['unknown2'])
+
+        # write palette
+        data += SECTION9_PAL_TITLE.encode()
+        data += pack('I', self.palette['size'])
+        data += pack('H', self.palette['palX'])
+        data += pack('H', self.palette['palY'])
+        data += pack('H', self.palette['width'])
+        data += pack('H', self.palette['height'])
+        for c in self.palette['colors']:
+            data += pack('H', (c[0] << SECTION9_PAL_COLOR_R_SHIFT) | (c[1] << SECTION9_PAL_COLOR_G_SHIFT) | (c[2] << SECTION9_PAL_COLOR_B_SHIFT) | (c[3] << SECTION9_PAL_COLOR_A_SHIFT))
+
+        # write background tiles
+        data += SECTION9_BACK_TITLE.encode()
+
+        # write layer 1
+        data += pack('H', self.back['layer_1']['width'])
+        data += pack('H', self.back['layer_1']['height'])
+        data += pack('H', len(self.back['layer_1']['tiles']))
+        data += pack('H', self.back['layer_1']['depth'])
+        data += 2 * NULL_BYTE
+        for tile in self.back['layer_1']['tiles']:
+            data += 2 * NULL_BYTE
+            data += pack('h', tile['dst_x'])
+            data += pack('h', tile['dst_y'])
+            data += tile['unknown_1']
+            data += pack('B', tile['src_x'])
+            data += tile['unknown_2']
+            data += pack('B', tile['src_y'])
+            data += tile['unknown_3']
+            data += pack('B', tile['src_x2'])
+            data += tile['unknown_4']
+            data += pack('B', tile['src_y2'])
+            data += tile['unknown_5']
+            data += pack('H', tile['width'])
+            data += pack('H', tile['height'])
+            data += pack('B', tile['palette_ID'])
+            data += tile['unknown_6']
+            data += pack('H', tile['ID'])
+            data += pack('B', tile['param'])
+            data += pack('B', tile['state'])
+            data += pack('B', tile['blending'])
+            data += tile['unknown_7']
+            data += pack('B', tile['type_trans'])
+            data += tile['unknown_8']
+            data += pack('B', tile['texture_id'])
+            data += tile['unknown_9']
+            data += pack('B', tile['texture_id2'])
+            data += tile['unknown_10']
+            data += pack('B', tile['depth'])
+            data += tile['unknown_11']
+            data += pack('I', tile['ID_big'])
+            data += pack('I', int(tile['src_x'] / 16 * 625000))
+            data += pack('I', int(tile['src_y'] / 16 * 625000))
+            data += 2 * NULL_BYTE
+        data += 2 * NULL_BYTE
+
+        # write layer 2
+        if len(self.back['layer_2']) == 0:
+            data += pack('B', 0) # False
+        else:
+            data += pack('B', 1) # True
+            data += pack('H', self.back['layer_2']['width'])
+            data += pack('H', self.back['layer_2']['height'])
+            data += pack('H', len(self.back['layer_2']['tiles']))
+            data += self.back['layer_2']['unknown']
+            data += 2 * NULL_BYTE
+            for tile in self.back['layer_2']['tiles']:
+                data += 2 * NULL_BYTE
+                data += pack('h', tile['dst_x'])
+                data += pack('h', tile['dst_y'])
+                data += tile['unknown_1']
+                data += pack('B', tile['src_x'])
+                data += tile['unknown_2']
+                data += pack('B', tile['src_y'])
+                data += tile['unknown_3']
+                data += pack('B', tile['src_x2'])
+                data += tile['unknown_4']
+                data += pack('B', tile['src_y2'])
+                data += tile['unknown_5']
+                data += pack('H', tile['width'])
+                data += pack('H', tile['height'])
+                data += pack('B', tile['palette_ID'])
+                data += tile['unknown_6']
+                data += pack('H', tile['ID'])
+                data += pack('B', tile['param'])
+                data += pack('B', tile['state'])
+                data += pack('B', tile['blending'])
+                data += tile['unknown_7']
+                data += pack('B', tile['type_trans'])
+                data += tile['unknown_8']
+                data += pack('B', tile['texture_id'])
+                data += tile['unknown_9']
+                data += pack('B', tile['texture_id2'])
+                data += tile['unknown_10']
+                data += pack('B', tile['depth'])
+                data += tile['unknown_11']
+                data += pack('I', tile['ID_big'])
+                data += pack('I', int(tile['src_x'] / 16 * 625000))
+                data += pack('I', int(tile['src_y'] / 16 * 625000))
+                data += 2 * NULL_BYTE
+            data += 2 * NULL_BYTE
+
+        # write layer 3
+        if len(self.back['layer_3']) == 0:
+            data += pack('B', 0) # False
+        else:
+            data += pack('B', 1) # True
+            data += pack('H', self.back['layer_3']['width'])
+            data += pack('H', self.back['layer_3']['height'])
+            data += pack('H', len(self.back['layer_3']['tiles']))
+            data += self.back['layer_3']['unknown']
+            data += 2 * NULL_BYTE
+            for tile in self.back['layer_3']['tiles']:
+                data += 2 * NULL_BYTE
+                data += pack('h', tile['dst_x'])
+                data += pack('h', tile['dst_y'])
+                data += tile['unknown_1']
+                data += pack('B', tile['src_x'])
+                data += tile['unknown_2']
+                data += pack('B', tile['src_y'])
+                data += tile['unknown_3']
+                data += pack('B', tile['src_x2'])
+                data += tile['unknown_4']
+                data += pack('B', tile['src_y2'])
+                data += tile['unknown_5']
+                data += pack('H', tile['width'])
+                data += pack('H', tile['height'])
+                data += pack('B', tile['palette_ID'])
+                data += tile['unknown_6']
+                data += pack('H', tile['ID'])
+                data += pack('B', tile['param'])
+                data += pack('B', tile['state'])
+                data += pack('B', tile['blending'])
+                data += tile['unknown_7']
+                data += pack('B', tile['type_trans'])
+                data += tile['unknown_8']
+                data += pack('B', tile['texture_id'])
+                data += tile['unknown_9']
+                data += pack('B', tile['texture_id2'])
+                data += tile['unknown_10']
+                data += pack('B', tile['depth'])
+                data += tile['unknown_11']
+                data += pack('I', tile['ID_big'])
+                data += pack('I', int(tile['src_x'] / 16 * 625000))
+                data += pack('I', int(tile['src_y'] / 16 * 625000))
+                data += 2 * NULL_BYTE
+            data += 2 * NULL_BYTE
+
+        # write layer 4
+        if len(self.back['layer_4']) == 0:
+            data += pack('B', 0) # False
+        else:
+            data += pack('B', 1) # True
+            data += pack('H', self.back['layer_4']['width'])
+            data += pack('H', self.back['layer_4']['height'])
+            data += pack('H', len(self.back['layer_4']['tiles']))
+            data += self.back['layer_4']['unknown']
+            data += 2 * NULL_BYTE
+            for tile in self.back['layer_4']['tiles']:
+                data += 2 * NULL_BYTE
+                data += pack('h', tile['dst_x'])
+                data += pack('h', tile['dst_y'])
+                data += tile['unknown_1']
+                data += pack('B', tile['src_x'])
+                data += tile['unknown_2']
+                data += pack('B', tile['src_y'])
+                data += tile['unknown_3']
+                data += pack('B', tile['src_x2'])
+                data += tile['unknown_4']
+                data += pack('B', tile['src_y2'])
+                data += tile['unknown_5']
+                data += pack('H', tile['width'])
+                data += pack('H', tile['height'])
+                data += pack('B', tile['palette_ID'])
+                data += tile['unknown_6']
+                data += pack('H', tile['ID'])
+                data += pack('B', tile['param'])
+                data += pack('B', tile['state'])
+                data += pack('B', tile['blending'])
+                data += tile['unknown_7']
+                data += pack('B', tile['type_trans'])
+                data += tile['unknown_8']
+                data += pack('B', tile['texture_id'])
+                data += tile['unknown_9']
+                data += pack('B', tile['texture_id2'])
+                data += tile['unknown_10']
+                data += pack('B', tile['depth'])
+                data += tile['unknown_11']
+                data += pack('I', tile['ID_big'])
+                data += pack('I', int(tile['src_x'] / 16 * 625000))
+                data += pack('I', int(tile['src_y'] / 16 * 625000))
+                data += 2 * NULL_BYTE
+            data += 2 * NULL_BYTE
+
+        # write textures
+        data += SECTION9_TEX_TITLE.encode()
+        for tex in self.textures:
+            if tex is None:
+                data += pack('H', 0) # False
+            else:
+                data += pack('H', 1) # True
+                data += pack('H', tex['size'])
+                data += pack('H', tex['depth'])
+                data += tex['data']
+
+        # write end of file
+        data += EOF_END_STRING.encode()
+        data += EOF_FILE_TERMINATOR.encode()
+        return data
 
 class FieldFile:
     '''Field File class'''
@@ -1246,4 +1467,39 @@ class FieldFile:
         self.encounter = Encounter(data[starts[6]+SIZE['SECTION-LENGTH']:starts[7]])
         self.triggers = Triggers(data[starts[7]+SIZE['SECTION-LENGTH']:starts[8]])
         self.background = Background(data[starts[8]+SIZE['SECTION-LENGTH']:])
-        return
+
+    def get_bytes(self, lzss_compress=False):
+        '''Return the bytes encoding this Field file
+
+        Args:
+            ``lzss_compress`` (``bool``): ``True`` to LZSS-compress the data before returning, otherwise ``False`` to return the uncompressed data
+
+        Returns:
+            ``bytes``: The data encoding this Field file
+        '''
+        # convert all sections to bytes first
+        section_bytes = [
+            self.field_script.get_bytes(),
+            self.camera_matrix.get_bytes(),
+            self.model_loader.get_bytes(),
+            self.palette.get_bytes(),
+            self.walkmesh.get_bytes(),
+            self.tile_map.get_bytes(),
+            self.encounter.get_bytes(),
+            self.triggers.get_bytes(),
+            self.background.get_bytes(),
+        ]
+
+        # merge into output
+        data = bytearray()
+        data += NULL_BYTE*SIZE['HEADER_BLANK']
+        data += pack('I', len(SECTION_NAME))
+        start_ind = len(data) + SIZE['HEADER_SECTION-START']*len(SECTION_NAME)
+        for sec in section_bytes:
+            data += pack('I', start_ind); start_ind += len(sec) + SIZE['HEADER_SECTION-START']
+        for sec in section_bytes:
+            data += pack('I', len(sec)); data += sec
+        if lzss_compress:
+            return compress_lzss(data)
+        else:
+            return data
