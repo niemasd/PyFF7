@@ -30,11 +30,6 @@ SECTION2_VECTOR_DIV = 4096.
 SECTION2_NUM_DIMENSIONS = 3
 SECTION3_NUM_LIGHTS = 3
 SECTION3_NUM_DIMENSIONS = 3
-SECTION4_COLOR_MASK = 0b11111
-SECTION4_COLOR_A_SHIFT = 15 # A = Alpha = Transparency
-SECTION4_COLOR_B_SHIFT = 10 # B = Blue
-SECTION4_COLOR_G_SHIFT = 5  # G = Green
-SECTION4_COLOR_R_SHIFT = 0  # R = Red
 SECTION5_NUM_VERTICES_PER_SECTOR = 3 # Sectors are triangles, which have 3 vertices
 SECTION6_SPRITE_TP_BLEND_ZZ_MASK         = 0b1111111000000000
 SECTION6_SPRITE_TP_BLEND_DEPH_MASK       = 0b0000000110000000
@@ -70,11 +65,6 @@ SECTION8_NUM_SHOWN_ARROWS = 12
 SECTION8_NUM_ARROWS = 12
 SECTION9_PAL_TITLE = "PALETTE"
 SECTION9_PAL_NUM_COLORS = 6
-SECTION9_PAL_COLOR_MASK = 0b11111
-SECTION9_PAL_COLOR_A_SHIFT = 15 # A = Alpha = Transparency
-SECTION9_PAL_COLOR_B_SHIFT = 10 # B = Blue
-SECTION9_PAL_COLOR_G_SHIFT = 5  # G = Green
-SECTION9_PAL_COLOR_R_SHIFT = 0  # R = Red
 SECTION9_BACK_TITLE = "BACK"
 SECTION9_TEX_TITLE = "TEXTURE"
 SECTION9_TEX_MAX_NUM = 42
@@ -339,6 +329,33 @@ SIZE['SECTION2-ENTRY'] = len(SECTION2_AXES)*SECTION2_NUM_DIMENSIONS*SIZE['SECTIO
 ERROR_INVALID_FIELD_FILE = "Invalid Field file"
 ERROR_SECTION2_CAM_VEC_Z_DUP_MISMATCH = "Duplicate z-axis vector dimension 3 value does not match"
 ERROR_SECTION5_SLICE_NOT_IMPLEMENTED = "The ability to slice indices in a Walkmesh has not yet been implemented"
+
+# colors are ABBBBBGG GGGRRRRR (where A = Alpha Mask, B = Blue, G = Green, and R = Red)
+COLOR_MASK   = 0b11111000
+COLOR_MASK_A = 0b00000001
+COLOR_CONVERT_A = lambda x: 255*((x >> 15) & COLOR_MASK_A)
+COLOR_CONVERT_B = lambda x: (x >> 7) & COLOR_MASK
+COLOR_CONVERT_G = lambda x: (x >> 2) & COLOR_MASK
+COLOR_CONVERT_R = lambda x: (x << 3) & COLOR_MASK
+COLOR_REVERSE_A = lambda x: (int(x/255) & COLOR_MASK_A) << 15
+COLOR_REVERSE_B = lambda x: (x & COLOR_MASK) << 7
+COLOR_REVERSE_G = lambda x: (x & COLOR_MASK) << 2
+COLOR_REVERSE_R = lambda x: (x & COLOR_MASK) >> 3
+
+def color_to_rgba(color):
+    '''Convert a Field color to an RGBA tuple
+
+    Args:
+        ``color`` (``int``): The Field color to convert (2 bytes)
+
+    Returns:
+        ``tuple`` of ``int``: The resulting RGBA tuple
+    '''
+    return [COLOR_CONVERT_R(color), COLOR_CONVERT_G(color), COLOR_CONVERT_B(color), COLOR_CONVERT_A(color)]
+
+def rgba_to_color(rgba):
+    r,g,b,a = rgba
+    return COLOR_REVERSE_R(r) | COLOR_REVERSE_G(g) | COLOR_REVERSE_B(b) | COLOR_REVERSE_A(a)
 
 def instruction_size(code, offset):
     '''Find the size of the instruction at the given offset in a script code block
@@ -655,13 +672,9 @@ class Palette:
         num_pages = unpack('H', data[ind:ind+SIZE['SECTION4-HEADER_NUM-PAGES']])[0]; ind += SIZE['SECTION4-HEADER_NUM-PAGES']
         while ind < len(data):
             color = unpack('H', data[ind:ind+SIZE['SECTION4_COLOR']])[0]; ind += SIZE['SECTION4_COLOR']
-            color_r = (color >> SECTION4_COLOR_R_SHIFT) & SECTION4_COLOR_MASK
-            color_g = (color >> SECTION4_COLOR_G_SHIFT) & SECTION4_COLOR_MASK
-            color_b = (color >> SECTION4_COLOR_B_SHIFT) & SECTION4_COLOR_MASK
-            color_a = (color >> SECTION4_COLOR_A_SHIFT) & SECTION4_COLOR_MASK
             if len(self.color_pages) == 0 or len(self.color_pages[-1]) == colors_per_page:
                 self.color_pages.append(list())
-            self.color_pages[-1].append([color_r, color_g, color_b, color_a]) # I read them as ABGR, but I like saving them as RGBA
+            self.color_pages[-1].append(color_to_rgba(color)) # I read them as ABGR, but I like saving them as RGBA
 
     def __eq__(self, other):
         return isinstance(other,Palette) and self.palX == other.palX and self.palY == other.palY and self.colors_per_page == other.colors_per_page and self.colors == other.colors
@@ -688,7 +701,7 @@ class Palette:
         data += pack('H', self.get_num_color_pages())
         for p in self.color_pages:
             for c in p:
-                data += pack('H', (c[0] << SECTION4_COLOR_R_SHIFT) | (c[1] << SECTION4_COLOR_G_SHIFT) | (c[2] << SECTION4_COLOR_B_SHIFT) | (c[3] << SECTION4_COLOR_A_SHIFT))
+                data += pack('H', rgba_to_color(c))
         data = pack('I', SIZE['SECTION4-HEADER_LENGTH']+len(data)) + data
         return data
 
@@ -977,11 +990,7 @@ class Background:
         self.palette['colors'] = list()
         for _ in range(SECTION9_PAL_NUM_COLORS):
             color = unpack('H', data[ind:ind+SIZE['SECTION9-PAL_COLOR']])[0]; ind += SIZE['SECTION9-PAL_COLOR']
-            color_r = (color >> SECTION9_PAL_COLOR_R_SHIFT) & SECTION9_PAL_COLOR_MASK
-            color_g = (color >> SECTION9_PAL_COLOR_G_SHIFT) & SECTION9_PAL_COLOR_MASK
-            color_b = (color >> SECTION9_PAL_COLOR_B_SHIFT) & SECTION9_PAL_COLOR_MASK
-            color_a = (color >> SECTION9_PAL_COLOR_A_SHIFT) & SECTION9_PAL_COLOR_MASK
-            self.palette['colors'].append([color_r, color_g, color_b, color_a]) # I read them as ABGR, but I like saving them as RGBA
+            self.palette['colors'].append(color_to_rgba(color)) # I read them as ABGR, but I like saving them as RGBA
 
         # read background tiles
         self.back = dict()
@@ -1233,7 +1242,7 @@ class Background:
         data += pack('H', self.palette['width'])
         data += pack('H', self.palette['height'])
         for c in self.palette['colors']:
-            data += pack('H', (c[0] << SECTION9_PAL_COLOR_R_SHIFT) | (c[1] << SECTION9_PAL_COLOR_G_SHIFT) | (c[2] << SECTION9_PAL_COLOR_B_SHIFT) | (c[3] << SECTION9_PAL_COLOR_A_SHIFT))
+            data += pack('H', rgba_to_color(c))
 
         # write background tiles
         data += SECTION9_BACK_TITLE.encode()
@@ -1549,10 +1558,11 @@ class FieldFile:
                     height = tile['height']
                 for dx in range(0, width):
                     for dy in range(0, height):
+                        img_x = tile['dst_x']+dx+center_x; img_y = tile['dst_y']+dy+center_y
                         color_ind = raw[(tile['src_y']+dy)*256 + tile['src_x'] + dx]
                         color_raw = color_page[color_ind]
-                        img_x = tile['dst_x']+dx+center_x; img_y = tile['dst_y']+dy+center_y
                         curr_color = img.getpixel((img_x,img_y))
-                        color = [min(255,curr_color[i]+(color_raw[i] << 3)) for i in range(3)]
-                        img.putpixel((img_x,img_y), tuple(color))
+                        color = [min(255,curr_color[i]+color_raw[i]) for i in range(3)]
+                        if color[:3] != [0,248,0]:
+                            img.putpixel((img_x,img_y), tuple(color))
         return img
