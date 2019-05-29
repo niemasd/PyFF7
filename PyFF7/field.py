@@ -1532,7 +1532,7 @@ class FieldFile:
         center_x = int(width/2); center_y = int(height/2)
 
         # build Pillow image
-        img = Image.new('RGB', (width,height), (0,0,0)); done = set()
+        img = Image.new('RGB', (width,height), (0,0,0))
         for k in ['layer_1', 'layer_2', 'layer_3', 'layer_4']:
             if 'tiles' not in self.background.back[k]:
                 continue
@@ -1554,5 +1554,5 @@ class FieldFile:
                         img_x = tile['dst_x']+dx+center_x; img_y = tile['dst_y']+dy+center_y
                         curr_color = img.getpixel((img_x,img_y))
                         color = [min(255,curr_color[i]+(color_raw[i] << 3)) for i in range(3)]
-                        img.putpixel((img_x,img_y), tuple(color)); done.add((img_x,img_y))
+                        img.putpixel((img_x,img_y), tuple(color))
         return img
