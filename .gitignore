@@ -12,6 +12,11 @@ examples/*
 *.tex
 *.tmd
 
+# images
+*.png
+*.jpg
+*.bmp
+
 # Swap files
 *.swp
 
