@@ -536,13 +536,6 @@ class CameraMatrix:
             if vec_z_dim_3_dup != cam['vector_z'][2]:
                 raise ValueError(ERROR_SECTION2_CAM_VEC_Z_DUP_MISMATCH)
 
-            # correct vectors (for each vector, divide all 3 dimensions by 4096 and negate 2nd and 3rd dimensions)
-            #for a in SECTION2_AXES:
-            #    for d in range(SECTION2_NUM_DIMENSIONS):
-            #        cam['vector_%s'%a][d] /= SECTION2_VECTOR_DIV # divide all vector values by 4096
-            #        if d > 0:
-            #            cam['vector_%s'%a][d] *= -1 # negate the 2nd and 3rd dimensions of each vector
-
             # read camera space positions
             cam['position_camera_space'] = list()
             for _ in range(len(SECTION2_AXES)):
@@ -1597,23 +1590,36 @@ class FieldFile:
         if width % 256 != 0 or height % 256 != 0:
             raise ValueError("Width and height of desired image must be multiples of 256")
         orig_width,orig_height = self.background.get_dimensions()
+        width_ratio = float(width)/orig_width; height_ratio = float(height)/orig_height
+        orig_layer1_width = self.background.back['layer_1']['width']; orig_layer1_height = self.background.back['layer_1']['height']
 
+        ''' # TODO Need to figure out how to fix the zooming issue
         # fix relevant values elsewhere in the Field file
         self.field_script.scale = width
-        for cam in self.camera_matrix:
-            cam['zoom'] = int(cam['zoom'] * orig_width / width)
         self.model_loader.scale = width
+        for cam in self.camera_matrix:
+            cam['zoom'] = int(cam['zoom'] / width_ratio)
         for model in self.model_loader:
             model['scale'] = width
-        self.background
-        orig_layer1_width = self.background.back['layer_1']['width']
-        orig_layer1_height = self.background.back['layer_1']['height']
+
+        # fix walkmesh
+        walkmesh_min = [min(vertex[i] for triangle in self.walkmesh.sector_pool for vertex in triangle) for i in range(3)]
+        walkmesh_max = [max(vertex[i] for triangle in self.walkmesh.sector_pool for vertex in triangle) for i in range(3)]
+        walkmesh_delta = [walkmesh_max[i] - walkmesh_min[i] for i in range(3)]
+        walkmesh_new_delta = [walkmesh_delta[i]*width_ratio for i in range(3)]
+        walkmesh_new_min = [int(walkmesh_min[i] - (walkmesh_new_delta[i]-walkmesh_delta[i])/2) for i in range(3)]
+        for triangle in self.walkmesh.sector_pool:
+            for vertex in triangle:
+                vertex[0] = int(((vertex[0]-walkmesh_min[0])/walkmesh_delta[0])*walkmesh_new_delta[0] + walkmesh_new_min[0])
+                vertex[1] = int(((vertex[1]-walkmesh_min[1])/walkmesh_delta[1])*walkmesh_new_delta[1] + walkmesh_min[1])
+                vertex[2] = int(((vertex[2]-walkmesh_min[2])/walkmesh_delta[2])*walkmesh_new_delta[2] + walkmesh_new_min[2])
+        '''
 
         # clear internal items
         self.palette.color_pages = [list()]
         for k in ['layer_2', 'layer_3', 'layer_4']:
             self.background.back[k] = dict()
-        self.background.back['layer_1'] = {'width':int(width*orig_layer1_width/orig_width), 'height':int(height*orig_layer1_height/orig_height), 'depth':1, 'tiles':list()}
+        self.background.back['layer_1'] = {'width':int(orig_layer1_width*width_ratio), 'height':int(orig_layer1_height*height_ratio), 'depth':1, 'tiles':list()}
         self.background.textures = list()
 
         # write tiles and colors
