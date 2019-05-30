@@ -1457,6 +1457,31 @@ class Background:
         data += EOF_FILE_TERMINATOR.encode()
         return data
 
+    def get_dimensions(self):
+        '''Get the width and height of the image in this Background
+
+        Returns:
+            ``int``: The width of the image
+
+            ``int``: The height of the image
+        '''
+        min_width = 0; max_width = 0
+        min_height = 0; max_height = 0
+        for k in ['layer_1', 'layer_2', 'layer_3', 'layer_4']:
+            if 'tiles' not in self.back[k]:
+                continue
+            for tile in self.back[k]['tiles']:
+                if tile['dst_x'] >= 0 and tile['dst_x'] > max_width:
+                    max_width = tile['dst_x']
+                elif tile['dst_x'] < 0 and -tile['dst_x'] > min_width:
+                    min_width = -tile['dst_x']
+                if tile['dst_y'] >= 0 and tile['dst_y'] > max_height:
+                    max_height = tile['dst_y']
+                elif tile['dst_y'] < 0 and -tile['dst_y'] > min_height:
+                    min_height = -tile['dst_y']
+        width = min_width + max_width + 16; height = min_height + max_height + 16
+        return width,height
+
 class FieldFile:
     '''Field File class'''
     def __init__(self, data):
@@ -1533,25 +1558,9 @@ class FieldFile:
         Returns:
             ``Image``: A Pillow Image object of this Field file's Background
         '''
+        # set up
         from PIL import Image
-
-        # compute image width and height
-        min_width = 0; max_width = 0
-        min_height = 0; max_height = 0
-        for k in ['layer_1', 'layer_2', 'layer_3', 'layer_4']:
-            if 'tiles' not in self.background.back[k]:
-                continue
-            for tile in self.background.back[k]['tiles']:
-                if tile['dst_x'] >= 0 and tile['dst_x'] > max_width:
-                    max_width = tile['dst_x']
-                elif tile['dst_x'] < 0 and -tile['dst_x'] > min_width:
-                    min_width = -tile['dst_x']
-                if tile['dst_y'] >= 0 and tile['dst_y'] > max_height:
-                    max_height = tile['dst_y']
-                elif tile['dst_y'] < 0 and -tile['dst_y'] > min_height:
-                    min_height = -tile['dst_y']
-        width = min_width + max_width + 16
-        height = min_height + max_height + 16
+        width,height = self.background.get_dimensions()
         center_x = int(width/2); center_y = int(height/2)
 
         # build Pillow image
@@ -1587,13 +1596,24 @@ class FieldFile:
         img = img.convert('RGB'); width,height = img.size; center_x = int(width/2); center_y = int(height/2)
         if width % 256 != 0 or height % 256 != 0:
             raise ValueError("Width and height of desired image must be multiples of 256")
+        orig_width,orig_height = self.background.get_dimensions()
+
+        # fix relevant values elsewhere in the Field file
         self.field_script.scale = width
+        for cam in self.camera_matrix:
+            cam['zoom'] = int(cam['zoom'] * width / orig_width)
+        #self.model_loader.scale = width
+        #for model in self.model_loader:
+        #    model['scale'] = width
+        self.background
+        orig_layer1_width = self.background.back['layer_1']['width']
+        orig_layer1_height = self.background.back['layer_1']['height']
 
         # clear internal items
         self.palette.color_pages = [list()]
         for k in ['layer_2', 'layer_3', 'layer_4']:
             self.background.back[k] = dict()
-        self.background.back['layer_1'] = {'width':width, 'height':height, 'depth':1, 'tiles':list()}
+        self.background.back['layer_1'] = {'width':int(width*orig_layer1_width/orig_width), 'height':int(height*orig_layer1_height/orig_height), 'depth':1, 'tiles':list()}
         self.background.textures = list()
 
         # write tiles and colors
