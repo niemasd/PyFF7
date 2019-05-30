@@ -2,6 +2,15 @@
 Niema's toolkit for playing with files from Final Fantasy VII (PC and Switch). Check out the [wiki](../../wiki) for information about Final Fantasy VII's files.
 
 ## [Field](../../wiki/Field-File-Format) Files
+* **[field_change_background.py](field_change_background.py)**
+    * *Change the background of a Field file*
+    * Usage: `python3 <input_field_file> <input_image_file> <output_field_file>`
+    * **Note:** This works perfectly for files with the same dimensions as the original, but larger images will appear zoomed-in in-game
+    * **Note:** Files must have width and height that are both multiples of 256
+* **[field_extract_background.py](field_extract_background.py)**
+    * *Extract the background from a Field file*
+    * Usage: `python3 <input_field_file> <output_image_file>`
+    * **Note:** This seems to be buggy
 * **[field_info.py](field_info.py)**
     * *Read the information of a Field file*
     * Usage: `python3 field_info.py <input_field_file>`
