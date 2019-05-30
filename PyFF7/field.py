@@ -1572,3 +1572,103 @@ class FieldFile:
                             continue
                         img.putpixel((img_x,img_y), tuple(color))
         return img
+
+    def change_bg_image(self, img):
+        '''Change this TEX file's image
+
+        Args:
+            ``img`` (``Image``): The image to set this Field file's background to
+        '''
+        from PIL import Image
+
+        # set things up
+        if isinstance(img,str):
+            img = Image.open(img)
+        img = img.convert('RGB'); width,height = img.size; center_x = int(width/2); center_y = int(height/2)
+        if width % 256 != 0 or height % 256 != 0:
+            raise ValueError("Width and height of desired image must be multiples of 256")
+        self.field_script.scale = width
+
+        # clear internal items
+        self.palette.color_pages = [list()]
+        for k in ['layer_2', 'layer_3', 'layer_4']:
+            self.background.back[k] = dict()
+        self.background.back['layer_1'] = {'width':width, 'height':height, 'depth':1, 'tiles':list()}
+        self.background.textures = list()
+
+        # write tiles and colors
+        color_to_pages = dict() # map each color to a set of all pages it appears in
+        color_to_page_ind = [dict()] # for each page, map each color to its index in the page
+
+        # for each texture page (each is 256x256):
+        for tex_page_corner_x in range(0, width-255, 256):
+            for tex_page_corner_y in range(0, height-255, 256):
+                tex = {'size':0, 'depth':1, 'data':bytearray()}
+                tex_id = int(width/256)*int(tex_page_corner_y/256) + int(tex_page_corner_x/256)
+                coords_to_data = dict()
+
+                # for each background tile (each is 16x16):
+                for tile_corner_x in range(tex_page_corner_x, tex_page_corner_x+256, 16):
+                    for tile_corner_y in range(tex_page_corner_y, tex_page_corner_y+256, 16):
+                        tile = {
+                            'dst_x': tile_corner_x - center_x,
+                            'dst_y': tile_corner_y - center_y,
+                            'src_x': tile_corner_x - tex_page_corner_x,
+                            'src_y': tile_corner_y - tex_page_corner_y,
+                            'texture_id': tex_id,
+                            'depth': 1,
+                            'width': 16,
+                            'height': 16,
+                            'src_x2': 0,
+                            'src_y2': 0,
+                            'ID': 4095,
+                            'param': 0,
+                            'state': 0,
+                            'blending': 0,
+                            'type_trans': 0,
+                            'texture_id2': 0,
+                            'ID_big': 0,
+                            'unknown_1': 4*NULL_BYTE, 'unknown_2': NULL_BYTE, 'unknown_3': NULL_BYTE, 'unknown_4': NULL_BYTE, 'unknown_5': NULL_BYTE, 'unknown_6': NULL_BYTE, 'unknown_7': NULL_BYTE, 'unknown_8': NULL_BYTE, 'unknown_9': NULL_BYTE, 'unknown_10': NULL_BYTE, 'unknown_11': NULL_BYTE,
+                        }
+                        
+                        # find the colors in this tile
+                        colors = [[tuple(color_convert_bit(list(img.getpixel((x,y)))+[1], 8, 5)) for y in range(tile_corner_y, tile_corner_y+16)] for x in range(tile_corner_x, tile_corner_x+16)]
+                        unique_colors = {c for row in colors for c in row}
+                        for c in unique_colors:
+                            if c not in color_to_pages:
+                                color_to_pages[c] = set()
+
+                        # find the best page (or make a new one if no page can fit all the colors)
+                        need_to_add = {i:len(unique_colors) for i in range(len(self.palette.color_pages))}
+                        for c in unique_colors:
+                            for page in color_to_pages[c]:
+                                need_to_add[page] -= 1
+                        pages_sorted = sorted(need_to_add.keys(), key=lambda x: need_to_add[x]+len(self.palette.color_pages[x]))
+                        best_page = pages_sorted[0]
+                        if need_to_add[best_page]+len(self.palette.color_pages[best_page]) > 256: # no color page can fit all of them, so make a new page
+                            best_page = len(self.palette.color_pages); self.palette.color_pages.append(list()); color_to_page_ind.append(dict())
+                        for c in unique_colors:
+                            color_to_pages[c].add(best_page)
+                            if c not in color_to_page_ind[best_page]:
+                                color_to_page_ind[best_page][c] = len(self.palette.color_pages[best_page]); self.palette.color_pages[best_page].append(c)
+                        tile['palette_ID'] = best_page # now all colors are on 1 page
+                        self.background.back['layer_1']['tiles'].append(tile)
+
+                        # for each pixel:
+                        for x in range(tile_corner_x, tile_corner_x+16):
+                            for y in range(tile_corner_y, tile_corner_y+16):
+                                color = colors[x-tile_corner_x][y-tile_corner_y]
+                                coords_to_data[(x,y)] = color_to_page_ind[best_page][color]
+
+                # write the color palette indices into the texture
+                for x in range(tex_page_corner_x, tex_page_corner_x+256):
+                    for y in range(tex_page_corner_y, tex_page_corner_y+256):
+                        tex['data'] += pack('B', coords_to_data[(x,y)])
+                self.background.textures.append(tex)
+
+        # finalize things
+        while len(self.background.textures) < SECTION9_TEX_MAX_NUM: # background textures section needs to be filled to specific length
+            self.background.textures.append(None)
+        for i in range(len(self.palette.color_pages)):
+            while len(self.palette.color_pages[i]) < 256: # fill up the color pages
+                self.palette.color_pages[i].append((0,0,0,1))
