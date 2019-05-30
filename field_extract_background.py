@@ -13,4 +13,6 @@ if __name__ == "__main__":
         print(USAGE); exit(1)
     if isdir(argv[2]) or isfile(argv[2]):
         raise ValueError("ERROR: Specified output directory exists: %s" % argv[2])
+    print("Input File: %s" % argv[1])
+    print("Output File: %s" % argv[2])
     FieldFile(argv[1]).get_bg_image().save(argv[2])

@@ -13,6 +13,9 @@ if __name__ == "__main__":
         print(USAGE); exit(1)
     if isdir(argv[3]) or isfile(argv[3]):
         raise ValueError("ERROR: Specified output file exists: %s" % argv[3])
+    print("Input Field File: %s" % argv[1])
+    print("Input Image File: %s" % argv[2])
+    print("Output Field File: %s" % argv[3])
     ff = FieldFile(argv[1])
     ff.change_bg_image(argv[2])
     data = ff.get_bytes()
