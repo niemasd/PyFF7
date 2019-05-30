@@ -338,19 +338,23 @@ COLOR_SHIFT_B = 10
 COLOR_SHIFT_G =  5
 COLOR_SHIFT_R =  0
 
-def color_5bit_to_8bit(color):
-    '''Convert a 5-bit color into an 8-bit color
+def color_convert_bit(color,x,y):
+    '''Convert an x-bit color into an y-bit color
 
     Args:
-        ``color`` (``tuple`` of ``int``): The 5-bit color to convert
+        ``color`` (``tuple`` of ``int``): The x-bit color to convert
+
+        ``x`` (``int``): The bits of the original color
+
+        ``y`` (``int``): The bits of the target color
 
     Returns:
-        ``tuple of ``int``: The resulting 8-bit color
+        ``tuple of ``int``: The resulting y-bit color
     '''
     if isinstance(color,int):
-        return int(0b11111111 * color / 0b11111)
+        return int(((2**y)-1) * color / ((2**x)-1))
     else:
-        return [color_5bit_to_8bit(c) for c in color[:3]] + [color[3]]
+        return [color_convert_bit(c,x,y) for c in color[:3]] + [color[3]]
 
 def color_to_rgba(color):
     '''Convert a Field color to an RGBA tuple
@@ -1563,7 +1567,7 @@ class FieldFile:
                         img_x = tile['dst_x']+dx+center_x; img_y = tile['dst_y']+dy+center_y
                         curr_color = img.getpixel((img_x,img_y))
                         color_ind = raw[(tile['src_y']+dy)*256 + tile['src_x'] + dx]
-                        color = color_5bit_to_8bit(color_page[color_ind])[:3]
+                        color = color_convert_bit(color_page[color_ind],5,8)[:3]
                         if color == [0,255,0] or color == [0,0,0]:
                             continue
                         img.putpixel((img_x,img_y), tuple(color))
