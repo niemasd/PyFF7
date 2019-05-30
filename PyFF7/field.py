@@ -1601,8 +1601,8 @@ class FieldFile:
         color_to_page_ind = [dict()] # for each page, map each color to its index in the page
 
         # for each texture page (each is 256x256):
-        for tex_page_corner_x in range(0, width-255, 256):
-            for tex_page_corner_y in range(0, height-255, 256):
+        for tex_page_corner_y in range(0, height-255, 256):
+            for tex_page_corner_x in range(0, width-255, 256):
                 tex = {'size':0, 'depth':1, 'data':bytearray()}
                 tex_id = int(width/256)*int(tex_page_corner_y/256) + int(tex_page_corner_x/256)
                 coords_to_data = dict()
@@ -1661,8 +1661,8 @@ class FieldFile:
                                 coords_to_data[(x,y)] = color_to_page_ind[best_page][color]
 
                 # write the color palette indices into the texture
-                for x in range(tex_page_corner_x, tex_page_corner_x+256):
-                    for y in range(tex_page_corner_y, tex_page_corner_y+256):
+                for y in range(tex_page_corner_y, tex_page_corner_y+256):
+                    for x in range(tex_page_corner_x, tex_page_corner_x+256):
                         tex['data'] += pack('B', coords_to_data[(x,y)])
                 self.background.textures.append(tex)
 
