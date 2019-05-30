@@ -1601,10 +1601,10 @@ class FieldFile:
         # fix relevant values elsewhere in the Field file
         self.field_script.scale = width
         for cam in self.camera_matrix:
-            cam['zoom'] = int(cam['zoom'] * width / orig_width)
-        #self.model_loader.scale = width
-        #for model in self.model_loader:
-        #    model['scale'] = width
+            cam['zoom'] = int(cam['zoom'] * orig_width / width)
+        self.model_loader.scale = width
+        for model in self.model_loader:
+            model['scale'] = width
         self.background
         orig_layer1_width = self.background.back['layer_1']['width']
         orig_layer1_height = self.background.back['layer_1']['height']
