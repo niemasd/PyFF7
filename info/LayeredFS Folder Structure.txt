@@ -1,0 +1,483 @@
+/romfs
+├── be_loc
+│   ├── be_loc_en.xml
+│   ├── be_loc_fr.xml
+│   ├── be_loc_ge.xml
+│   ├── be_loc_it.xml
+│   ├── be_loc_ja.xml
+│   ├── be_loc_sp.xml
+│   └── save
+│       ├── be_loc_en.xml
+│       ├── be_loc_fr.xml
+│       ├── be_loc_ge.xml
+│       ├── be_loc_it.xml
+│       ├── be_loc_ja.xml
+│       └── be_loc_sp.xml
+├── ff7
+│   ├── font
+│   │   ├── TBGoPro_Regular.fnt
+│   │   └── TBGoPro_Regular_0.png
+│   ├── resources
+│   │   └── ff7_1.02
+│   │       ├── ff7_en
+│   │       └── ff7_ja
+│   ├── shaders
+│   │   ├── 2dpositioncolor_vv.glsl
+│   │   ├── 2dpositioncolortex_vv.glsl
+│   │   ├── 2xsal_depth_p.glsl
+│   │   ├── 2xsal_p.glsl
+│   │   ├── 2xsal_vv.glsl
+│   │   ├── color_p.glsl
+│   │   ├── colortex_p.glsl
+│   │   ├── depthtex_p.glsl
+│   │   ├── fxaa2_vv.glsl
+│   │   ├── fxaanv5_p.glsl
+│   │   ├── hq4x_p.glsl
+│   │   ├── hq4x_vv.glsl
+│   │   ├── lmain_vv.glsl
+│   │   ├── merge_p.glsl
+│   │   ├── mergeforeground_p.glsl
+│   │   ├── text_p.glsl
+│   │   ├── tlmain_vv.glsl
+│   │   └── video_p.glsl
+│   └── workingdir
+│       ├── data
+│       │   ├── battle
+│       │   │   ├── battle.lgp
+│       │   │   ├── enemy012.dat
+│       │   │   ├── enemy331.dat
+│       │   │   ├── kage.dat
+│       │   │   ├── magic.lgp
+│       │   │   ├── mark.dat
+│       │   │   ├── rain7.tex
+│       │   │   ├── seffect1.tex
+│       │   │   ├── seffect2.tex
+│       │   │   ├── seffect3.tex
+│       │   │   ├── sky_a.lmd
+│       │   │   ├── sky_b.ply
+│       │   │   ├── sky_c.lmd
+│       │   │   ├── sky_d.ply
+│       │   │   └── stage57.dat
+│       │   ├── cd
+│       │   │   ├── cr_as.lgp
+│       │   │   ├── cr_fr.lgp
+│       │   │   ├── cr_gm.lgp
+│       │   │   ├── cr_sp.lgp
+│       │   │   ├── cr_us.lgp
+│       │   │   ├── disc_fr.lgp
+│       │   │   ├── disc_gm.lgp
+│       │   │   ├── disc_sp.lgp
+│       │   │   ├── disc_us.lgp
+│       │   │   └── moviecam.lgp
+│       │   ├── field
+│       │   │   ├── char.lgp
+│       │   │   ├── fflevel.lgp
+│       │   │   ├── flevel.lgp
+│       │   │   ├── gflevel.lgp
+│       │   │   ├── jfleve.lgp
+│       │   │   └── sflevel.lgp
+│       │   ├── lang-de
+│       │   │   ├── battle
+│       │   │   │   ├── camdat0.bin
+│       │   │   │   ├── camdat1.bin
+│       │   │   │   ├── camdat2.bin
+│       │   │   │   ├── co.bin
+│       │   │   │   └── scene.bin
+│       │   │   ├── kernel
+│       │   │   │   ├── kernel.bin
+│       │   │   │   ├── kernel2.bin
+│       │   │   │   └── window.bin
+│       │   │   └── movies
+│       │   │       ├── ending2.mp4
+│       │   │       └── jenova_e.mp4
+│       │   ├── lang-en
+│       │   │   ├── battle
+│       │   │   │   ├── camdat0.bin
+│       │   │   │   ├── camdat1.bin
+│       │   │   │   ├── camdat2.bin
+│       │   │   │   ├── co.bin
+│       │   │   │   └── scene.bin
+│       │   │   ├── kernel
+│       │   │   │   ├── kernel.bin
+│       │   │   │   ├── kernel2.bin
+│       │   │   │   └── window.bin
+│       │   │   └── movies
+│       │   │       ├── ending2.mp4
+│       │   │       └── jenova_e.mp4
+│       │   ├── lang-es
+│       │   │   ├── battle
+│       │   │   │   ├── camdat0.bin
+│       │   │   │   ├── camdat1.bin
+│       │   │   │   ├── camdat2.bin
+│       │   │   │   ├── co.bin
+│       │   │   │   └── scene.bin
+│       │   │   ├── kernel
+│       │   │   │   ├── kernel.bin
+│       │   │   │   ├── kernel2.bin
+│       │   │   │   └── window.bin
+│       │   │   └── movies
+│       │   │       ├── ending2.mp4
+│       │   │       └── jenova_e.mp4
+│       │   ├── lang-fr
+│       │   │   ├── battle
+│       │   │   │   ├── camdat0.bin
+│       │   │   │   ├── camdat1.bin
+│       │   │   │   ├── camdat2.bin
+│       │   │   │   ├── co.bin
+│       │   │   │   └── scene.bin
+│       │   │   ├── kernel
+│       │   │   │   ├── kernel.bin
+│       │   │   │   ├── kernel2.bin
+│       │   │   │   └── window.bin
+│       │   │   └── movies
+│       │   │       ├── ending2.mp4
+│       │   │       └── jenova_e.mp4
+│       │   ├── lang-ja
+│       │   │   ├── battle
+│       │   │   │   ├── camdat0.bin
+│       │   │   │   ├── camdat1.bin
+│       │   │   │   ├── camdat2.bin
+│       │   │   │   ├── co.bin
+│       │   │   │   └── scene.bin
+│       │   │   ├── kernel
+│       │   │   │   ├── kernel.bin
+│       │   │   │   ├── kernel2.bin
+│       │   │   │   └── window.bin
+│       │   │   └── movies
+│       │   │       ├── ending2.mp4
+│       │   │       └── jenova_e.mp4
+│       │   ├── menu
+│       │   │   ├── menu_fr.lgp
+│       │   │   ├── menu_gm.lgp
+│       │   │   ├── menu_ja.lgp
+│       │   │   ├── menu_sp.lgp
+│       │   │   └── menu_us.lgp
+│       │   ├── midi
+│       │   │   ├── awe.lgp
+│       │   │   ├── midi.lgp
+│       │   │   ├── sf2
+│       │   │   │   ├── ff7.sf2
+│       │   │   │   ├── ff7m.sf2
+│       │   │   │   ├── ff7s.sf2
+│       │   │   │   └── lb2.sf2
+│       │   │   ├── xg.lgp
+│       │   │   └── ygm.lgp
+│       │   ├── minigame
+│       │   │   ├── chocobo.lgp
+│       │   │   ├── coaster.lgp
+│       │   │   ├── condor.lgp
+│       │   │   ├── condorj.lgp
+│       │   │   ├── data
+│       │   │   │   ├── dunit00.tex
+│       │   │   │   ├── dunit00a.tex
+│       │   │   │   ├── dunit00b.tex
+│       │   │   │   ├── dunit00c.tex
+│       │   │   │   ├── dunit00d.tex
+│       │   │   │   ├── dunit01.tex
+│       │   │   │   ├── dunit01a.tex
+│       │   │   │   ├── dunit01b.tex
+│       │   │   │   ├── dunit01c.tex
+│       │   │   │   ├── eft00.tex
+│       │   │   │   ├── eunit00a.tex
+│       │   │   │   ├── eunit00b.tex
+│       │   │   │   ├── eunit00c.tex
+│       │   │   │   ├── eunit00d.tex
+│       │   │   │   ├── eunit01.tex
+│       │   │   │   ├── eunit01a.tex
+│       │   │   │   ├── eunit01b.tex
+│       │   │   │   ├── eunit01c.tex
+│       │   │   │   ├── eunit01d.tex
+│       │   │   │   ├── funit00.tex
+│       │   │   │   ├── funit00a.tex
+│       │   │   │   ├── funit00b.tex
+│       │   │   │   ├── funit00c.tex
+│       │   │   │   ├── funit00d.tex
+│       │   │   │   ├── funit01.tex
+│       │   │   │   ├── funit01a.tex
+│       │   │   │   ├── funit01b.tex
+│       │   │   │   ├── funit01c.tex
+│       │   │   │   ├── sunit00.tex
+│       │   │   │   ├── sunit00a.tex
+│       │   │   │   ├── sunit00b.tex
+│       │   │   │   ├── sunit00c.tex
+│       │   │   │   ├── sunit00d.tex
+│       │   │   │   ├── sunit01.tex
+│       │   │   │   ├── sunit01a.tex
+│       │   │   │   ├── sunit01b.tex
+│       │   │   │   └── sunit01c.tex
+│       │   │   ├── fchocobo.lgp
+│       │   │   ├── fcondor.lgp
+│       │   │   ├── fsub.lgp
+│       │   │   ├── gchocobo.lgp
+│       │   │   ├── gcondor.lgp
+│       │   │   ├── gsub.lgp
+│       │   │   ├── high-fr.lgp
+│       │   │   ├── high-ge.lgp
+│       │   │   ├── high-sp.lgp
+│       │   │   ├── high-us.lgp
+│       │   │   ├── schocobo.lgp
+│       │   │   ├── scondor.lgp
+│       │   │   ├── snowboard-fr.lgp
+│       │   │   ├── snowboard-ge.lgp
+│       │   │   ├── snowboard-sp.lgp
+│       │   │   ├── snowboard-us.lgp
+│       │   │   ├── ssub.lgp
+│       │   │   └── sub.lgp
+│       │   ├── movies
+│       │   │   ├── biglight.mp4
+│       │   │   ├── bike.mp4
+│       │   │   ├── biskdead.mp4
+│       │   │   ├── boogdemo.mp4
+│       │   │   ├── boogdown.mp4
+│       │   │   ├── boogstar.mp4
+│       │   │   ├── boogup.mp4
+│       │   │   ├── brgnvl.mp4
+│       │   │   ├── c_scene1.mp4
+│       │   │   ├── c_scene2.mp4
+│       │   │   ├── c_scene3.mp4
+│       │   │   ├── canon.mp4
+│       │   │   ├── canonh1p.mp4
+│       │   │   ├── canonh3f.mp4
+│       │   │   ├── canonht0.mp4
+│       │   │   ├── canonht1.mp4
+│       │   │   ├── canonht2.mp4
+│       │   │   ├── canonon.mp4
+│       │   │   ├── car_1209.mp4
+│       │   │   ├── credits.mp4
+│       │   │   ├── d_ropego.mp4
+│       │   │   ├── d_ropein.mp4
+│       │   │   ├── dumcrush.mp4
+│       │   │   ├── earithdd.mp4
+│       │   │   ├── ending1.mp4
+│       │   │   ├── ending3.mp4
+│       │   │   ├── explode.mp4
+│       │   │   ├── fallpl.mp4
+│       │   │   ├── fcar.mp4
+│       │   │   ├── feelwin0.mp4
+│       │   │   ├── feelwin1.mp4
+│       │   │   ├── fship2.mp4
+│       │   │   ├── funeral.mp4
+│       │   │   ├── gelnica.mp4
+│       │   │   ├── gold1.mp4
+│       │   │   ├── gold2.mp4
+│       │   │   ├── gold3.mp4
+│       │   │   ├── gold4.mp4
+│       │   │   ├── gold5.mp4
+│       │   │   ├── gold6.mp4
+│       │   │   ├── gold7.mp4
+│       │   │   ├── gold7_2.mp4
+│       │   │   ├── greatpit.mp4
+│       │   │   ├── hiwind0.mp4
+│       │   │   ├── hwindfly.mp4
+│       │   │   ├── hwindjet.mp4
+│       │   │   ├── jairofal.mp4
+│       │   │   ├── jairofly.mp4
+│       │   │   ├── junair_d.mp4
+│       │   │   ├── junair_u.mp4
+│       │   │   ├── junelego.mp4
+│       │   │   ├── junelein.mp4
+│       │   │   ├── junin_go.mp4
+│       │   │   ├── junin_in.mp4
+│       │   │   ├── junon.mp4
+│       │   │   ├── junsea.mp4
+│       │   │   ├── last4_2.mp4
+│       │   │   ├── last4_3.mp4
+│       │   │   ├── last4_4.mp4
+│       │   │   ├── lastflor.mp4
+│       │   │   ├── lastmap.mp4
+│       │   │   ├── loslake1.mp4
+│       │   │   ├── lslmv.mp4
+│       │   │   ├── mainplr.mp4
+│       │   │   ├── meteofix.mp4
+│       │   │   ├── meteosky.mp4
+│       │   │   ├── mk8.mp4
+│       │   │   ├── mkup.mp4
+│       │   │   ├── monitor.mp4
+│       │   │   ├── mtcrl.mp4
+│       │   │   ├── mtnvl.mp4
+│       │   │   ├── mtnvl2.mp4
+│       │   │   ├── nivlsfs.mp4
+│       │   │   ├── northmk.mp4
+│       │   │   ├── nrcrl.mp4
+│       │   │   ├── nrcrl_b.mp4
+│       │   │   ├── nvlmk.mp4
+│       │   │   ├── ontrain.mp4
+│       │   │   ├── opening.mp4
+│       │   │   ├── parashot.mp4
+│       │   │   ├── phoenix.mp4
+│       │   │   ├── plrexp.mp4
+│       │   │   ├── rckethit0.mp4
+│       │   │   ├── rckethit1.mp4
+│       │   │   ├── rcketoff.mp4
+│       │   │   ├── rcktfail.mp4
+│       │   │   ├── setogake.mp4
+│       │   │   ├── smk.mp4
+│       │   │   ├── southmk.mp4
+│       │   │   ├── u_ropego.mp4
+│       │   │   ├── u_ropein.mp4
+│       │   │   ├── weapon0.mp4
+│       │   │   ├── weapon1.mp4
+│       │   │   ├── weapon2.mp4
+│       │   │   ├── weapon3.mp4
+│       │   │   ├── weapon4.mp4
+│       │   │   ├── weapon5.mp4
+│       │   │   ├── wh2e2.mp4
+│       │   │   ├── white2.mp4
+│       │   │   ├── zmind01.mp4
+│       │   │   ├── zmind02.mp4
+│       │   │   └── zmind03.mp4
+│       │   ├── music
+│       │   │   ├── heart.wav
+│       │   │   ├── music.idx
+│       │   │   ├── sato.wav
+│       │   │   ├── sensui.wav
+│       │   │   └── wind.wav
+│       │   ├── music_ogg
+│       │   │   ├── aseri.ogg
+│       │   │   ├── aseri2.ogg
+│       │   │   ├── ayasi.ogg
+│       │   │   ├── barret.ogg
+│       │   │   ├── bat.ogg
+│       │   │   ├── bee.ogg
+│       │   │   ├── bokujo.ogg
+│       │   │   ├── boo.ogg
+│       │   │   ├── cannon.ogg
+│       │   │   ├── canyon.ogg
+│       │   │   ├── cephiros.ogg
+│       │   │   ├── chase.ogg
+│       │   │   ├── chu.ogg
+│       │   │   ├── chu2.ogg
+│       │   │   ├── cinco.ogg
+│       │   │   ├── cintro.ogg
+│       │   │   ├── comical.ogg
+│       │   │   ├── condor.ogg
+│       │   │   ├── corel.ogg
+│       │   │   ├── corneo.ogg
+│       │   │   ├── costa.ogg
+│       │   │   ├── crlost.ogg
+│       │   │   ├── crwin.ogg
+│       │   │   ├── date.ogg
+│       │   │   ├── dokubo.ogg
+│       │   │   ├── dun2.ogg
+│       │   │   ├── earis.ogg
+│       │   │   ├── earislo.ogg
+│       │   │   ├── elec.ogg
+│       │   │   ├── fan2.ogg
+│       │   │   ├── fanfare.ogg
+│       │   │   ├── fiddle.ogg
+│       │   │   ├── fin.ogg
+│       │   │   ├── geki.ogg
+│       │   │   ├── gold1.ogg
+│       │   │   ├── guitar2.ogg
+│       │   │   ├── gun.ogg
+│       │   │   ├── hen.ogg
+│       │   │   ├── hiku.ogg
+│       │   │   ├── horror.ogg
+│       │   │   ├── iseki.ogg
+│       │   │   ├── jukai.ogg
+│       │   │   ├── junon.ogg
+│       │   │   ├── jyro.ogg
+│       │   │   ├── ketc.ogg
+│       │   │   ├── kita.ogg
+│       │   │   ├── kurai.ogg
+│       │   │   ├── lb1.ogg
+│       │   │   ├── lb2.ogg
+│       │   │   ├── ld.ogg
+│       │   │   ├── makoro.ogg
+│       │   │   ├── mati.ogg
+│       │   │   ├── mekyu.ogg
+│       │   │   ├── mogu.ogg
+│       │   │   ├── mura1.ogg
+│       │   │   ├── nointro.ogg
+│       │   │   ├── oa.ogg
+│       │   │   ├── ob.ogg
+│       │   │   ├── odds.ogg
+│       │   │   ├── over2.ogg
+│       │   │   ├── parade.ogg
+│       │   │   ├── pj.ogg
+│       │   │   ├── pre.ogg
+│       │   │   ├── red.ogg
+│       │   │   ├── rhythm.ogg
+│       │   │   ├── riku.ogg
+│       │   │   ├── ro.ogg
+│       │   │   ├── rocket.ogg
+│       │   │   ├── roll.ogg
+│       │   │   ├── rukei.ogg
+│       │   │   ├── sadbar.ogg
+│       │   │   ├── sadsid.ogg
+│       │   │   ├── sea.ogg
+│       │   │   ├── seto.ogg
+│       │   │   ├── si.ogg
+│       │   │   ├── sid2.ogg
+│       │   │   ├── sido.ogg
+│       │   │   ├── siera.ogg
+│       │   │   ├── sinra.ogg
+│       │   │   ├── sinraslo.ogg
+│       │   │   ├── snow.ogg
+│       │   │   ├── ta.ogg
+│       │   │   ├── tb.ogg
+│       │   │   ├── tender.ogg
+│       │   │   ├── tifa.ogg
+│       │   │   ├── tm.ogg
+│       │   │   ├── utai.ogg
+│       │   │   ├── vincent.ogg
+│       │   │   ├── walz.ogg
+│       │   │   ├── weapon.ogg
+│       │   │   ├── yado.ogg
+│       │   │   ├── yufi.ogg
+│       │   │   ├── yufi2.ogg
+│       │   │   └── yume.ogg
+│       │   ├── png
+│       │   │   ├── bigmsgbox.png
+│       │   │   ├── black.png
+│       │   │   ├── buttons.png
+│       │   │   ├── cheat_battleboost.png
+│       │   │   ├── cheat_nobattle.png
+│       │   │   ├── cheat_skipdialog.png
+│       │   │   ├── cheat_speedx3.png
+│       │   │   ├── cheat_speedx3_off.png
+│       │   │   ├── doingSomethingIcon.png
+│       │   │   ├── howtoplay_keyassign_de.png
+│       │   │   ├── howtoplay_keyassign_en.png
+│       │   │   ├── howtoplay_keyassign_es.png
+│       │   │   ├── howtoplay_keyassign_fr.png
+│       │   │   ├── howtoplay_keyassign_ja.png
+│       │   │   ├── msgbox.png
+│       │   │   ├── press_start.png
+│       │   │   ├── square-enix-logo.png
+│       │   │   ├── submarinemenu_de.png
+│       │   │   ├── submarinemenu_en.png
+│       │   │   ├── submarinemenu_es.png
+│       │   │   ├── submarinemenu_fr.png
+│       │   │   ├── submarinemenu_ja.png
+│       │   │   └── warning.png
+│       │   ├── sound
+│       │   │   ├── audio.dat
+│       │   │   └── audio.fmt
+│       │   └── wm
+│       │       ├── wm0.bot
+│       │       ├── wm0.map
+│       │       ├── wm2.bot
+│       │       ├── wm2.map
+│       │       ├── wm3.bot
+│       │       ├── wm3.map
+│       │       ├── world_fr.lgp
+│       │       ├── world_gm.lgp
+│       │       ├── world_ja.lgp
+│       │       ├── world_sp.lgp
+│       │       └── world_us.lgp
+│       ├── ff7input.cfg
+│       └── save
+│           ├── save00.ff7
+│           ├── save01.ff7
+│           ├── save02.ff7
+│           ├── save03.ff7
+│           ├── save04.ff7
+│           ├── save05.ff7
+│           ├── save06.ff7
+│           ├── save07.ff7
+│           ├── save08.ff7
+│           └── save09.ff7
+└── legal_info_0100a5b00bdc6000_5c0d.zip
+
+44 directories, 436 files
