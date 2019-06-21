@@ -6,7 +6,7 @@ Niema Moshiri 2019
 from PIL import Image
 from struct import pack,unpack
 
-# size of various items in an TEX archive (in bytes)
+# size of various items in an TEX file (in bytes)
 SIZE = {
     # Header
     'HEADER_VERSION':                      4, # Header: Version (must be 1)
