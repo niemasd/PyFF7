@@ -154,7 +154,12 @@ class TMD:
             # load object data
             obj['vertices'] = [parse_vertex(data[vertex_list_start+i*SIZE['VERTEX'] : vertex_list_start+(i+1)*SIZE['VERTEX']]) for i in range(num_vertices)]
             obj['normals'] = [parse_normal(data[normal_list_start+i*SIZE['NORMAL'] : normal_list_start+(i+1)*SIZE['NORMAL']]) for i in range(num_normals)]
-            obj['primitives'] = [parse_primitive(data[primitive_list_start+i*SIZE['PRIMITIVE'] : primitive_list_start+(i+1)*SIZE['PRIMITIVE']]) for i in range(num_primitives)]
+            primitive_info = [parse_primitive(data[primitive_list_start+i*SIZE['PRIMITIVE'] : primitive_list_start+(i+1)*SIZE['PRIMITIVE']]) for i in range(num_primitives)]
+
+            # helper function to build primitive from primitive info
+            def build_primitive(p):
+                return None # TODO IMPLEMENT
+            obj['primitives'] = [build_primitive(p) for p in primitive_info]
 
             # add to object list
             self.objects.append(obj)
