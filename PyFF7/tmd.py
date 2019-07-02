@@ -12,6 +12,10 @@ PRIMITIVE_FLAG_LGT_MASK = 0b00000001
 PRIMITIVE_FLAG_GRD_SHIFT = 2
 PRIMITIVE_FLAG_FCE_SHIFT = 1
 PRIMITIVE_FLAG_LGT_SHIFT = 0
+PRIMITIVE_MODE_CODE_MASK   = 0b11100000
+PRIMITIVE_MODE_OPTION_MASK = 0b00011111
+PRIMITIVE_MODE_CODE_SHIFT = 5
+PRIMITIVE_MODE_OPTION_SHIFT = 0
 
 # size of various items in an TMD file (in bytes)
 SIZE = {
@@ -154,8 +158,6 @@ class TMD:
 
             # add to object list
             self.objects.append(obj)
-        print(self.objects[0])
-        exit()
 
     def get_bytes(self):
         '''Return the bytes encoding this TMD file

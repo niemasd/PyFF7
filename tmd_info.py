@@ -19,5 +19,20 @@ if __name__ == "__main__":
         for i,obj in enumerate(tmd.objects):
             print("* Object %d" % (i+1))
             print("  * Scale: %d" % obj['scale'])
+            print("  * Number of Vertices: %d" % len(obj['vertices']))
+            for j,v in enumerate(obj['vertices']):
+                print("    * Vertex %d: %s" % ((j+1), str(tuple(v)).replace(' ','')))
+            print("  * Number of Normals: %d" % len(obj['normals']))
+            for j,v in enumerate(obj['normals']):
+                print("    * Normal %d: %s" % ((j+1), str(tuple(v)).replace(' ','')))
+            print("  * Number of Primitives: %d" % len(obj['primitives']))
+            for j,p in enumerate(obj['primitives']):
+                print("    * Primitive %d" % (j+1))
+                print("      * Size of 2D Drawing Primitives (olen): %d" % p['olen'])
+                print("      * Size of Packet Data Section (ilen): %d" % p['ilen'])
+                print("      * GRD Flag: %d" % p['flags']['GRD'])
+                print("      * FCE Flag: %d" % p['flags']['FCE'])
+                print("      * LGT Flag: %d" % p['flags']['LGT'])
+                print("      * Mode: %s" % p['mode'])
     except BrokenPipeError:
         stderr.close()
