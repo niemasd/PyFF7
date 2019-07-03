@@ -26,8 +26,8 @@ if __name__ == "__main__":
             for j,v in enumerate(obj['normals']):
                 print("    * Normal %d: %s" % ((j+1), str(tuple(v)).replace(' ','')))
             print("  * Number of Primitives: %d" % len(obj['primitives']))
-            #for j,p in enumerate(obj['primitives']):
-            #    print("    * Primitive %d" % (j+1))
+            for j,p in enumerate(obj['primitives']):
+                print("    * Primitive %d: %s" % ((j+1),str(p)))
             #    print("      * Size of 2D Drawing Primitives (olen): %d" % p['olen'])
             #    print("      * Size of Packet Data Section (ilen): %d" % p['ilen'])
             #    print("      * GRD Flag: %d" % p['flags']['GRD'])
