@@ -54,9 +54,6 @@ Niema's toolkit for playing with files from Final Fantasy VII (PC and Switch). C
     * Usage: `python3 tex_info.py <input_tex_file>`
 
 ## [TMD](../../wiki/TMD-Format) Files
-* **[tmd_extract.py](tmd_extract.py)**
-    * *Extract the objects inside of a TMD file*
-    * Usage: `python3 tmd_extract.py <input_tmd_file> <output_directory>`
 * **[tmd_info.py](tmd_info.py)**
     * *Read the information of a TMD file*
     * Usage: `python3 tmd_info.py <input_tmd_file>`

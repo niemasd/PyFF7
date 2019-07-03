@@ -3,7 +3,6 @@
 Functions and classes for handling TMD files
 Niema Moshiri 2019
 '''
-from . import MAX_SIGNED_SHORT
 from struct import pack,unpack
 
 # constants
