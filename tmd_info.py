@@ -15,8 +15,8 @@ if __name__ == "__main__":
         print("Information")
         print("* File Name: %s" % argv[1])
         print("* Version: %d" % tmd.version)
-        print("* Number of Objects: %d" % len(tmd.objects))
-        for i,obj in enumerate(tmd.objects):
+        print("* Number of Objects: %d" % len(tmd))
+        for i,obj in enumerate(tmd):
             print("* Object %d" % (i+1))
             print("  * Scale: %d" % obj['scale'])
             print("  * Number of Vertices: %d" % len(obj['vertices']))

@@ -3,6 +3,7 @@
 Functions and classes for handling TMD files
 Niema Moshiri 2019
 '''
+from . import MAX_SIGNED_SHORT
 from struct import pack,unpack
 
 # constants
@@ -756,12 +757,26 @@ class TMD:
             # add to object list
             self.objects.append(obj)
 
+    def __len__(self):
+        '''Return the number of objects in this TMD
+
+        Returns:
+            ``int``: The number of objects in this TMD
+        '''
+        return len(self.objects)
+
+    def __iter__(self):
+        '''Iterate over the objects in this TMD'''
+        for o in self.objects:
+            yield o
+
     def get_bytes(self):
         '''Return the bytes encoding this TMD file
 
         Returns:
             ``bytes``: The data encoding this TMD file
         '''
+        raise NotImplementedError
         # prepare stuff
         out = bytearray()
         return out
