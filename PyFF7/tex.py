@@ -173,10 +173,14 @@ class TEX:
 
         # read pixel data
         self.image = Image.new('RGBA', (width,height))
+        bpp_over_4 = int(bytes_per_pixel/4) # for use with Pixel Format Specification
         for y in range(height):
             for x in range(width):
                 if len(palette) == 0:
-                    raise NotImplementedError("Using the Pixel Format Specification is not yet implemented")
+                    cp = list()
+                    for _ in range(4): # BGRA format
+                        cp.append(unpack(BYTES_TO_FORMAT[bpp_over_4], data[ind:ind+bpp_over_4])[0]); ind += bpp_over_4
+                    color = (cp[2], cp[1], cp[0], cp[3])
                 else:
                     color = palette[unpack(BYTES_TO_FORMAT[bytes_per_pixel], data[ind:ind+bytes_per_pixel])[0]]; ind += bytes_per_pixel
                 self.image.putpixel((x,y), color)
@@ -296,3 +300,11 @@ class TEX:
             ``int``: The number of unique RGBA colors in this TEX file's image
         '''
         return len(set(self.image.getdata()))
+
+    def unique_colors(self):
+        '''Return a set containing the unique RGBA colors in this TEX file's image
+
+        Returns:
+            ``set`` of ``tuple`` of ``int``: The unique RGBA colors in this TEX file's image
+        '''
+        return set(self.image.getdata())
