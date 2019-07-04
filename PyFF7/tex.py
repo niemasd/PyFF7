@@ -258,6 +258,11 @@ class TEX:
             for x in range(self.get_width()):
                 out += pack(pal_index_format, col_to_ind[self.image.getpixel((x,y))])
         return out
+    
+    def __iter__(self):
+        '''Iterate over this image's colors'''
+        for c in self.image.getdata():
+            yield c
 
     def get_height(self):
         '''Get the image height of this TEX file

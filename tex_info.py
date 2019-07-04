@@ -16,6 +16,9 @@ if __name__ == "__main__":
         print("* File Name: %s" % argv[1])
         print("* Image Width: %d" % tex.get_width())
         print("* Image Height: %d" % tex.get_height())
-        print("* RGBA Colors: %d" % tex.num_colors())
+        print("* Unique RGBA Colors: %d" % tex.num_colors())
+        print("* Color List:")
+        for c in tex:
+            print("  * (%d,%d,%d,%d)" % c)
     except BrokenPipeError:
         stderr.close()
