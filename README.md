@@ -43,12 +43,12 @@ Niema's toolkit for playing with files from Final Fantasy VII (PC and Switch). C
     * Usage: `python3 npk_unpack.py <input_npk_file> <output_directory>`
 
 ## [TEX](../../wiki/TEX-Format) Files
-* **[tex_change_image.py](tex_change_image.py)**
-    * *Change the image inside of a TEX file*
-    * Usage: `python3 tex_change_image.py <input_tex_file> <input_image_file> <output_tex_file>`
 * **[tex_convert.py](tex_convert.py)**
     * *Convert a TEX file to a regular image file*
     * Usage: `python3 tex_convert.py <input_tex_file> <output_image_file>`
+* **[tex_create.py](tex_create.py)**
+    * *Create a TEX file from an image file*
+    * Usage: `python3 tex_create.py <input_image_file> <output_tex_file>`
 * **[tex_info.py](tex_info.py)**
     * *Read the information of a TEX file*
     * Usage: `python3 tex_info.py <input_tex_file>`
