@@ -67,8 +67,12 @@ SIZE = {
     'HEADER-2_RUNTIME-DATA3':              4, # Header 2: Runtime Data 3
     'HEADER-2_UNKNOWN6':                   4, # Header 2: Unknown 6
     'HEADER-2_PALETTE-INDEX':              4, # Header 2: Palette Index (Runtime Data)
-    'HEADER-2_RUNTIME-DATA4':              8, # Header 2: Runtime Data 4
-    'HEADER-2_UNKNOWN7':                  16, # Header 2: Unknown 7
+    'HEADER-2_RUNTIME-DATA4':              4, # Header 2: Runtime Data 4
+    'HEADER-2_RUNTIME-DATA5':              4, # Header 2: Runtime Data 5
+    'HEADER-2_UNKNOWN7':                   4, # Header 2: Unknown 7
+    'HEADER-2_UNKNOWN8':                   4, # Header 2: Unknown 8
+    'HEADER-2_UNKNOWN9':                   4, # Header 2: Unknown 9
+    'HEADER-2_UNKNOWN10':                  4, # Header 2: Unknown 10
 
     # Palette Entry (BGRA)
     'PALETTE-ENTRY_BLUE':                  1, # Palette Entry: Blue
@@ -95,8 +99,8 @@ DEFAULT_RUNTIME_DATA1 = b'd\xf9G\x02'
 DEFAULT_RUNTIME_DATA2 = NULL_BYTE*4
 DEFAULT_RUNTIME_DATA3 = b'\x04\x00\x00\x00'
 DEFAULT_RUNTIME_DATA4 = b'\xa8\xc6P\x02\x00\x00\x00\x00' # this one sometimes changes
-DEFAULT_UNKNOWN1 = NULL_BYTE*4
-DEFAULT_UNKNOWN2 = NULL_BYTE*4
+DEFAULT_UNKNOWN1 = 0
+DEFAULT_UNKNOWN2 = 1
 DEFAULT_UNKNOWN3 = b'\x03\x00\x00\x00'
 DEFAULT_UNKNOWN4 = NULL_BYTE*4
 DEFAULT_UNKNOWN5 = NULL_BYTE*4
@@ -187,7 +191,11 @@ class TEX:
         unknown6 = data[ind:ind+SIZE['HEADER-2_UNKNOWN6']]; ind += SIZE['HEADER-2_UNKNOWN6']
         palette_index = unpack('I', data[ind:ind+SIZE['HEADER-2_PALETTE-INDEX']])[0]; ind += SIZE['HEADER-2_PALETTE-INDEX']
         runtime_data4 = data[ind:ind+SIZE['HEADER-2_RUNTIME-DATA4']]; ind += SIZE['HEADER-2_RUNTIME-DATA4']
+        runtime_data5 = data[ind:ind+SIZE['HEADER-2_RUNTIME-DATA5']]; ind += SIZE['HEADER-2_RUNTIME-DATA5']
         unknown7 = data[ind:ind+SIZE['HEADER-2_UNKNOWN7']]; ind += SIZE['HEADER-2_UNKNOWN7']
+        unknown8 = data[ind:ind+SIZE['HEADER-2_UNKNOWN8']]; ind += SIZE['HEADER-2_UNKNOWN8']
+        unknown9 = data[ind:ind+SIZE['HEADER-2_UNKNOWN9']]; ind += SIZE['HEADER-2_UNKNOWN9']
+        unknown10 = data[ind:ind+SIZE['HEADER-2_UNKNOWN10']]; ind += SIZE['HEADER-2_UNKNOWN10']
 
         # read palette data
         palette = list()
@@ -233,59 +241,81 @@ class TEX:
         color_key_flag = int(len({a for r,g,b,a in pal}-{255}) != 0)
 
         # add header
-        out += pack('I', DEFAULT_VERSION)
-        out += DEFAULT_UNKNOWN1
-        out += pack('I', color_key_flag)
-        out += DEFAULT_UNKNOWN2
-        out += DEFAULT_UNKNOWN3
-        out += pack('I', DEFAULT_MIN_BITS_PER_COLOR)
-        out += pack('I', DEFAULT_MAX_BITS_PER_COLOR)
-        out += pack('I', DEFAULT_MIN_ALPHA_BITS)
-        out += pack('I', DEFAULT_MAX_ALPHA_BITS)
-        out += pack('I', DEFAULT_MIN_BITS_PER_PIXEL)
-        out += pack('I', DEFAULT_MAX_BITS_PER_PIXEL)
-        out += DEFAULT_UNKNOWN4
-        out += pack('I', 1)        # number of palettes
-        out += pack('I', len(pal)) # number of colors per palette
-        out += pack('I', DEFAULT_BIT_DEPTH)
-        out += pack('I', self.get_width())
-        out += pack('I', self.get_height())
-        out += pack('I', bytes_per_pixel*self.get_width())
-        out += DEFAULT_UNKNOWN5
-        out += pack('I', 1)        # palette flag
-        out += pack('I', BITS_PER_BYTE)
-        out += pack('I', DEFAULT_INDEXED_TO_8_BIT_FLAG)
-        out += pack('I', len(pal)) # palette size
-        out += pack('I', len(pal)) # number of colors per palette (duplicate)
-        out += DEFAULT_RUNTIME_DATA1
-        out += pack('I', bits_per_pixel)
-        out += pack('I', bytes_per_pixel)
+        out += pack('I', 1) # version
+        out += pack('I', 0) # unknown 1
+        out += pack('I', 1) # color key flag
+        out += pack('I', 1) # unknown 2
+        out += pack('I', 5) # unknown 3
+        out += pack('I', 32) # min bits per color
+        out += pack('I', 8) # max bits per color
+        out += pack('I', 0) # min alpha bits
+        out += pack('I', 8) # max alpha bits
+        out += pack('I', 8) # min bits per pixel
+        out += pack('I', 32) # max bits per pixel
+        out += pack('I', 0) # unknown 4
+        out += pack('I', 0)        # number of palettes
+        out += pack('I', 0) # number of colors per palette
+        out += pack('I', 32) # bit depth
+        out += pack('I', self.get_width()) # width
+        out += pack('I', self.get_height()) # height
+        out += pack('I', 4*self.get_width()) # bytes per row (bytes per pixel * width)
+        out += pack('I', 0) # unknown 5
+        out += pack('I', 0)        # palette flag
+        out += pack('I', 0) # bits per index
+        out += pack('I', 0) # indexed to 8 bit flag
+        out += pack('I', 0) # palette size
+        out += pack('I', 0) # number of colors per palette (duplicate)
+        out += pack('I', 19752016) # runtime data 1
+        out += pack('I', 32) # bits per pixel
+        out += pack('I', 4) # bytes per pixel
 
-        # this segment is all 0s in the FF7 battle files I tested
-        for _ in range(20):
-            out += pack('I', 0)
+        # add pixel format
+        for _ in range(4):
+            out += pack('I', 8) # num [red,green,blue,alpha] bits
+        out += pack('I', 0x00FF0000) # red bit mask
+        out += pack('I', 0xFFFFFF00) # green bit mask
+        out += pack('I', 0x000000FF) # blue bit mask
+        out += pack('I', 0xFF000000) # alpha bit mask
+        out += pack('I', 16) # red shift
+        out += pack('I', 8) # green shift
+        out += pack('I', 0) # blue shift
+        out += pack('I', 24) # alpha shift
+        for _ in range(4):
+            out += pack('I', 8) # 8 - num [red,gree,blue,alpha] bits
+        for _ in range(4):
+            out += pack('I', 255) # [red,gree,blue,alpha] max
 
         # add header 2
         out += pack('I', 0)        # color key array flag
-        out += DEFAULT_RUNTIME_DATA2
-        out += pack('I', DEFAULT_REFERENCE_ALPHA)
-        out += DEFAULT_RUNTIME_DATA3
-        out += DEFAULT_UNKNOWN6
-        out += pack('I', DEFAULT_PALETTE_INDEX)
-        out += DEFAULT_RUNTIME_DATA4
-        out += DEFAULT_UNKNOWN7
+        out += pack('I', 0) # runtime data 2
+        out += pack('I', 255) # default reference alpha
+        out += pack('I', 4) # runtime data 3
+        out += pack('I', 1) # unknown 6
+        out += pack('I', 0) # palette index
+        out += pack('I', 34546076) # runtime data 4
+        out += pack('I', 0) # runtime data 5
+        out += pack('I', 0) # unknown 7
+        out += pack('I', 480) # unknown 8
+        out += pack('I', 320) # unknown 9
+        out += pack('I', 512) # unknown 10
 
         # add palette data
-        for r,g,b,a in pal:
-            out += pack('B', b)
-            out += pack('B', g)
-            out += pack('B', r)
-            out += pack('B', a)
+        #fora r,g,b,a in pal:
+        #    out += pack('B', b)
+        #    out += pack('B', g)
+        #    out += pack('B', r)
+        #    out += pack('B', a)
 
         # add pixels
+        #for y in range(self.get_height()):
+        #    for x in range(self.get_width()):
+        #        out += pack(pal_index_format, col_to_ind[self.image.getpixel((x,y))])
         for y in range(self.get_height()):
             for x in range(self.get_width()):
-                out += pack(pal_index_format, col_to_ind[self.image.getpixel((x,y))])
+                r,g,b,a = self.image.getpixel((x,y))
+                for v in [b,g,r,a]:
+                    out += pack('B', v)
+                
         return out
     
     def __iter__(self):
