@@ -83,29 +83,7 @@ SIZE = {
 SIZE['HEADER'] = sum(SIZE[k] for k in SIZE if k.startswith('HEADER_')) # 108
 
 # other defaults
-BITS_PER_BYTE = 8
 BYTES_TO_FORMAT = {1:'B', 2:'H', 4:'I'}
-DEFAULT_BIT_DEPTH = 8
-DEFAULT_INDEXED_TO_8_BIT_FLAG = 0
-DEFAULT_MAX_ALPHA_BITS = 8
-DEFAULT_MAX_BITS_PER_COLOR = 8
-DEFAULT_MAX_BITS_PER_PIXEL = 32
-DEFAULT_MIN_ALPHA_BITS = 0
-DEFAULT_MIN_BITS_PER_COLOR = 4
-DEFAULT_MIN_BITS_PER_PIXEL = 8
-DEFAULT_PALETTE_INDEX = 0
-DEFAULT_REFERENCE_ALPHA = 255
-DEFAULT_RUNTIME_DATA1 = b'd\xf9G\x02'
-DEFAULT_RUNTIME_DATA2 = NULL_BYTE*4
-DEFAULT_RUNTIME_DATA3 = b'\x04\x00\x00\x00'
-DEFAULT_RUNTIME_DATA4 = b'\xa8\xc6P\x02\x00\x00\x00\x00' # this one sometimes changes
-DEFAULT_UNKNOWN1 = 0
-DEFAULT_UNKNOWN2 = 1
-DEFAULT_UNKNOWN3 = b'\x03\x00\x00\x00'
-DEFAULT_UNKNOWN4 = NULL_BYTE*4
-DEFAULT_UNKNOWN5 = NULL_BYTE*4
-DEFAULT_UNKNOWN6 = b'\x01\x00\x00\x00'
-DEFAULT_UNKNOWN7 = b'@\x01\x00\x00\xf8\x01\x00\x00\x00\x02\x00\x00\x00\x02\x00\x00'
 DEFAULT_VERSION = 1
 
 # error messages
@@ -227,95 +205,73 @@ class TEX:
         Returns:
             ``bytes``: The data encoding this TEX file
         '''
-        # prepare stuff
         out = bytearray()
-        pal = list(set(self.image.getdata()))
-        col_to_ind = {c:i for i,c in enumerate(pal)}
-        if len(pal) <= 256:
-            bytes_per_pixel = 1; pal_index_format = 'B'
-        elif len(pal) <= 65536:
-            bytes_per_pixel = 2; pal_index_format = 'H'
-        else:
-            bytes_per_pixel = 4; pal_index_format = 'I'
-        bits_per_pixel = BITS_PER_BYTE * bytes_per_pixel
-        color_key_flag = int(len({a for r,g,b,a in pal}-{255}) != 0)
 
         # add header
-        out += pack('I', 1) # version
-        out += pack('I', 0) # unknown 1
-        out += pack('I', 1) # color key flag
-        out += pack('I', 1) # unknown 2
-        out += pack('I', 5) # unknown 3
-        out += pack('I', 32) # min bits per color
-        out += pack('I', 8) # max bits per color
-        out += pack('I', 0) # min alpha bits
-        out += pack('I', 8) # max alpha bits
-        out += pack('I', 8) # min bits per pixel
-        out += pack('I', 32) # max bits per pixel
-        out += pack('I', 0) # unknown 4
-        out += pack('I', 0)        # number of palettes
-        out += pack('I', 0) # number of colors per palette
-        out += pack('I', 32) # bit depth
-        out += pack('I', self.get_width()) # width
-        out += pack('I', self.get_height()) # height
+        out += pack('I', 1)                  # version
+        out += pack('I', 0)                  # unknown 1
+        out += pack('I', 1)                  # color key flag
+        out += pack('I', 1)                  # unknown 2
+        out += pack('I', 5)                  # unknown 3
+        out += pack('I', 32)                 # min bits per color
+        out += pack('I', 8)                  # max bits per color
+        out += pack('I', 0)                  # min alpha bits
+        out += pack('I', 8)                  # max alpha bits
+        out += pack('I', 8)                  # min bits per pixel
+        out += pack('I', 32)                 # max bits per pixel
+        out += pack('I', 0)                  # unknown 4
+        out += pack('I', 0)                  # number of palettes
+        out += pack('I', 0)                  # number of colors per palette
+        out += pack('I', 32)                 # bit depth
+        out += pack('I', self.get_width())   # width
+        out += pack('I', self.get_height())  # height
         out += pack('I', 4*self.get_width()) # bytes per row (bytes per pixel * width)
-        out += pack('I', 0) # unknown 5
-        out += pack('I', 0)        # palette flag
-        out += pack('I', 0) # bits per index
-        out += pack('I', 0) # indexed to 8 bit flag
-        out += pack('I', 0) # palette size
-        out += pack('I', 0) # number of colors per palette (duplicate)
-        out += pack('I', 19752016) # runtime data 1
-        out += pack('I', 32) # bits per pixel
-        out += pack('I', 4) # bytes per pixel
+        out += pack('I', 0)                  # unknown 5
+        out += pack('I', 0)                  # palette flag
+        out += pack('I', 0)                  # bits per index
+        out += pack('I', 0)                  # indexed to 8 bit flag
+        out += pack('I', 0)                  # palette size
+        out += pack('I', 0)                  # number of colors per palette (duplicate)
+        out += pack('I', 19752016)           # runtime data 1
+        out += pack('I', 32)                 # bits per pixel
+        out += pack('I', 4)                  # bytes per pixel
 
         # add pixel format
         for _ in range(4):
-            out += pack('I', 8) # num [red,green,blue,alpha] bits
-        out += pack('I', 0x00FF0000) # red bit mask
-        out += pack('I', 0xFFFFFF00) # green bit mask
-        out += pack('I', 0x000000FF) # blue bit mask
-        out += pack('I', 0xFF000000) # alpha bit mask
-        out += pack('I', 16) # red shift
-        out += pack('I', 8) # green shift
-        out += pack('I', 0) # blue shift
-        out += pack('I', 24) # alpha shift
+            out += pack('I', 8)              # num [red,green,blue,alpha] bits
+        out += pack('I', 0x00FF0000)         # red bit mask
+        out += pack('I', 0xFFFFFF00)         # green bit mask
+        out += pack('I', 0x000000FF)         # blue bit mask
+        out += pack('I', 0xFF000000)         # alpha bit mask
+        out += pack('I', 16)                 # red shift
+        out += pack('I', 8)                  # green shift
+        out += pack('I', 0)                  # blue shift
+        out += pack('I', 24)                 # alpha shift
         for _ in range(4):
-            out += pack('I', 8) # 8 - num [red,gree,blue,alpha] bits
+            out += pack('I', 8)              # 8 - num [red,gree,blue,alpha] bits
         for _ in range(4):
-            out += pack('I', 255) # [red,gree,blue,alpha] max
+            out += pack('I', 255)            # [red,gree,blue,alpha] max
 
         # add header 2
-        out += pack('I', 0)        # color key array flag
-        out += pack('I', 0) # runtime data 2
-        out += pack('I', 255) # default reference alpha
-        out += pack('I', 4) # runtime data 3
-        out += pack('I', 1) # unknown 6
-        out += pack('I', 0) # palette index
-        out += pack('I', 34546076) # runtime data 4
-        out += pack('I', 0) # runtime data 5
-        out += pack('I', 0) # unknown 7
-        out += pack('I', 480) # unknown 8
-        out += pack('I', 320) # unknown 9
-        out += pack('I', 512) # unknown 10
-
-        # add palette data
-        #fora r,g,b,a in pal:
-        #    out += pack('B', b)
-        #    out += pack('B', g)
-        #    out += pack('B', r)
-        #    out += pack('B', a)
+        out += pack('I', 0)                  # color key array flag
+        out += pack('I', 0)                  # runtime data 2
+        out += pack('I', 255)                # default reference alpha
+        out += pack('I', 4)                  # runtime data 3
+        out += pack('I', 1)                  # unknown 6
+        out += pack('I', 0)                  # palette index
+        out += pack('I', 34546076)           # runtime data 4
+        out += pack('I', 0)                  # runtime data 5
+        out += pack('I', 0)                  # unknown 7
+        out += pack('I', 480)                # unknown 8
+        out += pack('I', 320)                # unknown 9
+        out += pack('I', 512)                # unknown 10
 
         # add pixels
-        #for y in range(self.get_height()):
-        #    for x in range(self.get_width()):
-        #        out += pack(pal_index_format, col_to_ind[self.image.getpixel((x,y))])
         for y in range(self.get_height()):
             for x in range(self.get_width()):
                 r,g,b,a = self.image.getpixel((x,y))
                 for v in [b,g,r,a]:
                     out += pack('B', v)
-                
         return out
     
     def __iter__(self):
