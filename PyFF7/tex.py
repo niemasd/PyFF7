@@ -106,77 +106,19 @@ class TEX:
         if isinstance(data,str): # if filename instead of bytes, read bytes
             with open(data,'rb') as f:
                 data = f.read()
-        ind = 0
 
-        # read header
-        version = unpack('I', data[ind:ind+SIZE['HEADER_VERSION']])[0]; ind += SIZE['HEADER_VERSION']
+        # parse header
+        version = unpack('I', data[0:0+SIZE['HEADER_VERSION']])[0]
         if version != DEFAULT_VERSION:
             raise ValueError(ERROR_INVALID_TEX_FILE)
-        unknown1 = data[ind:ind+SIZE['HEADER_VERSION']]; ind += SIZE['HEADER_VERSION']
-        color_key_flag = unpack('I', data[ind:ind+SIZE['HEADER_COLOR-KEY-FLAG']])[0]; ind += SIZE['HEADER_COLOR-KEY-FLAG']
-        unknown2 = data[ind:ind+SIZE['HEADER_UNKNOWN2']]; ind += SIZE['HEADER_UNKNOWN2']
-        unknown3 = data[ind:ind+SIZE['HEADER_UNKNOWN3']]; ind += SIZE['HEADER_UNKNOWN3']
-        min_bits_per_color = unpack('I', data[ind:ind+SIZE['HEADER_MIN-BITS-PER-COLOR']])[0]; ind += SIZE['HEADER_MIN-BITS-PER-COLOR']
-        max_bits_per_color = unpack('I', data[ind:ind+SIZE['HEADER_MAX-BITS-PER-COLOR']])[0]; ind += SIZE['HEADER_MAX-BITS-PER-COLOR']
-        min_alpha_bits = unpack('I', data[ind:ind+SIZE['HEADER_MIN-ALPHA-BITS']])[0]; ind += SIZE['HEADER_MIN-ALPHA-BITS']
-        max_alpha_bits = unpack('I', data[ind:ind+SIZE['HEADER_MAX-ALPHA-BITS']])[0]; ind += SIZE['HEADER_MAX-ALPHA-BITS']
-        min_bits_per_pixel = unpack('I', data[ind:ind+SIZE['HEADER_MIN-BITS-PER-PIXEL']])[0]; ind += SIZE['HEADER_MIN-BITS-PER-PIXEL']
-        max_bits_per_pixel = unpack('I', data[ind:ind+SIZE['HEADER_MAX-BITS-PER-PIXEL']])[0]; ind += SIZE['HEADER_MAX-BITS-PER-PIXEL']
-        unknown4 = data[ind:ind+SIZE['HEADER_UNKNOWN4']]; ind += SIZE['HEADER_UNKNOWN4']
-        num_palettes = unpack('I', data[ind:ind+SIZE['HEADER_NUM-PALETTES']])[0]; ind += SIZE['HEADER_NUM-PALETTES']
-        num_colors_per_palette = unpack('I', data[ind:ind+SIZE['HEADER_NUM-COLORS-PER-PALETTE']])[0]; ind += SIZE['HEADER_NUM-COLORS-PER-PALETTE']
-        bit_depth = unpack('I', data[ind:ind+SIZE['HEADER_BIT-DEPTH']])[0]; ind += SIZE['HEADER_BIT-DEPTH']
-        width = unpack('I', data[ind:ind+SIZE['HEADER_IMAGE-WIDTH']])[0]; ind += SIZE['HEADER_IMAGE-WIDTH']
-        height = unpack('I', data[ind:ind+SIZE['HEADER_IMAGE-HEIGHT']])[0]; ind += SIZE['HEADER_IMAGE-HEIGHT']
-        bytes_per_row = unpack('I', data[ind:ind+SIZE['HEADER_BYTES-PER-ROW']])[0]; ind += SIZE['HEADER_BYTES-PER-ROW']
-        unknown5 = data[ind:ind+SIZE['HEADER_UNKNOWN5']]; ind += SIZE['HEADER_UNKNOWN5']
-        palette_flag = unpack('I', data[ind:ind+SIZE['HEADER_PALETTE-FLAG']])[0]; ind += SIZE['HEADER_PALETTE-FLAG']
-        bits_per_index = unpack('I', data[ind:ind+SIZE['HEADER_BITS-PER-INDEX']])[0]; ind += SIZE['HEADER_BITS-PER-INDEX']
-        indexed_to_8bit_flag = unpack('I', data[ind:ind+SIZE['HEADER_INDEXED-TO-8BIT-FLAG']])[0]; ind += SIZE['HEADER_INDEXED-TO-8BIT-FLAG']
-        palette_size = unpack('I', data[ind:ind+SIZE['HEADER_PALETTE-SIZE']])[0]; ind += SIZE['HEADER_PALETTE-SIZE']
-        num_colors_per_palette_dup = unpack('I', data[ind:ind+SIZE['HEADER_NUM-COLORS-PER-PALETTE-DUP']])[0]; ind += SIZE['HEADER_NUM-COLORS-PER-PALETTE-DUP']
-        runtime_data1 = data[ind:ind+SIZE['HEADER_RUNTIME-DATA1']]; ind += SIZE['HEADER_RUNTIME-DATA1']
-        bits_per_pixel = unpack('I', data[ind:ind+SIZE['HEADER_BITS-PER-PIXEL']])[0]; ind += SIZE['HEADER_BITS-PER-PIXEL']
-        bytes_per_pixel = unpack('I', data[ind:ind+SIZE['HEADER_BYTES-PER-PIXEL']])[0]; ind += SIZE['HEADER_BYTES-PER-PIXEL']
-
-        # read pixel format
-        num_red_bits = unpack('I', data[ind:ind+SIZE['PIXEL-FORMAT_NUM-RED-BITS']])[0]; ind += SIZE['PIXEL-FORMAT_NUM-RED-BITS']
-        num_green_bits = unpack('I', data[ind:ind+SIZE['PIXEL-FORMAT_NUM-GREEN-BITS']])[0]; ind += SIZE['PIXEL-FORMAT_NUM-GREEN-BITS']
-        num_blue_bits = unpack('I', data[ind:ind+SIZE['PIXEL-FORMAT_NUM-BLUE-BITS']])[0]; ind += SIZE['PIXEL-FORMAT_NUM-BLUE-BITS']
-        num_alpha_bits = unpack('I', data[ind:ind+SIZE['PIXEL-FORMAT_NUM-ALPHA-BITS']])[0]; ind += SIZE['PIXEL-FORMAT_NUM-ALPHA-BITS']
-        red_bitmask = unpack('I', data[ind:ind+SIZE['PIXEL-FORMAT_RED-BITMASK']])[0]; ind += SIZE['PIXEL-FORMAT_RED-BITMASK']
-        green_bitmask = unpack('I', data[ind:ind+SIZE['PIXEL-FORMAT_GREEN-BITMASK']])[0]; ind += SIZE['PIXEL-FORMAT_GREEN-BITMASK']
-        blue_bitmask = unpack('I', data[ind:ind+SIZE['PIXEL-FORMAT_BLUE-BITMASK']])[0]; ind += SIZE['PIXEL-FORMAT_BLUE-BITMASK']
-        alpha_bitmask = unpack('I', data[ind:ind+SIZE['PIXEL-FORMAT_ALPHA-BITMASK']])[0]; ind += SIZE['PIXEL-FORMAT_ALPHA-BITMASK']
-        red_shift = unpack('I', data[ind:ind+SIZE['PIXEL-FORMAT_RED-SHIFT']])[0]; ind += SIZE['PIXEL-FORMAT_RED-SHIFT']
-        green_shift = unpack('I', data[ind:ind+SIZE['PIXEL-FORMAT_GREEN-SHIFT']])[0]; ind += SIZE['PIXEL-FORMAT_GREEN-SHIFT']
-        blue_shift = unpack('I', data[ind:ind+SIZE['PIXEL-FORMAT_BLUE-SHIFT']])[0]; ind += SIZE['PIXEL-FORMAT_BLUE-SHIFT']
-        alpha_shift = unpack('I', data[ind:ind+SIZE['PIXEL-FORMAT_ALPHA-SHIFT']])[0]; ind += SIZE['PIXEL-FORMAT_ALPHA-SHIFT']
-        eight_minus_num_red_bits = unpack('I', data[ind:ind+SIZE['PIXEL-FORMAT_8-MINUS-NUM-RED-BITS']])[0]; ind += SIZE['PIXEL-FORMAT_8-MINUS-NUM-RED-BITS']
-        eight_minus_num_green_bits = unpack('I', data[ind:ind+SIZE['PIXEL-FORMAT_8-MINUS-NUM-GREEN-BITS']])[0]; ind += SIZE['PIXEL-FORMAT_8-MINUS-NUM-GREEN-BITS']
-        eight_minus_num_blue_bits = unpack('I', data[ind:ind+SIZE['PIXEL-FORMAT_8-MINUS-NUM-BLUE-BITS']])[0]; ind += SIZE['PIXEL-FORMAT_8-MINUS-NUM-BLUE-BITS']
-        eight_minus_num_alpha_bits = unpack('I', data[ind:ind+SIZE['PIXEL-FORMAT_8-MINUS-NUM-ALPHA-BITS']])[0]; ind += SIZE['PIXEL-FORMAT_8-MINUS-NUM-ALPHA-BITS']
-        red_max = unpack('I', data[ind:ind+SIZE['PIXEL-FORMAT_RED-MAX']])[0]; ind += SIZE['PIXEL-FORMAT_RED-MAX']
-        green_max = unpack('I', data[ind:ind+SIZE['PIXEL-FORMAT_GREEN-MAX']])[0]; ind += SIZE['PIXEL-FORMAT_GREEN-MAX']
-        blue_max = unpack('I', data[ind:ind+SIZE['PIXEL-FORMAT_BLUE-MAX']])[0]; ind += SIZE['PIXEL-FORMAT_BLUE-MAX']
-        alpha_max = unpack('I', data[ind:ind+SIZE['PIXEL-FORMAT_ALPHA-MAX']])[0]; ind += SIZE['PIXEL-FORMAT_ALPHA-MAX']
-
-        # read header 2
-        color_key_array_flag = unpack('I', data[ind:ind+SIZE['HEADER-2_COLOR-KEY-ARRAY-FLAG']])[0]; ind += SIZE['HEADER-2_COLOR-KEY-ARRAY-FLAG']
-        runtime_data2 = data[ind:ind+SIZE['HEADER-2_RUNTIME-DATA2']]; ind += SIZE['HEADER-2_RUNTIME-DATA2']
-        reference_alpha = unpack('I', data[ind:ind+SIZE['HEADER-2_REFERENCE-ALPHA']])[0]; ind += SIZE['HEADER-2_REFERENCE-ALPHA']
-        runtime_data3 = data[ind:ind+SIZE['HEADER-2_RUNTIME-DATA3']]; ind += SIZE['HEADER-2_RUNTIME-DATA3']
-        unknown6 = data[ind:ind+SIZE['HEADER-2_UNKNOWN6']]; ind += SIZE['HEADER-2_UNKNOWN6']
-        palette_index = unpack('I', data[ind:ind+SIZE['HEADER-2_PALETTE-INDEX']])[0]; ind += SIZE['HEADER-2_PALETTE-INDEX']
-        runtime_data4 = data[ind:ind+SIZE['HEADER-2_RUNTIME-DATA4']]; ind += SIZE['HEADER-2_RUNTIME-DATA4']
-        runtime_data5 = data[ind:ind+SIZE['HEADER-2_RUNTIME-DATA5']]; ind += SIZE['HEADER-2_RUNTIME-DATA5']
-        unknown7 = data[ind:ind+SIZE['HEADER-2_UNKNOWN7']]; ind += SIZE['HEADER-2_UNKNOWN7']
-        unknown8 = data[ind:ind+SIZE['HEADER-2_UNKNOWN8']]; ind += SIZE['HEADER-2_UNKNOWN8']
-        unknown9 = data[ind:ind+SIZE['HEADER-2_UNKNOWN9']]; ind += SIZE['HEADER-2_UNKNOWN9']
-        unknown10 = data[ind:ind+SIZE['HEADER-2_UNKNOWN10']]; ind += SIZE['HEADER-2_UNKNOWN10']
+        width = unpack('I', data[60:60+SIZE['HEADER_IMAGE-WIDTH']])[0]
+        height = unpack('I', data[64:64+SIZE['HEADER_IMAGE-HEIGHT']])[0]
+        palette_flag = unpack('I', data[76:76+SIZE['HEADER_PALETTE-FLAG']])[0]
+        palette_size = unpack('I', data[88:88+SIZE['HEADER_PALETTE-SIZE']])[0]
+        bytes_per_pixel = unpack('I', data[104:104+SIZE['HEADER_BYTES-PER-PIXEL']])[0]
 
         # read palette data
-        palette = list()
+        ind = 236; palette = list()
         if palette_flag == 1:
             for _ in range(palette_size):
                 curr_blue = unpack('B', data[ind:ind+SIZE['PALETTE-ENTRY_BLUE']])[0]; ind += SIZE['PALETTE-ENTRY_BLUE']
