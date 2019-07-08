@@ -16,13 +16,20 @@ if __name__ == "__main__":
         print("* Save Type: %s" % prop['label'])
         print("* Number of Save Slots: %s" % len(sav))
         for i,s in enumerate(sav):
-            print("  * Save Slot %d:" % (i+1))
+            if s['data']['checksum'] == 0:
+                print("  * Save Slot %d: Empty" % (i+1)); continue
+            else:
+                print("  * Save Slot %d:" % (i+1))
             print("    * Checksum: 0x%x" % s['data']['checksum'])
+            print("    * Unknown 1: %d" % s['data']['unknown1'])
             print("    * Preview:")
             print("      * Lead Character's Level: %d" % s['data']['preview']['level'])
             print("      * Party: %s" % ', '.join([PORTRAIT_TO_NAME[s['data']['preview']['portrait%d'%j]] for j in [1,2,3] if s['data']['preview']['portrait%d'%j] != 255]))
             print("      * Lead Character's Name: %s" % s['data']['preview']['name'])
             print("      * Lead Character's HP: %d/%d" % (s['data']['preview']['curr_hp'], s['data']['preview']['max_hp']))
             print("      * Lead Character's MP: %d/%d" % (s['data']['preview']['curr_mp'], s['data']['preview']['max_mp']))
+            print("      * Total Gil: %d" % s['data']['preview']['gil'])
+            print("      * Playtime (seconds): %d" % s['data']['preview']['playtime'])
+            print("      * Save Location: %s" % s['data']['preview']['location'])
     except BrokenPipeError:
         stderr.close()

@@ -12,6 +12,7 @@ SAVE_SLOT_SIZE = 4340
 # start offsets of various items in a save file (in bytes, with respect to start of slot data)
 START = {
     'SLOT_CHECKSUM':          0x0000, # Save Slot: Checksum
+    'SLOT_UNKNOWN1':          0x0002, # Save Slot: Unknown 1
     'SLOT_PREVIEW-LEVEL':     0x0004, # Save Slot: Preview: Lead Character's Level
     'SLOT_PREVIEW-PORTRAIT1': 0x0005, # Save Slot: Preview: Portrait 1
     'SLOT_PREVIEW-PORTRAIT2': 0x0006, # Save Slot: Preview: Portrait 2
@@ -21,21 +22,28 @@ START = {
     'SLOT_PREVIEW-HP-MAX':    0x001A, # Save Slot: Preview: Lead Character's Maximum HP
     'SLOT_PREVIEW-MP-CURR':   0x001C, # Save Slot: Preview: Lead Character's Current MP
     'SLOT_PREVIEW-MP-MAX':    0x001E, # Save Slot: Preview: Lead Character's Maximum MP
+    'SLOT_PREVIEW-GIL':       0x0020, # Save Slot: Preview: Total Gil
+    'SLOT_PREVIEW-PLAYTIME':  0x0024, # Save Slot: Preview: Total Playtime
+    'SLOT_PREVIEW-LOCATION':  0x0028, # Save Slot: Preview: Save Location
 }
 
 # size of various items in a save file (in bytes)
 SIZE = {
     # Final Fantasy VII Save Slot
     'SLOT_CHECKSUM':          2, # Save Slot: Checksum
+    'SLOT_PREVIEW-GIL':       4, # Save Slot: Preview: Amount of Gil
     'SLOT_PREVIEW-HP-CURR':   2, # Save Slot: Preview: Lead Character's Current HP
     'SLOT_PREVIEW-HP-MAX':    2, # Save Slot: Preview: Lead Character's Maximum HP
     'SLOT_PREVIEW-LEVEL':     1, # Save Slot: Preview: Lead Character's Level
+    'SLOT_PREVIEW-LOCATION': 32, # Save Slot: Preview: Save Location
     'SLOT_PREVIEW-MP-CURR':   2, # Save Slot: Preview: Lead Character's Current MP
     'SLOT_PREVIEW-MP-MAX':    2, # Save Slot: Preview: Lead Character's Maximum MP
     'SLOT_PREVIEW-NAME':     16, # Save Slot: Preview: Lead Character's Name
+    'SLOT_PREVIEW-PLAYTIME':  4, # Save Slot: Preview: Total Playtime
     'SLOT_PREVIEW-PORTRAIT1': 1, # Save Slot: Preview: Portrait 1
     'SLOT_PREVIEW-PORTRAIT2': 1, # Save Slot: Preview: Portrait 2
     'SLOT_PREVIEW-PORTRAIT3': 1, # Save Slot: Preview: Portrait 3
+    'SLOT_UNKNOWN1':          2, # Save Slot: Unknown 1
 }
 
 # translate portrait number to character name
@@ -146,6 +154,7 @@ def parse_slot_data(data):
         raise ValueError(ERROR_INVALID_SAVE_FILE)
     out = {'preview':dict()}
     out['checksum'] = unpack('H', data[START['SLOT_CHECKSUM']:START['SLOT_CHECKSUM']+SIZE['SLOT_CHECKSUM']])[0]
+    out['unknown1'] = unpack('H', data[START['SLOT_UNKNOWN1']:START['SLOT_UNKNOWN1']+SIZE['SLOT_UNKNOWN1']])[0]
     out['preview']['level'] = unpack('B', data[START['SLOT_PREVIEW-LEVEL']:START['SLOT_PREVIEW-LEVEL']+SIZE['SLOT_PREVIEW-LEVEL']])[0]
     for i in [1,2,3]:
         out['preview']['portrait%d'%i] = unpack('B', data[START['SLOT_PREVIEW-PORTRAIT%d'%i]:START['SLOT_PREVIEW-PORTRAIT%d'%i]+SIZE['SLOT_PREVIEW-PORTRAIT%d'%i]])[0]
@@ -154,6 +163,9 @@ def parse_slot_data(data):
     out['preview']['max_hp'] = unpack('H', data[START['SLOT_PREVIEW-HP-MAX']:START['SLOT_PREVIEW-HP-MAX']+SIZE['SLOT_PREVIEW-HP-MAX']])[0]
     out['preview']['curr_mp'] = unpack('H', data[START['SLOT_PREVIEW-MP-CURR']:START['SLOT_PREVIEW-MP-CURR']+SIZE['SLOT_PREVIEW-MP-CURR']])[0]
     out['preview']['max_mp'] = unpack('H', data[START['SLOT_PREVIEW-MP-MAX']:START['SLOT_PREVIEW-MP-MAX']+SIZE['SLOT_PREVIEW-MP-MAX']])[0]
+    out['preview']['gil'] = unpack('I', data[START['SLOT_PREVIEW-GIL']:START['SLOT_PREVIEW-GIL']+SIZE['SLOT_PREVIEW-GIL']])[0]
+    out['preview']['playtime'] = unpack('I', data[START['SLOT_PREVIEW-PLAYTIME']:START['SLOT_PREVIEW-PLAYTIME']+SIZE['SLOT_PREVIEW-PLAYTIME']])[0]
+    out['preview']['location'] = decode_field_text(data[START['SLOT_PREVIEW-LOCATION']:START['SLOT_PREVIEW-LOCATION']+SIZE['SLOT_PREVIEW-LOCATION']])
     return out
 
 class Save:
