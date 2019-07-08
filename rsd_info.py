@@ -12,7 +12,6 @@ if __name__ == "__main__":
         print(USAGE); exit(1)
     rsd = RSD(argv[1])
     try:
-        print("Information")
         print("* File Name: %s" % argv[1])
         print("* ID: %s" % rsd.ID)
         print("* Polygon Mesh File (PLY): %s" % rsd.attr['PLY'])

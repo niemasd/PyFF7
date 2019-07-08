@@ -12,7 +12,6 @@ if __name__ == "__main__":
         print(USAGE); exit(1)
     npk = NPK(argv[1])
     try:
-        print("Information")
         print("* File Name: %s" % argv[1])
         print("* Number of Files: %d" % len(npk))
         for i,f in enumerate(npk):

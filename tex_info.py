@@ -12,7 +12,6 @@ if __name__ == "__main__":
         print(USAGE); exit(1)
     tex = TEX(argv[1])
     try:
-        print("Information")
         print("* File Name: %s" % argv[1])
         print("* Image Width: %d" % tex.get_width())
         print("* Image Height: %d" % tex.get_height())

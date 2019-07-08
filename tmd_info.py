@@ -12,7 +12,6 @@ if __name__ == "__main__":
         print(USAGE); exit(1)
     tmd = TMD(argv[1])
     try:
-        print("Information")
         print("* File Name: %s" % argv[1])
         print("* Version: %d" % tmd.version)
         print("* Number of Objects: %d" % len(tmd))

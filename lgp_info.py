@@ -20,7 +20,6 @@ if __name__ == "__main__":
     if lgp.num_conflicting_filenames != len(lgp.conflicting_filenames):
         raise ValueError(ERROR_TOC_CONTAB_NUM_CONFLICTS_MISMATCH)
     try:
-        print("Information")
         print("* File Name: %s" % argv[1])
         print("* File Creator: %s" % lgp.header['file_creator'])
         print("* File Terminator: %s" % lgp.terminator)
