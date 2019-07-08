@@ -42,6 +42,11 @@ Niema's toolkit for playing with files from Final Fantasy VII (PC and Switch). C
     * *Unpack an NPK archive*
     * Usage: `python3 npk_unpack.py <input_npk_file> <output_directory>`
 
+## [Save](../../wiki/Save-Format) Files
+* **[save_info.py](save_info.py)**
+    * *Read the information of a save file*
+    * Usage: `python3 save_info.py <input_save_file>
+
 ## [TEX](../../wiki/TEX-Format) Files
 * **[tex_convert.py](tex_convert.py)**
     * *Convert a TEX file to a regular image file*
