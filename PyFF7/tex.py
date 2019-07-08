@@ -141,42 +141,60 @@ class TEX:
                     color = palette[unpack(BYTES_TO_FORMAT[bytes_per_pixel], data[ind:ind+bytes_per_pixel])[0]]; ind += bytes_per_pixel
                 self.image.putpixel((x,y), color)
 
-    def get_bytes(self):
+    def get_bytes(self, bmp_mode=False):
         '''Return the bytes encoding this TEX file
+
+        Args:
+            ``bmp_mode`` (``bool``): Use the BMP mode of encoding the image. File sizes will be (much) larger, but transparency will always work. Try it if transparency is messed up in a game of interest
 
         Returns:
             ``bytes``: The data encoding this TEX file
         '''
         out = bytearray()
+        if bmp_mode:
+            bytes_per_pixel = 4; num_pal = 0; pal_len = 0; pal_flag = 0; bits_per_index = 0
+        else:
+            pal = list(set(self.image.getdata())); num_pal = 1; pal_len = len(pal); pal_flag = 1
+            col_to_ind = {c:i for i,c in enumerate(pal)}
+            if pal_len <= 256:
+                bytes_per_pixel = 1; pal_index_format = 'B'
+            elif pal_len <= 65536:
+                bytes_per_pixel = 2; pal_index_format = 'H'
+            else:
+                bytes_per_pixel = 4; pal_index_format = 'I'
+            bits_per_index = 8 * bytes_per_pixel
+        bits_per_pixel = 8 * bytes_per_pixel
+        color_key_flag = int(bmp_mode or len({a for r,g,b,a in pal}-{255}) != 0)
+        bytes_per_row = bytes_per_pixel * self.get_width()
 
         # add header
         out += pack('I', 1)                  # version
         out += pack('I', 0)                  # unknown 1
-        out += pack('I', 1)                  # color key flag
+        out += pack('I', color_key_flag)     # color key flag
         out += pack('I', 1)                  # unknown 2
         out += pack('I', 5)                  # unknown 3
-        out += pack('I', 32)                 # min bits per color
+        out += pack('I', 4)                  # min bits per color
         out += pack('I', 8)                  # max bits per color
         out += pack('I', 0)                  # min alpha bits
         out += pack('I', 8)                  # max alpha bits
         out += pack('I', 8)                  # min bits per pixel
         out += pack('I', 32)                 # max bits per pixel
         out += pack('I', 0)                  # unknown 4
-        out += pack('I', 0)                  # number of palettes
-        out += pack('I', 0)                  # number of colors per palette
+        out += pack('I', num_pal)            # number of palettes
+        out += pack('I', pal_len)            # number of colors per palette
         out += pack('I', 32)                 # bit depth
         out += pack('I', self.get_width())   # width
         out += pack('I', self.get_height())  # height
-        out += pack('I', 4*self.get_width()) # bytes per row (bytes per pixel * width)
+        out += pack('I', bytes_per_row)      # bytes per row (bytes per pixel * width)
         out += pack('I', 0)                  # unknown 5
-        out += pack('I', 0)                  # palette flag
-        out += pack('I', 0)                  # bits per index
+        out += pack('I', pal_flag)           # palette flag
+        out += pack('I', bits_per_index)     # bits per index
         out += pack('I', 0)                  # indexed to 8 bit flag
-        out += pack('I', 0)                  # palette size
-        out += pack('I', 0)                  # number of colors per palette (duplicate)
+        out += pack('I', pal_len)            # palette size
+        out += pack('I', pal_len)            # number of colors per palette (duplicate)
         out += pack('I', 19752016)           # runtime data 1
-        out += pack('I', 32)                 # bits per pixel
-        out += pack('I', 4)                  # bytes per pixel
+        out += pack('I', bits_per_pixel)     # bits per pixel
+        out += pack('I', bytes_per_pixel)    # bytes per pixel
 
         # add pixel format
         for _ in range(4):
@@ -208,12 +226,28 @@ class TEX:
         out += pack('I', 320)                # unknown 9
         out += pack('I', 512)                # unknown 10
 
-        # add pixels
-        for y in range(self.get_height()):
-            for x in range(self.get_width()):
-                r,g,b,a = self.image.getpixel((x,y))
-                for v in [b,g,r,a]:
-                    out += pack('B', v)
+        # image data (BMP Mode)
+        if bmp_mode:
+            for y in range(self.get_height()):
+                for x in range(self.get_width()):
+                    r,g,b,a = self.image.getpixel((x,y))
+                    for v in [b,g,r,a]:
+                        out += pack('B', v)
+
+        # image data (Palette Mode)
+        else:
+            # add palette
+            for r,g,b,a in pal:
+                out += pack('B', b)
+                out += pack('B', g)
+                out += pack('B', r)
+                out += pack('B', a)
+
+            # add pixels
+            for y in range(self.get_height()):
+                for x in range(self.get_width()):
+                    out += pack(pal_index_format, col_to_ind[self.image.getpixel((x,y))])
+            
         return out
     
     def __iter__(self):
