@@ -175,7 +175,7 @@ class TEX:
         out += pack('I', 5)                  # unknown 3
         out += pack('I', 4)                  # min bits per color
         out += pack('I', 8)                  # max bits per color
-        out += pack('I', 0)                  # min alpha bits
+        out += pack('I', 4)                  # min alpha bits
         out += pack('I', 8)                  # max alpha bits
         out += pack('I', 8)                  # min bits per pixel
         out += pack('I', 32)                 # max bits per pixel

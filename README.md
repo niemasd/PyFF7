@@ -48,7 +48,8 @@ Niema's toolkit for playing with files from Final Fantasy VII (PC and Switch). C
     * Usage: `python3 tex_convert.py <input_tex_file> <output_image_file>`
 * **[tex_create.py](tex_create.py)**
     * *Create a TEX file from an image file*
-    * Usage: `python3 tex_create.py <input_image_file> <output_tex_file>`
+    * Usage: `python3 tex_create.py <input_image_file> <output_tex_file> [-bmp]`
+        * The optional `-bmp` flag at the end will use BMP mode (larger filesize, but better transparency compatibility)
 * **[tex_info.py](tex_info.py)**
     * *Read the information of a TEX file*
     * Usage: `python3 tex_info.py <input_tex_file>`
