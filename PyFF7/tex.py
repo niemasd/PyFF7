@@ -245,6 +245,10 @@ class TEX:
         '''
         return self.image
 
+    def show(self):
+        '''Show this TEX file's image'''
+        self.image.show()
+
     def change_image(self, img):
         '''Change this TEX file's image
 

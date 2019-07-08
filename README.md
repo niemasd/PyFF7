@@ -52,6 +52,9 @@ Niema's toolkit for playing with files from Final Fantasy VII (PC and Switch). C
 * **[tex_info.py](tex_info.py)**
     * *Read the information of a TEX file*
     * Usage: `python3 tex_info.py <input_tex_file>`
+* **[tex_view.py](tex_view.py)**
+    * *View a TEX file*
+    * Usage: `python3 tex_view.py <input_tex_file>`
 
 ## [TMD](../../wiki/TMD-Format) Files
 * **[tmd_info.py](tmd_info.py)**
