@@ -3,7 +3,7 @@
 Functions and classes for handling TEX files
 Niema Moshiri 2019
 '''
-from . import NULL_BYTE
+from . import BYTES_TO_FORMAT,NULL_BYTE
 from PIL import Image
 from struct import pack,unpack
 
@@ -83,7 +83,6 @@ SIZE = {
 SIZE['HEADER'] = sum(SIZE[k] for k in SIZE if k.startswith('HEADER_')) # 108
 
 # other defaults
-BYTES_TO_FORMAT = {1:'B', 2:'H', 4:'I'}
 DEFAULT_VERSION = 1
 
 # error messages

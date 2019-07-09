@@ -3,11 +3,14 @@
 Functions and classes for handling save files
 Niema Moshiri 2019
 '''
+from . import BYTES_TO_FORMAT
 from .text import decode_field_text
 from struct import pack,unpack
 
 # constants
 SAVE_SLOT_SIZE = 4340
+CAPACITY_STOCK_ITEM = 320
+CAPACITY_STOCK_MATERIA = 200
 
 # start offsets of various items in a save file (in bytes, with respect to start of slot data)
 START = {
@@ -31,6 +34,20 @@ START = {
     'SLOT_WINDOW-COLOR-LL':   0x004E, # Save Slot: Window Color, Lower-Left Corner (RGB)
     'SLOT_WINDOW-COLOR-LR':   0x0051, # Save Slot: Window Color, Lower-Right Corner (RGB)
     'SLOT_RECORD-CLOUD':      0x0054, # Save Slot: Character Record: Cloud
+    'SLOT_RECORD-BARRET':     0x00D8, # Save Slot: Character Record: Barret
+    'SLOT_RECORD-TIFA':       0x015C, # Save Slot: Character Record: Tifa
+    'SLOT_RECORD-AERITH':     0x01E0, # Save Slot: Character Record: Aerith
+    'SLOT_RECORD-REDXIII':    0x0264, # Save Slot: Character Record: Red XIII
+    'SLOT_RECORD-YUFFIE':     0x02E8, # Save Slot: Character Record: Yuffie
+    'SLOT_RECORD-CAITSITH':   0x036C, # Save Slot: Character Record: Cait Sith
+    'SLOT_RECORD-VINCENT':    0x03F0, # Save Slot: Character Record: Vincent
+    'SLOT_RECORD-CID':        0x0474, # Save Slot: Character Record: Cid
+    'SLOT_PORTRAIT1':         0x04F8, # Save Slot: Portrait 1
+    'SLOT_PORTRAIT2':         0x04F9, # Save Slot: Portrait 2
+    'SLOT_PORTRAIT3':         0x04FA, # Save Slot: Portrait 3
+    'SLOT_BLANK1':            0x04FB, # Save Slot: Blank 1 (0xFF)
+    'SLOT_STOCK-ITEM':        0x04FC, # Save Slot: Party Item Stock (2 bytes/slot, 320 slots)
+    'SLOT_STOCK-MATERIA':     0x077C, # Save Slot: Party Materia Stock (4 bytes/slot, 200 slots)
 
     # Character Record
     'RECORD_SEPHIROTH-FLAG':     0x00, # Character Record: Vincent -> Sephiroth Flag
@@ -66,50 +83,77 @@ START = {
     'RECORD_UNKNOWN2':           0x34, # Character Record: Unknown 2
     'RECORD_HP-MAX':             0x38, # Character Record: Maximum HP (after materia)
     'RECORD_MP-MAX':             0x3A, # Character Record: Maximum MP (after materia)
-    'RECORD_EXP':                0x3C, # Character Record: Current Experience
+    'RECORD_EXP_CURR':           0x3C, # Character Record: Current Experience
+    'RECORD_MATERIA-WEAPON-1':   0x40, # Character Record: Weapon Materia Slot 1
+    'RECORD_MATERIA-WEAPON-2':   0x41, # Character Record: Weapon Materia Slot 2
+    'RECORD_MATERIA-WEAPON-3':   0x42, # Character Record: Weapon Materia Slot 3
+    'RECORD_MATERIA-WEAPON-4':   0x43, # Character Record: Weapon Materia Slot 4
+    'RECORD_MATERIA-WEAPON-5':   0x44, # Character Record: Weapon Materia Slot 5
+    'RECORD_MATERIA-WEAPON-6':   0x45, # Character Record: Weapon Materia Slot 6
+    'RECORD_MATERIA-WEAPON-7':   0x46, # Character Record: Weapon Materia Slot 7
+    'RECORD_MATERIA-WEAPON-8':   0x47, # Character Record: Weapon Materia Slot 8
+    'RECORD_MATERIA-ARMOR-1':    0x48, # Character Record: Armor Materia Slot 1
+    'RECORD_MATERIA-ARMOR-2':    0x49, # Character Record: Armor Materia Slot 2
+    'RECORD_MATERIA-ARMOR-3':    0x4A, # Character Record: Armor Materia Slot 3
+    'RECORD_MATERIA-ARMOR-4':    0x4B, # Character Record: Armor Materia Slot 4
+    'RECORD_MATERIA-ARMOR-5':    0x4C, # Character Record: Armor Materia Slot 5
+    'RECORD_MATERIA-ARMOR-6':    0x4D, # Character Record: Armor Materia Slot 6
+    'RECORD_MATERIA-ARMOR-7':    0x4E, # Character Record: Armor Materia Slot 7
+    'RECORD_MATERIA-ARMOR-8':    0x4F, # Character Record: Armor Materia Slot 8
+    'RECORD_UNKNOWN3':           0x50, # Character Record: Unknown 3
+    'RECORD_EXP_NEXT':           0x80, # Character Record: Next Level Experience
 }
 
 # size of various items in a save file (in bytes)
 SIZE = {
     # Final Fantasy VII Save Slot
-    'SLOT_CHECKSUM':          2, # Save Slot: Checksum
-    'SLOT_PREVIEW-GIL':       4, # Save Slot: Preview: Amount of Gil
-    'SLOT_PREVIEW-HP-CURR':   2, # Save Slot: Preview: Lead Character's Current HP
-    'SLOT_PREVIEW-HP-MAX':    2, # Save Slot: Preview: Lead Character's Maximum HP
-    'SLOT_PREVIEW-LEVEL':     1, # Save Slot: Preview: Lead Character's Level
-    'SLOT_PREVIEW-LOCATION': 32, # Save Slot: Preview: Save Location
-    'SLOT_PREVIEW-MP-CURR':   2, # Save Slot: Preview: Lead Character's Current MP
-    'SLOT_PREVIEW-MP-MAX':    2, # Save Slot: Preview: Lead Character's Maximum MP
-    'SLOT_PREVIEW-NAME':     16, # Save Slot: Preview: Lead Character's Name
-    'SLOT_PREVIEW-PLAYTIME':  4, # Save Slot: Preview: Total Playtime
-    'SLOT_PREVIEW-PORTRAIT':  1, # Save Slot: Preview: Portrait
-    'SLOT_RECORD':          132, # Save Slot: Character Record
-    'SLOT_UNKNOWN1':          2, # Save Slot: Unknown 1
-    'SLOT_WINDOW-COLOR':      3, # Save Slot: Window Color (RGB)
+    'SLOT_BLANK1':               1, # Save Slot: Blank 1 (0xFF)
+    'SLOT_CHECKSUM':             2, # Save Slot: Checksum
+    'SLOT_PORTRAIT':             1, # Save Slot: Portrait
+    'SLOT_PREVIEW-GIL':          4, # Save Slot: Preview: Amount of Gil
+    'SLOT_PREVIEW-HP-CURR':      2, # Save Slot: Preview: Lead Character's Current HP
+    'SLOT_PREVIEW-HP-MAX':       2, # Save Slot: Preview: Lead Character's Maximum HP
+    'SLOT_PREVIEW-LEVEL':        1, # Save Slot: Preview: Lead Character's Level
+    'SLOT_PREVIEW-LOCATION':    32, # Save Slot: Preview: Save Location
+    'SLOT_PREVIEW-MP-CURR':      2, # Save Slot: Preview: Lead Character's Current MP
+    'SLOT_PREVIEW-MP-MAX':       2, # Save Slot: Preview: Lead Character's Maximum MP
+    'SLOT_PREVIEW-NAME':        16, # Save Slot: Preview: Lead Character's Name
+    'SLOT_PREVIEW-PLAYTIME':     4, # Save Slot: Preview: Total Playtime
+    'SLOT_PREVIEW-PORTRAIT':     1, # Save Slot: Preview: Portrait
+    'SLOT_RECORD':             132, # Save Slot: Character Record
+    'SLOT_STOCK-ITEM':         640, # Save Slot: Party Item Stock (2 bytes/slot, 320 slots)
+    'SLOT_STOCK-ITEM-SINGLE':    2, # Save Slot: Party Item Stock: Single Item
+    'SLOT_STOCK-MATERIA':      800, # Save Slot: Party Materia Stock (4 bytes/slot, 200 slots)
+    'SLOT_STOCK-MATERIA-SINGLE': 4, # Save Slot: Party Materia Stock: Single Item
+    'SLOT_UNKNOWN1':             2, # Save Slot: Unknown 1
+    'SLOT_WINDOW-COLOR':         3, # Save Slot: Window Color (RGB)
 
     # Character Record
-    'RECORD_ACCESSORY':       1, # Character Record: Accessory
-    'RECORD_ARMOR':           1, # Character Record: Armor
-    'RECORD_BONUS':           1, # Character Record: Bonus
-    'RECORD_EXP':             4, # Character Record: Current Experience
-    'RECORD_FLAGS':           3, # Character Record: Character Flags
-    'RECORD_HP-BASE':         2, # Character Record: Base HP (before materia)
-    'RECORD_HP-CURR':         2, # Character Record: Current HP
-    'RECORD_HP-MAX':          2, # Character Record: Maximum HP (after materia)
-    'RECORD_LEVEL':           1, # Character Record: Level (0-99)
-    'RECORD_LIMIT-BAR':       1, # Character Record: Current Limit Bar (0 = Empty, 255 = Limit Break)
-    'RECORD_LIMIT-LEVEL':     1, # Character Record: Current Limit Level (1-4)
-    'RECORD_LIMIT-SKILLS':    2, # Character Record: Learned Limit Skills
-    'RECORD_MP-BASE':         2, # Character Record: Base MP (before materia)
-    'RECORD_MP-CURR':         2, # Character Record: Current MP
-    'RECORD_MP-MAX':          2, # Character Record: Maximum MP (after materia)
-    'RECORD_NAME':           12, # Character Record: Name
-    'RECORD_NUM-KILLS':       2, # Character Record: Number of Kills
-    'RECORD_NUM-LIMIT-USES':  2, # Character Record: Number of Limit Uses
-    'RECORD_SEPHIROTH-FLAG':  1, # Character Record: Vincent -> Sephiroth Flag
-    'RECORD_STAT':            1, # Character Record: Status
-    'RECORD_UNKNOWN2':        4, # Character Record: Unknown 2
-    'RECORD_WEAPON':          1, # Character Record: Equipped Weapon
+    'RECORD_ACCESSORY':          1, # Character Record: Accessory
+    'RECORD_ARMOR':              1, # Character Record: Armor
+    'RECORD_BONUS':              1, # Character Record: Bonus
+    'RECORD_EXP_CURR':           4, # Character Record: Current Experience
+    'RECORD_EXP_NEXT':           4, # Character Record: Next Level Experience
+    'RECORD_FLAGS':              3, # Character Record: Character Flags
+    'RECORD_HP-BASE':            2, # Character Record: Base HP (before materia)
+    'RECORD_HP-CURR':            2, # Character Record: Current HP
+    'RECORD_HP-MAX':             2, # Character Record: Maximum HP (after materia)
+    'RECORD_LEVEL':              1, # Character Record: Level (0-99)
+    'RECORD_LIMIT-BAR':          1, # Character Record: Current Limit Bar (0 = Empty, 255 = Limit Break)
+    'RECORD_LIMIT-LEVEL':        1, # Character Record: Current Limit Level (1-4)
+    'RECORD_LIMIT-SKILLS':       2, # Character Record: Learned Limit Skills
+    'RECORD_MATERIA':            1, # Character Record: Weapon/Armor Materia
+    'RECORD_MP-BASE':            2, # Character Record: Base MP (before materia)
+    'RECORD_MP-CURR':            2, # Character Record: Current MP
+    'RECORD_MP-MAX':             2, # Character Record: Maximum MP (after materia)
+    'RECORD_NAME':              12, # Character Record: Name
+    'RECORD_NUM-KILLS':          2, # Character Record: Number of Kills
+    'RECORD_NUM-LIMIT-USES':     2, # Character Record: Number of Limit Uses
+    'RECORD_SEPHIROTH-FLAG':     1, # Character Record: Vincent -> Sephiroth Flag
+    'RECORD_STAT':               1, # Character Record: Status
+    'RECORD_UNKNOWN2':           4, # Character Record: Unknown 2
+    'RECORD_UNKNOWN3':          48, # Character Record: Unknown 3
+    'RECORD_WEAPON':             1, # Character Record: Equipped Weapon
 }
 
 # translate portrait number to character name
@@ -284,8 +328,27 @@ def parse_char_record(data):
     out['unknown2'] = unpack('I', data[START['RECORD_UNKNOWN2']:START['RECORD_UNKNOWN2']+SIZE['RECORD_UNKNOWN2']])[0]
     out['max_hp'] = unpack('H', data[START['RECORD_HP-MAX']:START['RECORD_HP-MAX']+SIZE['RECORD_HP-MAX']])[0]
     out['max_mp'] = unpack('H', data[START['RECORD_MP-MAX']:START['RECORD_MP-MAX']+SIZE['RECORD_MP-MAX']])[0]
-    out['exp'] = unpack('I', data[START['RECORD_EXP']:START['RECORD_EXP']+SIZE['RECORD_EXP']])[0]
+    out['exp_curr'] = unpack('I', data[START['RECORD_EXP_CURR']:START['RECORD_EXP_CURR']+SIZE['RECORD_EXP_CURR']])[0]
+    out['materia'] = {'weapon':list(),'armor':list()}
+    for k in ['WEAPON','ARMOR']:
+        for i in range(1,9): # 1 through 8
+            out['materia'][k.lower()].append(unpack('B', data[START['RECORD_MATERIA-%s-%d'%(k,i)]:START['RECORD_MATERIA-%s-%d'%(k,i)]+SIZE['RECORD_MATERIA']])[0])
+    out['unknown3'] = data[START['RECORD_UNKNOWN3']:START['RECORD_UNKNOWN3']+SIZE['RECORD_UNKNOWN3']]
+    out['exp_next'] = unpack('I', data[START['RECORD_EXP_NEXT']:START['RECORD_EXP_NEXT']+SIZE['RECORD_EXP_NEXT']])[0]
     return out
+
+def parse_stock_item(data):
+    '''Parse the bytes of an item stock
+
+    Args:
+        ``data`` (``bytes``): The input item stock data
+
+    Returns:
+        ``list`` of ``tuple``: The parsed item stock as (item, quantity) tuples, where items are represented as (item ID, even/odd) tuples, where even is 0 and odd is 1
+    '''
+    if len(data) != SIZE['SLOT_STOCK-ITEM']:
+        raise ValueError("Invalid item stock size: %d" % len(data))
+    return [((data[i], data[i+1]%2), int(data[i+1]/2)) for i in range(0, len(data), SIZE['SLOT_STOCK-ITEM-SINGLE'])]
 
 def parse_slot_data(data):
     '''Parse the bytes of a save slot
@@ -303,8 +366,9 @@ def parse_slot_data(data):
     out['unknown1'] = unpack('H', data[START['SLOT_UNKNOWN1']:START['SLOT_UNKNOWN1']+SIZE['SLOT_UNKNOWN1']])[0]
     out['preview'] = dict()
     out['preview']['level'] = unpack('B', data[START['SLOT_PREVIEW-LEVEL']:START['SLOT_PREVIEW-LEVEL']+SIZE['SLOT_PREVIEW-LEVEL']])[0]
+    out['preview']['party'] = list()
     for i in [1,2,3]:
-        out['preview']['portrait%d'%i] = unpack('B', data[START['SLOT_PREVIEW-PORTRAIT%d'%i]:START['SLOT_PREVIEW-PORTRAIT%d'%i]+SIZE['SLOT_PREVIEW-PORTRAIT']])[0]
+        out['preview']['party'].append(unpack('B', data[START['SLOT_PREVIEW-PORTRAIT%d'%i]:START['SLOT_PREVIEW-PORTRAIT%d'%i]+SIZE['SLOT_PREVIEW-PORTRAIT']])[0])
     out['preview']['name'] = decode_field_text(data[START['SLOT_PREVIEW-NAME']:START['SLOT_PREVIEW-NAME']+SIZE['SLOT_PREVIEW-NAME']])
     out['preview']['curr_hp'] = unpack('H', data[START['SLOT_PREVIEW-HP-CURR']:START['SLOT_PREVIEW-HP-CURR']+SIZE['SLOT_PREVIEW-HP-CURR']])[0]
     out['preview']['max_hp'] = unpack('H', data[START['SLOT_PREVIEW-HP-MAX']:START['SLOT_PREVIEW-HP-MAX']+SIZE['SLOT_PREVIEW-HP-MAX']])[0]
@@ -317,8 +381,14 @@ def parse_slot_data(data):
     for k1,k2 in [('upper_left','UL'), ('upper_right','UR'), ('lower_left','LL'), ('lower_right','LR')]:
         out['window_color'][k1] = parse_color(data[START['SLOT_WINDOW-COLOR-%s'%k2]:START['SLOT_WINDOW-COLOR-%s'%k2]+SIZE['SLOT_WINDOW-COLOR']])
     out['record'] = dict()
-    for k in ['CLOUD']: # TODO ADD OTHER CHARACTERS
+    for k in ['CLOUD', 'BARRET', 'TIFA', 'AERITH', 'REDXIII', 'YUFFIE', 'CAITSITH', 'VINCENT', 'CID']:
         out['record'][k.lower()] = parse_char_record(data[START['SLOT_RECORD-%s'%k]:START['SLOT_RECORD-%s'%k]+SIZE['SLOT_RECORD']])
+    out['party'] = list()
+    for i in [1,2,3]:
+        out['party'].append(unpack('B', data[START['SLOT_PORTRAIT%d'%i]:START['SLOT_PORTRAIT%d'%i]+SIZE['SLOT_PORTRAIT']])[0])
+    out['stock'] = dict()
+    out['stock']['item'] = parse_stock_item(data[START['SLOT_STOCK-ITEM']:START['SLOT_STOCK-ITEM']+SIZE['SLOT_STOCK-ITEM']])
+    #out['stock']['materia'] = parse_stock_materia(data[START['SLOT_STOCK-MATERIA']:START['SLOT_STOCK-MATERIA']+SIZE['SLOT_STOCK-MATERIA']])
     return out
 
 class Save:

@@ -22,9 +22,10 @@ if __name__ == "__main__":
                 print("  * Save Slot %d:" % (i+1))
             print("    * Checksum: 0x%04X" % s['data']['checksum'])
             print("    * Unknown 1: %d" % s['data']['unknown1'])
+            print("    * Party: %s" % ', '.join([PORTRAIT_TO_NAME[v] for v in s['data']['party'] if v != 255]))
             print("    * Preview:")
             print("      * Lead Character's Level: %d" % s['data']['preview']['level'])
-            print("      * Party: %s" % ', '.join([PORTRAIT_TO_NAME[s['data']['preview']['portrait%d'%j]] for j in [1,2,3] if s['data']['preview']['portrait%d'%j] != 255]))
+            print("      * Party: %s" % ', '.join([PORTRAIT_TO_NAME[v] for v in s['data']['preview']['party'] if v != 255]))
             print("      * Lead Character's Name: %s" % s['data']['preview']['name'])
             print("      * Lead Character's HP: %d/%d" % (s['data']['preview']['curr_hp'], s['data']['preview']['max_hp']))
             print("      * Lead Character's MP: %d/%d" % (s['data']['preview']['curr_mp'], s['data']['preview']['max_mp']))
@@ -34,12 +35,12 @@ if __name__ == "__main__":
             print("    * Window Color:")
             for k in ['upper_left', 'upper_right', 'lower_left', 'lower_right']:
                 print("      * %s: %s" % (k.replace('_',' ').capitalize(), '#%02X%02X%02X'%s['data']['window_color'][k]))
-            for ch in ['Cloud']:
-                rec = s['data']['record'][ch.lower()]
+            for ch in ['Cloud', 'Barret', 'Tifa', 'Aerith', 'Red XIII', 'Yuffie', 'Cait Sith', 'Vincent', 'Cid']:
+                rec = s['data']['record'][ch.replace(' ','').lower()]
                 print("    * Character Record: %s" % ch)
                 print("      * Name: %s" % rec['name'])
                 print("      * Level: %d" % rec['level'])
-                print("      * Experience: %d" % rec['exp'])
+                print("      * Experience: %d/%d" % (rec['exp_curr'], rec['exp_curr']+rec['exp_next']))
                 print("      * HP: %d/%d (base %d)" % (rec['curr_hp'], rec['max_hp'], rec['base_hp']))
                 print("      * MP: %d/%d (base %d)" % (rec['curr_mp'], rec['max_mp'], rec['base_mp']))
                 print("      * Vincent -> Sephiroth Flag: %s" % bool(rec['sephiroth_flag']))
@@ -51,9 +52,9 @@ if __name__ == "__main__":
                     print("        * %s: %d" % (k.capitalize(), rec['bonus'][k]))
                 print("      * Limit Level: %d" % rec['limit_level'])
                 print("      * Limit Bar: %d%%" % int(100.*rec['limit_bar']/255.))
-                print("      * Weapon: %d" % rec['weapon'])
-                print("      * Armor: %d" % rec['armor'])
-                print("      * Accessory: %d" % rec['accessory'])
+                for k in ['weapon','armor']:
+                    print("      * %s: %d" % (k.capitalize(), rec[k]))
+                    print("        * Equipped Materia: %s" % [v for v in rec['materia'][k] if v != 255])
                 print("      * Character Flags: %s" % ' '.join(bin(e).lstrip('0b').zfill(8) for e in rec['flags']))
                 print("      * Learned Limit Skills: %s" % ' '.join(bin(e).lstrip('0b').zfill(8) for e in rec['limit_skills']))
                 print("      * Number of Kills: %d" % rec['num_kills'])
@@ -61,5 +62,8 @@ if __name__ == "__main__":
                 for j in [1,2,3]:
                     print("        * Limit %d-1: %d" % (j,rec['num_limit_uses_%d_1'%j]))
                 print("      * Unknown 2: %d" % rec['unknown2'])
+                print("      * Unknown 3: %s" % ''.join('%X'%v for v in rec['unknown3']))
+            for k in ['Item']:#, 'Materia']:
+                print("    * %s Stock: %s" % (k, [v for v in s['data']['stock'][k.lower()] if v[0][0] != 255]))
     except BrokenPipeError:
         stderr.close()
