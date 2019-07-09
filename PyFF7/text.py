@@ -5,7 +5,8 @@ A lot of this is borrowed from FF7Tools V1.3 (https://github.com/cebix/ff7tools)
 Niema Moshiri 2019
 '''
 from . import NULL_BYTE,NULL_STR
-from struct import unpack
+from re import match
+from struct import pack,unpack
 
 # Characters in range 0x00..0xdf directly map to Unicode characters
 # This is almost identical to the MacOS Roman encoding shifted down by 32 positions
@@ -271,3 +272,124 @@ def decode_field_text(data, JP=False):
                 t += '\n'
             text += t
     return text
+
+def encode_text(text, field=True, JP=False):
+    '''Encode unicode string to FF7 text
+
+    Args:
+        ``text`` (``str``): The unicode string to encode
+
+        ``field`` (``bool``): ``True`` if this is Field text, otherwise ``False``
+
+        ``JP`` (``bool``): ``True`` if the text to encode is Japanese, otherwise ``False``
+
+    Returns:
+        ``bytes``: The resulting FF7 text
+    '''
+    if not isinstance(text,str):
+        raise TypeError("Expected string, but received %s" % str(type(text)))
+    char_set = {True:CHAR['NORMAL_JP'], False:CHAR['NORMAL']}[JP]
+    text_length = len(text)
+    data = bytearray(); i = 0
+    while i < text_length:
+        c = text[i]; i += 1
+
+        # escape sequence
+        if c == u'\\':
+            if i >= text_length:
+                raise IndexError("Spurious '\\' at end of string '%s'" % text)
+            c = text[i]; i += 1
+            if c in escapeChars:
+                data += pack('B', char_set.index(c))
+            else:
+                raise ValueError("Unknown escape sequence '\\%s' in string '%s'" % (c, text))
+
+        # command sequence
+        elif c == u'{':
+            end = text.find(u'}', i)
+            if end == -1:
+                raise IndexError("Mismatched {} in string '%s'" % text)
+            command = text[i:end]; keyword = command.split()[0]; i = end + 1
+
+            # field command
+            if field:
+                # WAIT <arg>
+                if keyword == u'WAIT':
+                    m = match(r"WAIT (\d+)", command)
+                    if not m:
+                        raise ValueError("Syntax error in command '%s' in string '%s'" % (command, text))
+                    arg = int(m.group(1))
+                    if arg > 0xFFFF:
+                        raise ValueError("Argument of WAIT command greater than 65535 in string '%s'" % text)
+                    data += '\xFE\xDD'; data += pack("<H", arg)
+
+                # STR <offset> <length>
+                elif keyword == u'STR':
+                    m = match(r"STR ([a-fA-F0-9]{4}) ([a-fA-F0-9]{4})", command)
+                    if not m:
+                        raise ValueError("Syntax error in command '%s' in string '%s'" % (command, text))
+                    offset = int(m.group(1), 16); length = int(m.group(2), 16)
+                    data += '\xFE\xE2'; data += pack("<HH", offset, length)
+
+                # simple command without argumentss
+                else:
+                    try:
+                        code = fieldCommands['{' + command + '}']; data += code
+                        if command == "NEW": # strip extra newline after NEW command
+                            if (i < text_length) and (text[i] == u'\n'):
+                                i += 1
+                    except KeyError:
+                        raise ValueError("Unknown command '%s' in string '%s'" % (command, text))
+
+            # kernel command
+            else:
+                # text box color
+                if keyword == u'COLOR':
+                    m = match(r"COLOR ([a-fA-F0-9]{2})", command)
+                    if not m:
+                        raise ValueError("Syntax error in command '%s' in string '%s'" % (command, text))
+                    data += '\xF8'; data += pack('B', int(m.group(1), 16))
+
+                # kernel variable reference
+                else:
+                    found = False
+                    for (code, checkKeyword,) in kernelVars.iteritems():
+                        if keyword == checkKeyword:
+                            m = match(r"%s ([a-fA-F0-9]{2}) ([a-fA-F0-9]{2})" % keyword, command)
+                            if not m:
+                                raise ValueError("Syntax error in command '%s' in string '%s'" % (command, text))
+                            data += code; data += pack('B', int(m.group(1), 16)); data += pack('B', int(m.group(2), 16))
+                            found = True; break
+                    if not found:
+                        raise ValueError("Unknown command '%s' in string '%s'" % (command, text))
+
+        # special field characters
+        else:
+            if field:
+                if c == u'\t':
+                    data += '\xE1'
+                    continue
+                elif c == u'\n':
+                    data += '\xE7'
+                    continue
+                elif c == u'〇':
+                    data += '\xF6'
+                    continue
+                elif c == u'△':
+                    data += '\xF7'
+                    continue
+                elif c == u'☐':
+                    data += '\xF8'
+                    continue
+                elif c == u'✕':
+                    data += '\xF9'
+                    continue
+
+            # regular printable character
+            try:
+                data += pack('B', char_set.index(c))
+            except ValueError:
+                raise ValueError("Unencodable character '%s' in string '%s'" % (c, text))
+
+    # terminate string
+    return data + b'\xFF'

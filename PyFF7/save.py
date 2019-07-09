@@ -4,7 +4,7 @@ Functions and classes for handling save files
 Niema Moshiri 2019
 '''
 from . import BYTES_TO_FORMAT,NULL_BYTE
-from .text import decode_field_text
+from .text import decode_field_text,encode_text
 from struct import pack,unpack
 
 # constants
@@ -434,6 +434,32 @@ class Save:
             slot['data'] = parse_slot_data(data[ind:ind+SAVE_SLOT_SIZE]); ind += SAVE_SLOT_SIZE
             slot['footer'] = data[ind:ind+prop['slot_footer_size']]; ind += prop['slot_footer_size']
             self.save_slots.append(slot)
+        self_bytes = self.get_bytes(); assert self_bytes == data[:len(self_bytes)] # TODO REMOVE WHEN DONE
+
+    def get_bytes(self):
+        '''Return the bytes encoding of this save file
+
+        Returns:
+            ``bytes``: The data encoding this save file
+        '''
+        out = bytearray()
+        out += self.header
+        for slot in self.save_slots:
+            d = slot['data']
+            out += slot['header']
+            out += pack('H', d['checksum']) # TODO maybe just recompute right now
+            out += pack('H', d['unknown1'])
+            out += pack('B', d['preview']['level'])
+            for ch in d['preview']['party']:
+                out += pack('B', ch)
+            tmp = encode_text(d['preview']['name']); out += encode_text(d['preview']['name']); out += NULL_BYTE*(SIZE['SLOT_PREVIEW-NAME']-len(tmp))
+            out += pack('H', d['preview']['curr_hp'])
+            out += pack('H', d['preview']['max_hp'])
+            out += pack('H', d['preview']['curr_mp'])
+            out += pack('H', d['preview']['max_mp'])
+            break # TODO REMOVE WHEN DONE WITH SAVE SLOT DATA
+            out += slot['footer']
+        return out
 
     def __len__(self):
         return len(self.save_slots)
