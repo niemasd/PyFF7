@@ -251,7 +251,7 @@ FILESIZE_TO_FORMAT = {PROP[k]['file_size']:k for k in PROP}
 # error messages
 ERROR_INVALID_SAVE_FILE = "Invalid save file"
 
-def parse_color(data):
+def unpack_color(data):
     '''Parse the bytes of an RGB color
 
     Args:
@@ -264,7 +264,18 @@ def parse_color(data):
         raise ValueError("Invalid color data length: %d bytes" % len(data))
     return (data[0], data[1], data[2])
 
-def parse_char_flags(data):
+def pack_color(c):
+    '''Pack an RGB color into 3 bytes
+
+    Args:
+        ``c`` (``tuple`` of ``int``): The input RGB color
+
+    Returns:
+        ``bytes``: The resulting packed data
+    '''
+    return pack('B',c[0]) + pack('B',c[1]) + pack('B',c[2])
+
+def unpack_char_flags(data):
     '''Parse the bytes of Character Flags (in Character Record)
 
     Args:
@@ -277,7 +288,18 @@ def parse_char_flags(data):
         raise ValueError("Invalid character flags data length: %d" % len(data))
     return data # TODO ACTUALLY PARSE
 
-def parse_char_limit_skills(data):
+def pack_char_flags(flags):
+    '''Pack Character Flags (in Character Record) into bytes
+
+    Args:
+        ``flags`` (TODO): The input character flags
+
+    Returns:
+        ``bytes``: The resulting packed data
+    '''
+    return flags # TODO ACTUALLY PACK ONCE I'VE IMPLEMENTED unpack_char_flags
+
+def unpack_char_limit_skills(data):
     '''Parse the bytes of Learned Limit Skills
 
     Args:
@@ -290,7 +312,18 @@ def parse_char_limit_skills(data):
         raise ValueError("Invalid learned limit skills data length: %d" % len(data))
     return data
 
-def parse_char_record(data):
+def pack_char_limit_skills(skills):
+    '''Pack Learned Limit Skills into bytes
+
+    Args:
+        ``skills`` (TODO): The input Learned Limit Skills
+
+    Returns:
+        ``bytes``: The resulting packed data
+    '''
+    return skills # TODO ACTUALLY PACK ONCE I'VE IMPLEMENTED unpack_char_limit_skills
+
+def unpack_char_record(data):
     '''Parse the bytes of a character record
 
     Args:
@@ -316,8 +349,8 @@ def parse_char_record(data):
     out['weapon'] = unpack('B', data[START['RECORD_WEAPON']:START['RECORD_WEAPON']+SIZE['RECORD_WEAPON']])[0]
     out['armor'] = unpack('B', data[START['RECORD_ARMOR']:START['RECORD_ARMOR']+SIZE['RECORD_ARMOR']])[0]
     out['accessory'] = unpack('B', data[START['RECORD_ACCESSORY']:START['RECORD_ACCESSORY']+SIZE['RECORD_ACCESSORY']])[0]
-    out['flags'] = parse_char_flags(data[START['RECORD_FLAGS']:START['RECORD_FLAGS']+SIZE['RECORD_FLAGS']])
-    out['limit_skills'] = parse_char_limit_skills(data[START['RECORD_LIMIT-SKILLS']:START['RECORD_LIMIT-SKILLS']+SIZE['RECORD_LIMIT-SKILLS']])
+    out['flags'] = unpack_char_flags(data[START['RECORD_FLAGS']:START['RECORD_FLAGS']+SIZE['RECORD_FLAGS']])
+    out['limit_skills'] = unpack_char_limit_skills(data[START['RECORD_LIMIT-SKILLS']:START['RECORD_LIMIT-SKILLS']+SIZE['RECORD_LIMIT-SKILLS']])
     out['num_kills'] = unpack('H', data[START['RECORD_NUM-KILLS']:START['RECORD_NUM-KILLS']+SIZE['RECORD_NUM-KILLS']])[0]
     for i in [1,2,3]:
         out['num_limit_uses_%d_1'%i] = unpack('H', data[START['RECORD_NUM-LIMIT-USES-%d-1'%i]:START['RECORD_NUM-LIMIT-USES-%d-1'%i]+SIZE['RECORD_NUM-LIMIT-USES']])[0]
@@ -337,7 +370,46 @@ def parse_char_record(data):
     out['exp_next'] = unpack('I', data[START['RECORD_EXP_NEXT']:START['RECORD_EXP_NEXT']+SIZE['RECORD_EXP_NEXT']])[0]
     return out
 
-def parse_stock_item(data):
+def pack_char_record(rec):
+    '''Pack a Character Record into bytes
+
+    Args:
+        ``rec`` (``dict``): The input character record
+
+    Returns:
+        ``bytes``: The resulting packed data
+    '''
+    out = bytearray()
+    out += pack('B', rec['sephiroth_flag'])
+    out += pack('B', rec['level'])
+    for k in ['strength', 'vitality', 'magic', 'spirit', 'dexterity', 'luck']:
+        out += pack('B', rec['status'][k])
+    for k in ['strength', 'vitality', 'magic', 'spirit', 'dexterity', 'luck']:
+        out += pack('B', rec['bonus'][k])
+    out += pack('B', rec['limit_level'])
+    out += pack('B', rec['limit_bar'])
+    tmp = encode_text(rec['name']); out += tmp; out += NULL_BYTE*(SIZE['RECORD_NAME']-len(tmp))
+    for k in ['weapon', 'armor', 'accessory']:
+        out += pack('B', rec[k])
+    out += pack_char_flags(rec['flags'])
+    out += pack_char_limit_skills(rec['limit_skills'])
+    out += pack('H', rec['num_kills'])
+    for i in [1,2,3]:
+        out += pack('H', rec['num_limit_uses_%d_1'%i])
+    for k in ['curr_hp', 'base_hp', 'curr_mp', 'base_mp']:
+        out += pack('H', rec[k])
+    out += pack('I', rec['unknown2'])
+    for k in ['max_hp','max_mp']:
+        out += pack('H', rec[k])
+    out += pack('I', rec['exp_curr'])
+    for k in ['weapon', 'armor']:
+        for v in rec['materia'][k]:
+            out += pack('B', v)
+    out += rec['unknown3']
+    out += pack('I', rec['exp_next'])
+    return out
+
+def unpack_stock_item(data):
     '''Parse the bytes of an item stock
 
     Args:
@@ -350,7 +422,26 @@ def parse_stock_item(data):
         raise ValueError("Invalid item stock size: %d" % len(data))
     return [((data[i], data[i+1]%2), int(data[i+1]/2)) for i in range(0, len(data), SIZE['SLOT_STOCK-ITEM-SINGLE'])]
 
-def parse_stock_materia(data):
+def pack_stock_item(items):
+    '''Pack an item stock into bytes
+
+    Args:
+        ``items`` (``list`` of ``tuple``): An item stock as (item, quantity) tuples, where items are represented as (item ID, even/odd) tuples, where even is 0 and odd is 1
+
+    Returns:
+        ``bytes``: The resulting packed data
+    '''
+    if len(items) != CAPACITY_STOCK_ITEM:
+        raise ValueError("Invalid item stock length: %d" % len(items))
+    out = bytearray()
+    for ((ID, even_odd), quantity) in items:
+        if ID == 0xFF and even_odd == 1: # empty slot
+            out += b'\xFF\xFF'
+        else:
+            out += pack('B', ID); out += pack('B', 2*quantity + even_odd)
+    return out
+
+def unpack_stock_materia(data):
     '''Parse the bytes of a materia stock
 
     Args:
@@ -363,7 +454,26 @@ def parse_stock_materia(data):
         raise ValueError("Invalid materia stock size: %d" % len(data))
     return [(data[i], unpack('I', data[i+1:i+SIZE['SLOT_STOCK-MATERIA-SINGLE']]+NULL_BYTE)[0]) for i in range(0, len(data), SIZE['SLOT_STOCK-MATERIA-SINGLE'])]
 
-def parse_slot_data(data):
+def pack_stock_materia(materia):
+    '''Pack a materia stock into bytes
+
+    Args:
+        ``materia`` (``list`` of ``tuple``): A materia stock as (materia ID, AP) tuples
+
+    Returns:
+        ``bytes``: The resulting packed data
+    '''
+    if len(materia) != CAPACITY_STOCK_MATERIA:
+        raise ValueError("Invalid materia stock length: %d" % len(materia))
+    out = bytearray()
+    for ID,AP in materia:
+        if ID == 0xFF and AP == 0xFFFFFF: # empty slot
+            out += b'\xFF\xFF\xFF\xFF'
+        else:
+            out += pack('B', ID); out += pack('I', AP)[:SIZE['SLOT_STOCK-MATERIA-SINGLE']]
+    return out
+
+def unpack_slot_data(data):
     '''Parse the bytes of a save slot
 
     Args:
@@ -392,16 +502,53 @@ def parse_slot_data(data):
     out['preview']['location'] = decode_field_text(data[START['SLOT_PREVIEW-LOCATION']:START['SLOT_PREVIEW-LOCATION']+SIZE['SLOT_PREVIEW-LOCATION']])
     out['window_color'] = dict()
     for k1,k2 in [('upper_left','UL'), ('upper_right','UR'), ('lower_left','LL'), ('lower_right','LR')]:
-        out['window_color'][k1] = parse_color(data[START['SLOT_WINDOW-COLOR-%s'%k2]:START['SLOT_WINDOW-COLOR-%s'%k2]+SIZE['SLOT_WINDOW-COLOR']])
+        out['window_color'][k1] = unpack_color(data[START['SLOT_WINDOW-COLOR-%s'%k2]:START['SLOT_WINDOW-COLOR-%s'%k2]+SIZE['SLOT_WINDOW-COLOR']])
     out['record'] = dict()
     for k in ['CLOUD', 'BARRET', 'TIFA', 'AERITH', 'REDXIII', 'YUFFIE', 'CAITSITH', 'VINCENT', 'CID']:
-        out['record'][k.lower()] = parse_char_record(data[START['SLOT_RECORD-%s'%k]:START['SLOT_RECORD-%s'%k]+SIZE['SLOT_RECORD']])
+        out['record'][k.lower()] = unpack_char_record(data[START['SLOT_RECORD-%s'%k]:START['SLOT_RECORD-%s'%k]+SIZE['SLOT_RECORD']])
     out['party'] = list()
     for i in [1,2,3]:
         out['party'].append(unpack('B', data[START['SLOT_PORTRAIT%d'%i]:START['SLOT_PORTRAIT%d'%i]+SIZE['SLOT_PORTRAIT']])[0])
     out['stock'] = dict()
-    out['stock']['item'] = parse_stock_item(data[START['SLOT_STOCK-ITEM']:START['SLOT_STOCK-ITEM']+SIZE['SLOT_STOCK-ITEM']])
-    out['stock']['materia'] = parse_stock_materia(data[START['SLOT_STOCK-MATERIA']:START['SLOT_STOCK-MATERIA']+SIZE['SLOT_STOCK-MATERIA']])
+    out['stock']['item'] = unpack_stock_item(data[START['SLOT_STOCK-ITEM']:START['SLOT_STOCK-ITEM']+SIZE['SLOT_STOCK-ITEM']])
+    out['stock']['materia'] = unpack_stock_materia(data[START['SLOT_STOCK-MATERIA']:START['SLOT_STOCK-MATERIA']+SIZE['SLOT_STOCK-MATERIA']])
+    return out
+
+def pack_slot_data(slot):
+    '''Pack an unpacked save slot into bytes
+
+    Args:
+        ``lot`` (``dict``): The input unpacked save slot
+
+    Returns:
+        ``bytes``: The resulting packed data
+    '''
+    out = bytearray(); d = slot['data']
+    out += slot['header']
+    out += pack('H', d['checksum']) # TODO maybe just recompute right now
+    out += pack('H', d['unknown1'])
+    out += pack('B', d['preview']['level'])
+    for ch in d['preview']['party']:
+        out += pack('B', ch)
+    tmp = encode_text(d['preview']['name']); out += tmp; out += NULL_BYTE*(SIZE['SLOT_PREVIEW-NAME']-len(tmp))
+    out += pack('H', d['preview']['curr_hp'])
+    out += pack('H', d['preview']['max_hp'])
+    out += pack('H', d['preview']['curr_mp'])
+    out += pack('H', d['preview']['max_mp'])
+    out += pack('I', d['preview']['gil'])
+    out += pack('I', d['preview']['playtime'])
+    tmp = encode_text(d['preview']['location']); out += tmp; out += NULL_BYTE*(SIZE['SLOT_PREVIEW-LOCATION']-len(tmp))
+    for loc in ['upper_left', 'upper_right', 'lower_left', 'lower_right']:
+        out += pack_color(d['window_color'][loc])
+    for ch in ['cloud', 'barret', 'tifa', 'aerith', 'redxiii', 'yuffie', 'caitsith', 'vincent', 'cid']:
+        out += pack_char_record(d['record'][ch])
+    for ch in d['party']:
+        out += pack('B', ch)
+    out += b'\xFF'
+    out += pack_stock_item(d['stock']['item'])
+    out += pack_stock_materia(d['stock']['materia'])
+    return out # TODO REMOVE WHEN FINISHED PACKING SAVE SLOT DATA
+    out += slot['footer']
     return out
 
 class Save:
@@ -431,10 +578,41 @@ class Save:
         for _ in range(prop['num_slots']):
             slot = dict()
             slot['header'] = data[ind:ind+prop['slot_header_size']]; ind += prop['slot_header_size']
-            slot['data'] = parse_slot_data(data[ind:ind+SAVE_SLOT_SIZE]); ind += SAVE_SLOT_SIZE
+            slot['data'] = unpack_slot_data(data[ind:ind+SAVE_SLOT_SIZE]); ind += SAVE_SLOT_SIZE
             slot['footer'] = data[ind:ind+prop['slot_footer_size']]; ind += prop['slot_footer_size']
             self.save_slots.append(slot)
-        self_bytes = self.get_bytes(); assert self_bytes == data[:len(self_bytes)] # TODO REMOVE WHEN DONE
+
+        # VALIDITY CHECK, TODO REMOVE WHEN DONE
+        self_bytes = self.get_bytes(); data_bytes = bytearray(data)
+        for i in range(len(self.save_slots)):
+            # fix preview name
+            null = False
+            start = len(self.header) + i*(prop['slot_header_size']+SAVE_SLOT_SIZE+prop['slot_footer_size']) + 8
+            for j in range(start, start + 16):
+                if null:
+                    data_bytes[j] = 0
+                elif data_bytes[j] == 255:
+                    null = True
+
+            # fix preview location
+            null = False
+            start = len(self.header) + i*(prop['slot_header_size']+SAVE_SLOT_SIZE+prop['slot_footer_size']) + 0x28
+            for j in range(start, start + 32):
+                if null:
+                    data_bytes[j] = 0
+                elif data_bytes[j] == 255:
+                    null = True
+
+            # fix character names
+            for j in range(len(self.save_slots[0]['data']['record'])):
+                null = False
+                start = len(self.header) + i*(prop['slot_header_size']+SAVE_SLOT_SIZE+prop['slot_footer_size']) + 0x54 + j*132 + 0x10
+                for k in range(start, start+12):
+                    if null:
+                        data_bytes[k] = 0
+                    elif data_bytes[k] == 255:
+                        null = True
+        assert self_bytes == data_bytes[:len(self_bytes)]
 
     def get_bytes(self):
         '''Return the bytes encoding of this save file
@@ -445,20 +623,8 @@ class Save:
         out = bytearray()
         out += self.header
         for slot in self.save_slots:
-            d = slot['data']
-            out += slot['header']
-            out += pack('H', d['checksum']) # TODO maybe just recompute right now
-            out += pack('H', d['unknown1'])
-            out += pack('B', d['preview']['level'])
-            for ch in d['preview']['party']:
-                out += pack('B', ch)
-            tmp = encode_text(d['preview']['name']); out += encode_text(d['preview']['name']); out += NULL_BYTE*(SIZE['SLOT_PREVIEW-NAME']-len(tmp))
-            out += pack('H', d['preview']['curr_hp'])
-            out += pack('H', d['preview']['max_hp'])
-            out += pack('H', d['preview']['curr_mp'])
-            out += pack('H', d['preview']['max_mp'])
-            break # TODO REMOVE WHEN DONE WITH SAVE SLOT DATA
-            out += slot['footer']
+            out += pack_slot_data(slot)
+            break # TODO REMOVE WHEN FINISHED PACK SLOT DATA
         return out
 
     def __len__(self):
