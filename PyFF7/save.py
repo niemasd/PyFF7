@@ -33,27 +33,40 @@ START = {
     'SLOT_RECORD-CLOUD':      0x0054, # Save Slot: Character Record: Cloud
 
     # Character Record
-    'RECORD_SEPHIROTH-FLAG':    0x00, # Character Record: Vincent -> Sephiroth Flag
-    'RECORD_LEVEL':             0x01, # Character Record: Level (0-99)
-    'RECORD_STAT-STRENGTH':     0x02, # Character Record: Status: Strength (0-255)
-    'RECORD_STAT-VITALITY':     0x03, # Character Record: Status: Vitality (0-255)
-    'RECORD_STAT-MAGIC':        0x04, # Character Record: Status: Magic (0-255)
-    'RECORD_STAT-SPIRIT':       0x05, # Character Record: Status: Spirit (0-255)
-    'RECORD_STAT-DEXTERITY':    0x06, # Character Record: Status: Dexterity (0-255)
-    'RECORD_STAT-LUCK':         0x07, # Character Record: Status: Luck (0-255)
-    'RECORD_BONUS-STRENGTH':    0x08, # Character Record: Bonus: Strength
-    'RECORD_BONUS-VITALITY':    0x09, # Character Record: Bonus: Vitality
-    'RECORD_BONUS-MAGIC':       0x0A, # Character Record: Bonus: Magic
-    'RECORD_BONUS-SPIRIT':      0x0B, # Character Record: Bonus: Spirit
-    'RECORD_BONUS-DEXTERITY':   0x0C, # Character Record: Bonus: Dexterity
-    'RECORD_BONUS-LUCK':        0x0D, # Character Record: Bonus: Luck
-    'RECORD_LIMIT-LEVEL':       0x0E, # Character Record: Current Limit Level (1-4)
-    'RECORD_LIMIT-BAR':         0x0F, # Character Record: Current Limit Bar (0 = Empty, 255 = Limit Break)
-    'RECORD_NAME':              0x10, # Character Record: Name
-    'RECORD_WEAPON':            0x1C, # Character Record: Equipped Weapon
-    'RECORD_ARMOR':             0x1D, # Character Record: Equipped Armor
-    'RECORD_ACCESSORY':         0x1E, # Character Record: Equipped Accessory
-    'RECORD_FLAGS':             0x1F, # Character Record: Character Flags
+    'RECORD_SEPHIROTH-FLAG':     0x00, # Character Record: Vincent -> Sephiroth Flag
+    'RECORD_LEVEL':              0x01, # Character Record: Level (0-99)
+    'RECORD_STAT-STRENGTH':      0x02, # Character Record: Status: Strength (0-255)
+    'RECORD_STAT-VITALITY':      0x03, # Character Record: Status: Vitality (0-255)
+    'RECORD_STAT-MAGIC':         0x04, # Character Record: Status: Magic (0-255)
+    'RECORD_STAT-SPIRIT':        0x05, # Character Record: Status: Spirit (0-255)
+    'RECORD_STAT-DEXTERITY':     0x06, # Character Record: Status: Dexterity (0-255)
+    'RECORD_STAT-LUCK':          0x07, # Character Record: Status: Luck (0-255)
+    'RECORD_BONUS-STRENGTH':     0x08, # Character Record: Bonus: Strength
+    'RECORD_BONUS-VITALITY':     0x09, # Character Record: Bonus: Vitality
+    'RECORD_BONUS-MAGIC':        0x0A, # Character Record: Bonus: Magic
+    'RECORD_BONUS-SPIRIT':       0x0B, # Character Record: Bonus: Spirit
+    'RECORD_BONUS-DEXTERITY':    0x0C, # Character Record: Bonus: Dexterity
+    'RECORD_BONUS-LUCK':         0x0D, # Character Record: Bonus: Luck
+    'RECORD_LIMIT-LEVEL':        0x0E, # Character Record: Current Limit Level (1-4)
+    'RECORD_LIMIT-BAR':          0x0F, # Character Record: Current Limit Bar (0 = Empty, 255 = Limit Break)
+    'RECORD_NAME':               0x10, # Character Record: Name
+    'RECORD_WEAPON':             0x1C, # Character Record: Equipped Weapon
+    'RECORD_ARMOR':              0x1D, # Character Record: Equipped Armor
+    'RECORD_ACCESSORY':          0x1E, # Character Record: Equipped Accessory
+    'RECORD_FLAGS':              0x1F, # Character Record: Character Flags
+    'RECORD_LIMIT-SKILLS':       0x22, # Character Record: Learned Limit Skills
+    'RECORD_NUM-KILLS':          0x24, # Character Record: Number of Kills
+    'RECORD_NUM-LIMIT-USES-1-1': 0x26, # Character Record: Number of Limit 1-1 Uses
+    'RECORD_NUM-LIMIT-USES-2-1': 0x28, # Character Record: Number of Limit 2-1 Uses
+    'RECORD_NUM-LIMIT-USES-3-1': 0x2A, # Character Record: Number of Limit 3-1 Uses
+    'RECORD_HP-CURR':            0x2C, # Character Record: Current HP
+    'RECORD_HP-BASE':            0x2E, # Character Record: Base HP (before materia)
+    'RECORD_MP-CURR':            0x30, # Character Record: Current MP
+    'RECORD_MP-BASE':            0x32, # Character Record: Base MP (before materia)
+    'RECORD_UNKNOWN2':           0x34, # Character Record: Unknown 2
+    'RECORD_HP-MAX':             0x38, # Character Record: Maximum HP (after materia)
+    'RECORD_MP-MAX':             0x3A, # Character Record: Maximum MP (after materia)
+    'RECORD_EXP':                0x3C, # Character Record: Current Experience
 }
 
 # size of various items in a save file (in bytes)
@@ -78,13 +91,24 @@ SIZE = {
     'RECORD_ACCESSORY':       1, # Character Record: Accessory
     'RECORD_ARMOR':           1, # Character Record: Armor
     'RECORD_BONUS':           1, # Character Record: Bonus
+    'RECORD_EXP':             4, # Character Record: Current Experience
     'RECORD_FLAGS':           3, # Character Record: Character Flags
+    'RECORD_HP-BASE':         2, # Character Record: Base HP (before materia)
+    'RECORD_HP-CURR':         2, # Character Record: Current HP
+    'RECORD_HP-MAX':          2, # Character Record: Maximum HP (after materia)
     'RECORD_LEVEL':           1, # Character Record: Level (0-99)
     'RECORD_LIMIT-BAR':       1, # Character Record: Current Limit Bar (0 = Empty, 255 = Limit Break)
     'RECORD_LIMIT-LEVEL':     1, # Character Record: Current Limit Level (1-4)
+    'RECORD_LIMIT-SKILLS':    2, # Character Record: Learned Limit Skills
+    'RECORD_MP-BASE':         2, # Character Record: Base MP (before materia)
+    'RECORD_MP-CURR':         2, # Character Record: Current MP
+    'RECORD_MP-MAX':          2, # Character Record: Maximum MP (after materia)
     'RECORD_NAME':           12, # Character Record: Name
+    'RECORD_NUM-KILLS':       2, # Character Record: Number of Kills
+    'RECORD_NUM-LIMIT-USES':  2, # Character Record: Number of Limit Uses
     'RECORD_SEPHIROTH-FLAG':  1, # Character Record: Vincent -> Sephiroth Flag
     'RECORD_STAT':            1, # Character Record: Status
+    'RECORD_UNKNOWN2':        4, # Character Record: Unknown 2
     'RECORD_WEAPON':          1, # Character Record: Equipped Weapon
 }
 
@@ -207,6 +231,19 @@ def parse_char_flags(data):
     '''
     if len(data) != SIZE['RECORD_FLAGS']:
         raise ValueError("Invalid character flags data length: %d" % len(data))
+    return data # TODO ACTUALLY PARSE
+
+def parse_char_limit_skills(data):
+    '''Parse the bytes of Learned Limit Skills
+
+    Args:
+        ``data`` (``bytes``): The input Learned Limit Skills bytes
+
+    Returns:
+        TODO: The resulting Learned Limit Skills
+    '''
+    if len(data) != SIZE['RECORD_LIMIT-SKILLS']:
+        raise ValueError("Invalid learned limit skills data length: %d" % len(data))
     return data
 
 def parse_char_record(data):
@@ -236,6 +273,18 @@ def parse_char_record(data):
     out['armor'] = unpack('B', data[START['RECORD_ARMOR']:START['RECORD_ARMOR']+SIZE['RECORD_ARMOR']])[0]
     out['accessory'] = unpack('B', data[START['RECORD_ACCESSORY']:START['RECORD_ACCESSORY']+SIZE['RECORD_ACCESSORY']])[0]
     out['flags'] = parse_char_flags(data[START['RECORD_FLAGS']:START['RECORD_FLAGS']+SIZE['RECORD_FLAGS']])
+    out['limit_skills'] = parse_char_limit_skills(data[START['RECORD_LIMIT-SKILLS']:START['RECORD_LIMIT-SKILLS']+SIZE['RECORD_LIMIT-SKILLS']])
+    out['num_kills'] = unpack('H', data[START['RECORD_NUM-KILLS']:START['RECORD_NUM-KILLS']+SIZE['RECORD_NUM-KILLS']])[0]
+    for i in [1,2,3]:
+        out['num_limit_uses_%d_1'%i] = unpack('H', data[START['RECORD_NUM-LIMIT-USES-%d-1'%i]:START['RECORD_NUM-LIMIT-USES-%d-1'%i]+SIZE['RECORD_NUM-LIMIT-USES']])[0]
+    out['curr_hp'] = unpack('H', data[START['RECORD_HP-CURR']:START['RECORD_HP-CURR']+SIZE['RECORD_HP-CURR']])[0]
+    out['base_hp'] = unpack('H', data[START['RECORD_HP-BASE']:START['RECORD_HP-BASE']+SIZE['RECORD_HP-BASE']])[0]
+    out['curr_mp'] = unpack('H', data[START['RECORD_MP-CURR']:START['RECORD_MP-CURR']+SIZE['RECORD_MP-CURR']])[0]
+    out['base_mp'] = unpack('H', data[START['RECORD_MP-BASE']:START['RECORD_MP-BASE']+SIZE['RECORD_MP-BASE']])[0]
+    out['unknown2'] = unpack('I', data[START['RECORD_UNKNOWN2']:START['RECORD_UNKNOWN2']+SIZE['RECORD_UNKNOWN2']])[0]
+    out['max_hp'] = unpack('H', data[START['RECORD_HP-MAX']:START['RECORD_HP-MAX']+SIZE['RECORD_HP-MAX']])[0]
+    out['max_mp'] = unpack('H', data[START['RECORD_MP-MAX']:START['RECORD_MP-MAX']+SIZE['RECORD_MP-MAX']])[0]
+    out['exp'] = unpack('I', data[START['RECORD_EXP']:START['RECORD_EXP']+SIZE['RECORD_EXP']])[0]
     return out
 
 def parse_slot_data(data):

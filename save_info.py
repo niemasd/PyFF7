@@ -34,12 +34,15 @@ if __name__ == "__main__":
             print("    * Window Color:")
             for k in ['upper_left', 'upper_right', 'lower_left', 'lower_right']:
                 print("      * %s: %s" % (k.replace('_',' ').capitalize(), '#%02X%02X%02X'%s['data']['window_color'][k]))
-            for k in ['Cloud']:
-                rec = s['data']['record'][k.lower()]
-                print("    * Character Record: %s" % k)
+            for ch in ['Cloud']:
+                rec = s['data']['record'][ch.lower()]
+                print("    * Character Record: %s" % ch)
                 print("      * Name: %s" % rec['name'])
-                print("      * Vincent -> Sephiroth Flag: %s" % bool(rec['sephiroth_flag']))
                 print("      * Level: %d" % rec['level'])
+                print("      * Experience: %d" % rec['exp'])
+                print("      * HP: %d/%d (base %d)" % (rec['curr_hp'], rec['max_hp'], rec['base_hp']))
+                print("      * MP: %d/%d (base %d)" % (rec['curr_mp'], rec['max_mp'], rec['base_mp']))
+                print("      * Vincent -> Sephiroth Flag: %s" % bool(rec['sephiroth_flag']))
                 print("      * Status:")
                 for k in ['strength','vitality','magic','spirit','dexterity','luck']:
                     print("        * %s: %d" % (k.capitalize(), rec['status'][k]))
@@ -52,5 +55,11 @@ if __name__ == "__main__":
                 print("      * Armor: %d" % rec['armor'])
                 print("      * Accessory: %d" % rec['accessory'])
                 print("      * Character Flags: %s" % ' '.join(bin(e).lstrip('0b').zfill(8) for e in rec['flags']))
+                print("      * Learned Limit Skills: %s" % ' '.join(bin(e).lstrip('0b').zfill(8) for e in rec['limit_skills']))
+                print("      * Number of Kills: %d" % rec['num_kills'])
+                print("      * Number of Limit Uses:")
+                for j in [1,2,3]:
+                    print("        * Limit %d-1: %d" % (j,rec['num_limit_uses_%d_1'%j]))
+                print("      * Unknown 2: %d" % rec['unknown2'])
     except BrokenPipeError:
         stderr.close()
