@@ -3,7 +3,7 @@
 Functions and classes for handling save files
 Niema Moshiri 2019
 '''
-from . import BYTES_TO_FORMAT
+from . import BYTES_TO_FORMAT,NULL_BYTE
 from .text import decode_field_text
 from struct import pack,unpack
 
@@ -350,6 +350,19 @@ def parse_stock_item(data):
         raise ValueError("Invalid item stock size: %d" % len(data))
     return [((data[i], data[i+1]%2), int(data[i+1]/2)) for i in range(0, len(data), SIZE['SLOT_STOCK-ITEM-SINGLE'])]
 
+def parse_stock_materia(data):
+    '''Parse the bytes of a materia stock
+
+    Args:
+        ``data`` (``bytes``): The input materia stock data
+
+    Returns:
+        ``list`` of `tuple``: The parsed materia stock as (materia ID, AP) tuples
+    '''
+    if len(data) != SIZE['SLOT_STOCK-MATERIA']:
+        raise ValueError("Invalid materia stock size: %d" % len(data))
+    return [(data[i], unpack('I', data[i+1:i+SIZE['SLOT_STOCK-MATERIA-SINGLE']]+NULL_BYTE)[0]) for i in range(0, len(data), SIZE['SLOT_STOCK-MATERIA-SINGLE'])]
+
 def parse_slot_data(data):
     '''Parse the bytes of a save slot
 
@@ -388,7 +401,7 @@ def parse_slot_data(data):
         out['party'].append(unpack('B', data[START['SLOT_PORTRAIT%d'%i]:START['SLOT_PORTRAIT%d'%i]+SIZE['SLOT_PORTRAIT']])[0])
     out['stock'] = dict()
     out['stock']['item'] = parse_stock_item(data[START['SLOT_STOCK-ITEM']:START['SLOT_STOCK-ITEM']+SIZE['SLOT_STOCK-ITEM']])
-    #out['stock']['materia'] = parse_stock_materia(data[START['SLOT_STOCK-MATERIA']:START['SLOT_STOCK-MATERIA']+SIZE['SLOT_STOCK-MATERIA']])
+    out['stock']['materia'] = parse_stock_materia(data[START['SLOT_STOCK-MATERIA']:START['SLOT_STOCK-MATERIA']+SIZE['SLOT_STOCK-MATERIA']])
     return out
 
 class Save:

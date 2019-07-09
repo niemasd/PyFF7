@@ -3,7 +3,7 @@
 Read the information of a save file
 Niema Moshiri 2019
 '''
-from PyFF7 import ITEM_DB
+from PyFF7 import ITEM_DB,MATERIA_DB
 from PyFF7.save import PORTRAIT_TO_NAME,PROP,Save
 from sys import argv,stderr
 USAGE = "USAGE: %s <input_save_file>" % argv[0]
@@ -68,5 +68,9 @@ if __name__ == "__main__":
                 for v in s['data']['stock']['item']:
                     if v[0] != (255, 1): # empty slot
                         print("      * %dx %s" % (v[1], ITEM_DB[v[0]]))
+                print("    * Materia Stock:")
+                for v in s['data']['stock']['materia']:
+                    if v[0] != 255: # empty slot
+                        print("      * %s (%d AP)" % (MATERIA_DB[v[0]], v[1]))
     except BrokenPipeError:
         stderr.close()
