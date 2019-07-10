@@ -48,6 +48,24 @@ START = {
     'SLOT_BLANK1':            0x04FB, # Save Slot: Blank 1 (0xFF)
     'SLOT_STOCK-ITEM':        0x04FC, # Save Slot: Party Item Stock (2 bytes/slot, 320 slots)
     'SLOT_STOCK-MATERIA':     0x077C, # Save Slot: Party Materia Stock (4 bytes/slot, 200 slots)
+    'SLOT_UNKNOWN4':          0x0A9C, # Save Slot: Unknown 4
+    'SLOT_GIL':               0x0B7C, # Save Slot: Total Gil
+    'SLOT_PLAYTIME':          0x0B80, # Save Slot: Total Playtime
+    'SLOT_UNKNOWN5':          0x0B84, # Save Slot: Unknown 5
+    'SLOT_CURR-MAP':          0x0B94, # Save Slot: Current Map
+    'SLOT_CURR-LOCATION':     0x0B96, # Save Slot: Current Location
+    'SLOT_UNKNOWN6':          0x0B98, # Save Slot: Unknown 6
+    'SLOT_WORLD-MAP-LOC-X':   0x0B9A, # Save Slot: World Map Location: X-Coordinate
+    'SLOT_WORLD-MAP-LOC-Y':   0x0B9C, # Save Slot: World Map Location: Y-Coordinate
+    'SLOT_WORLD-MAP-LOC-Z':   0x0B9E, # Save Slot: World Map Location: Z-Coordinate
+    'SLOT_UNKNOWN7':          0x0BA0, # Save Slot: Unknown 7
+    'SLOT_PLOT-PROGRESS':     0x0BA4, # Save Slot: Plot Progression Variable
+    'SLOT_UNKNOWN8':          0x0BA6, # Save Slot: Unknown 8
+    'SLOT_LOVE-AERITH':       0x0BA7, # Save Slot: Love Points: Aerith
+    'SLOT_LOVE-TIFA':         0x0BA8, # Save Slot: Love Points: Tifa
+    'SLOT_LOVE-YUFFIE':       0x0BA9, # Save Slot: Love Points: Yuffie
+    'SLOT_LOVE-BARRET':       0x0BAA, # Save Slot: Love Points: Barret
+    'SLOT_UNKNOWN9':          0x0BAB, # Save Slot: Unknown 9
 
     # Character Record
     'RECORD_SEPHIROTH-FLAG':     0x00, # Character Record: Vincent -> Sephiroth Flag
@@ -109,6 +127,12 @@ SIZE = {
     # Final Fantasy VII Save Slot
     'SLOT_BLANK1':               1, # Save Slot: Blank 1 (0xFF)
     'SLOT_CHECKSUM':             2, # Save Slot: Checksum
+    'SLOT_CURR-LOCATION':        2, # Save Slot: Current Location
+    'SLOT_CURR-MAP':             2, # Save Slot: Current Map
+    'SLOT_GIL':                  4, # Save Slot: Total Gil
+    'SLOT_LOVE':                 1, # Save Slot: Love Points
+    'SLOT_PLAYTIME':             4, # Save Slot: Total Playtime
+    'SLOT_PLOT-PROGRESS':        2, # Save Slot: Plot Progression Variable
     'SLOT_PORTRAIT':             1, # Save Slot: Portrait
     'SLOT_PREVIEW-GIL':          4, # Save Slot: Preview: Amount of Gil
     'SLOT_PREVIEW-HP-CURR':      2, # Save Slot: Preview: Lead Character's Current HP
@@ -126,7 +150,14 @@ SIZE = {
     'SLOT_STOCK-MATERIA':      800, # Save Slot: Party Materia Stock (4 bytes/slot, 200 slots)
     'SLOT_STOCK-MATERIA-SINGLE': 4, # Save Slot: Party Materia Stock: Single Item
     'SLOT_UNKNOWN1':             2, # Save Slot: Unknown 1
+    'SLOT_UNKNOWN4':           224, # Save Slot: Unknown 4
+    'SLOT_UNKNOWN5':            16, # Save Slot: Unknown 5
+    'SLOT_UNKNOWN6':             2, # Save Slot: Unknown 6
+    'SLOT_UNKNOWN7':             4, # Save Slot: Unknown 7
+    'SLOT_UNKNOWN8':             1, # Save Slot: Unknown 8
+    'SLOT_UNKNOWN9':             5, # Save Slot: Unknown 9
     'SLOT_WINDOW-COLOR':         3, # Save Slot: Window Color (RGB)
+    'SLOT_WORLD-MAP-LOC':        2, # Save Slot: World Map Location Coordinate
 
     # Character Record
     'RECORD_ACCESSORY':          1, # Character Record: Accessory
@@ -470,7 +501,7 @@ def pack_stock_materia(materia):
         if ID == 0xFF and AP == 0xFFFFFF: # empty slot
             out += b'\xFF\xFF\xFF\xFF'
         else:
-            out += pack('B', ID); out += pack('I', AP)[:SIZE['SLOT_STOCK-MATERIA-SINGLE']]
+            out += pack('B', ID); out += pack('I', AP)[:SIZE['SLOT_STOCK-MATERIA-SINGLE']-1]
     return out
 
 def unpack_slot_data(data):
@@ -489,9 +520,7 @@ def unpack_slot_data(data):
     out['unknown1'] = unpack('H', data[START['SLOT_UNKNOWN1']:START['SLOT_UNKNOWN1']+SIZE['SLOT_UNKNOWN1']])[0]
     out['preview'] = dict()
     out['preview']['level'] = unpack('B', data[START['SLOT_PREVIEW-LEVEL']:START['SLOT_PREVIEW-LEVEL']+SIZE['SLOT_PREVIEW-LEVEL']])[0]
-    out['preview']['party'] = list()
-    for i in [1,2,3]:
-        out['preview']['party'].append(unpack('B', data[START['SLOT_PREVIEW-PORTRAIT%d'%i]:START['SLOT_PREVIEW-PORTRAIT%d'%i]+SIZE['SLOT_PREVIEW-PORTRAIT']])[0])
+    out['preview']['party'] = [unpack('B', data[START['SLOT_PREVIEW-PORTRAIT%d'%i]:START['SLOT_PREVIEW-PORTRAIT%d'%i]+SIZE['SLOT_PREVIEW-PORTRAIT']])[0] for i in [1,2,3]]
     out['preview']['name'] = decode_field_text(data[START['SLOT_PREVIEW-NAME']:START['SLOT_PREVIEW-NAME']+SIZE['SLOT_PREVIEW-NAME']])
     out['preview']['curr_hp'] = unpack('H', data[START['SLOT_PREVIEW-HP-CURR']:START['SLOT_PREVIEW-HP-CURR']+SIZE['SLOT_PREVIEW-HP-CURR']])[0]
     out['preview']['max_hp'] = unpack('H', data[START['SLOT_PREVIEW-HP-MAX']:START['SLOT_PREVIEW-HP-MAX']+SIZE['SLOT_PREVIEW-HP-MAX']])[0]
@@ -500,18 +529,25 @@ def unpack_slot_data(data):
     out['preview']['gil'] = unpack('I', data[START['SLOT_PREVIEW-GIL']:START['SLOT_PREVIEW-GIL']+SIZE['SLOT_PREVIEW-GIL']])[0]
     out['preview']['playtime'] = unpack('I', data[START['SLOT_PREVIEW-PLAYTIME']:START['SLOT_PREVIEW-PLAYTIME']+SIZE['SLOT_PREVIEW-PLAYTIME']])[0]
     out['preview']['location'] = decode_field_text(data[START['SLOT_PREVIEW-LOCATION']:START['SLOT_PREVIEW-LOCATION']+SIZE['SLOT_PREVIEW-LOCATION']])
-    out['window_color'] = dict()
-    for k1,k2 in [('upper_left','UL'), ('upper_right','UR'), ('lower_left','LL'), ('lower_right','LR')]:
-        out['window_color'][k1] = unpack_color(data[START['SLOT_WINDOW-COLOR-%s'%k2]:START['SLOT_WINDOW-COLOR-%s'%k2]+SIZE['SLOT_WINDOW-COLOR']])
-    out['record'] = dict()
-    for k in ['CLOUD', 'BARRET', 'TIFA', 'AERITH', 'REDXIII', 'YUFFIE', 'CAITSITH', 'VINCENT', 'CID']:
-        out['record'][k.lower()] = unpack_char_record(data[START['SLOT_RECORD-%s'%k]:START['SLOT_RECORD-%s'%k]+SIZE['SLOT_RECORD']])
-    out['party'] = list()
-    for i in [1,2,3]:
-        out['party'].append(unpack('B', data[START['SLOT_PORTRAIT%d'%i]:START['SLOT_PORTRAIT%d'%i]+SIZE['SLOT_PORTRAIT']])[0])
+    out['window_color'] = {k1:unpack_color(data[START['SLOT_WINDOW-COLOR-%s'%k2]:START['SLOT_WINDOW-COLOR-%s'%k2]+SIZE['SLOT_WINDOW-COLOR']]) for k1,k2 in [('upper_left','UL'), ('upper_right','UR'), ('lower_left','LL'), ('lower_right','LR')]}
+    out['record'] = {k.lower():unpack_char_record(data[START['SLOT_RECORD-%s'%k]:START['SLOT_RECORD-%s'%k]+SIZE['SLOT_RECORD']]) for k in ['CLOUD', 'BARRET', 'TIFA', 'AERITH', 'REDXIII', 'YUFFIE', 'CAITSITH', 'VINCENT', 'CID']}
+    out['party'] = [unpack('B', data[START['SLOT_PORTRAIT%d'%i]:START['SLOT_PORTRAIT%d'%i]+SIZE['SLOT_PORTRAIT']])[0] for i in [1,2,3]]
     out['stock'] = dict()
     out['stock']['item'] = unpack_stock_item(data[START['SLOT_STOCK-ITEM']:START['SLOT_STOCK-ITEM']+SIZE['SLOT_STOCK-ITEM']])
     out['stock']['materia'] = unpack_stock_materia(data[START['SLOT_STOCK-MATERIA']:START['SLOT_STOCK-MATERIA']+SIZE['SLOT_STOCK-MATERIA']])
+    out['unknown4'] = data[START['SLOT_UNKNOWN4']:START['SLOT_UNKNOWN4']+SIZE['SLOT_UNKNOWN4']]
+    out['gil'] = unpack('I', data[START['SLOT_GIL']:START['SLOT_GIL']+SIZE['SLOT_GIL']])[0]
+    out['playtime'] = unpack('I', data[START['SLOT_PLAYTIME']:START['SLOT_PLAYTIME']+SIZE['SLOT_PLAYTIME']])[0]
+    out['unknown5'] = data[START['SLOT_UNKNOWN5']:START['SLOT_UNKNOWN5']+SIZE['SLOT_UNKNOWN5']]
+    out['curr_map'] = unpack('H', data[START['SLOT_CURR-MAP']:START['SLOT_CURR-MAP']+SIZE['SLOT_CURR-MAP']])[0]
+    out['curr_location'] = unpack('H', data[START['SLOT_CURR-LOCATION']:START['SLOT_CURR-LOCATION']+SIZE['SLOT_CURR-LOCATION']])[0]
+    out['unknown6'] = unpack('H', data[START['SLOT_UNKNOWN6']:START['SLOT_UNKNOWN6']+SIZE['SLOT_UNKNOWN6']])[0]
+    out['world_map_location'] = [unpack('H', data[START['SLOT_WORLD-MAP-LOC-%s'%k]:START['SLOT_WORLD-MAP-LOC-%s'%k]+SIZE['SLOT_WORLD-MAP-LOC']])[0] for k in ['X','Y','Z']]
+    out['unknown7'] = unpack('I', data[START['SLOT_UNKNOWN7']:START['SLOT_UNKNOWN7']+SIZE['SLOT_UNKNOWN7']])[0]
+    out['plot_progress'] = unpack('H', data[START['SLOT_PLOT-PROGRESS']:START['SLOT_PLOT-PROGRESS']+SIZE['SLOT_PLOT-PROGRESS']])[0]
+    out['unknown8'] = unpack('B', data[START['SLOT_UNKNOWN8']:START['SLOT_UNKNOWN8']+SIZE['SLOT_UNKNOWN8']])[0]
+    out['love'] = {k.lower():unpack('B', data[START['SLOT_LOVE-%s'%k]:START['SLOT_LOVE-%s'%k]+SIZE['SLOT_LOVE']])[0] for k in ['AERITH','TIFA','YUFFIE','BARRET']}
+    out['unknown9'] = data[START['SLOT_UNKNOWN9']:START['SLOT_UNKNOWN9']+SIZE['SLOT_UNKNOWN9']]
     return out
 
 def pack_slot_data(slot):
@@ -547,8 +583,22 @@ def pack_slot_data(slot):
     out += b'\xFF'
     out += pack_stock_item(d['stock']['item'])
     out += pack_stock_materia(d['stock']['materia'])
-    return out # TODO REMOVE WHEN FINISHED PACKING SAVE SLOT DATA
-    out += slot['footer']
+    out += d['unknown4']
+    out += pack('I', d['gil'])
+    out += pack('I', d['playtime'])
+    out += d['unknown5']
+    out += pack('H', d['curr_map'])
+    out += pack('H', d['curr_location'])
+    out += pack('H', d['unknown6'])
+    for v in d['world_map_location']:
+        out += pack('H', v)
+    out += pack('I', d['unknown7'])
+    out += pack('H', d['plot_progress'])
+    out += pack('B', d['unknown8'])
+    for ch in ['aerith','tifa','yuffie','barret']:
+        out += pack('B', d['love'][ch])
+    out += d['unknown9']
+    #out += slot['footer'] # TODO UNCOMMENT WHEN FINISHED PACKING SAVE SLOT DATA
     return out
 
 class Save:

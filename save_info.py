@@ -17,27 +17,35 @@ if __name__ == "__main__":
         print("* Save Type: %s" % prop['label'])
         print("* Number of Save Slots: %s" % len(sav))
         for i,s in enumerate(sav):
-            if s['data']['checksum'] == 0:
+            d = s['data']
+            if d['checksum'] == 0:
                 print("  * Save Slot %d: Empty" % (i+1)); continue
             else:
                 print("  * Save Slot %d:" % (i+1))
-            print("    * Checksum: 0x%04X" % s['data']['checksum'])
-            print("    * Unknown 1: %d" % s['data']['unknown1'])
-            print("    * Party: %s" % ', '.join([PORTRAIT_TO_NAME[v] for v in s['data']['party'] if v != 255]))
+            print("    * Checksum: 0x%04X" % d['checksum'])
+            print("    * Unknown 1: %d" % d['unknown1'])
             print("    * Preview:")
-            print("      * Lead Character's Level: %d" % s['data']['preview']['level'])
-            print("      * Party: %s" % ', '.join([PORTRAIT_TO_NAME[v] for v in s['data']['preview']['party'] if v != 255]))
-            print("      * Lead Character's Name: %s" % s['data']['preview']['name'])
-            print("      * Lead Character's HP: %d/%d" % (s['data']['preview']['curr_hp'], s['data']['preview']['max_hp']))
-            print("      * Lead Character's MP: %d/%d" % (s['data']['preview']['curr_mp'], s['data']['preview']['max_mp']))
-            print("      * Total Gil: %d" % s['data']['preview']['gil'])
-            print("      * Playtime (seconds): %d" % s['data']['preview']['playtime'])
-            print("      * Save Location: %s" % s['data']['preview']['location'])
+            print("      * Lead Character's Level: %d" % d['preview']['level'])
+            print("      * Party: %s" % ', '.join([PORTRAIT_TO_NAME[v] for v in d['preview']['party'] if v != 255]))
+            print("      * Lead Character's Name: %s" % d['preview']['name'])
+            print("      * Lead Character's HP: %d/%d" % (d['preview']['curr_hp'], d['preview']['max_hp']))
+            print("      * Lead Character's MP: %d/%d" % (d['preview']['curr_mp'], d['preview']['max_mp']))
+            print("      * Total Gil: %d" % d['preview']['gil'])
+            print("      * Playtime (seconds): %d" % d['preview']['playtime'])
+            print("      * Save Location: %s" % d['preview']['location'])
+            print("    * Party: %s" % ', '.join([PORTRAIT_TO_NAME[v] for v in d['party'] if v != 255]))
+            print("    * Total Gil: %d" % d['gil'])
+            print("    * Playtime (seconds): %d" % d['playtime'])
+            print("    * Save Location: Map = %d, Location = %d, World Map Location = %s" % (d['curr_map'], d['curr_location'], str(tuple(d['world_map_location'])).replace(' ','')))
+            print("    * Plot Progression Variable: %d" % d['plot_progress'])
+            print("    * Love Points:")
+            for ch in ['aerith','tifa','yuffie','barret']:
+                print("      * %s: %d" % (ch.capitalize(), d['love'][ch]))
             print("    * Window Color:")
             for k in ['upper_left', 'upper_right', 'lower_left', 'lower_right']:
-                print("      * %s: %s" % (k.replace('_',' ').capitalize(), '#%02X%02X%02X'%s['data']['window_color'][k]))
+                print("      * %s: %s" % (k.replace('_',' ').capitalize(), '#%02X%02X%02X'%d['window_color'][k]))
             for ch in ['Cloud', 'Barret', 'Tifa', 'Aerith', 'Red XIII', 'Yuffie', 'Cait Sith', 'Vincent', 'Cid']:
-                rec = s['data']['record'][ch.replace(' ','').lower()]
+                rec = d['record'][ch.replace(' ','').lower()]
                 print("    * Character Record: %s" % ch)
                 print("      * Name: %s" % rec['name'])
                 print("      * Level: %d" % rec['level'])
@@ -64,13 +72,19 @@ if __name__ == "__main__":
                     print("        * Limit %d-1: %d" % (j,rec['num_limit_uses_%d_1'%j]))
                 print("      * Unknown 2: %d" % rec['unknown2'])
                 print("      * Unknown 3: %s" % ''.join('%X'%v for v in rec['unknown3']))
-                print("    * Item Stock:")
-                for v in s['data']['stock']['item']:
-                    if v[0] != (255, 1): # empty slot
-                        print("      * %dx %s" % (v[1], ITEM_DB[v[0]]))
-                print("    * Materia Stock:")
-                for v in s['data']['stock']['materia']:
-                    if v[0] != 255: # empty slot
-                        print("      * %s (%d AP)" % (MATERIA_DB[v[0]], v[1]))
+            print("    * Item Stock:")
+            for v in d['stock']['item']:
+                if v[0] != (255, 1): # empty slot
+                    print("      * %dx %s" % (v[1], ITEM_DB[v[0]]))
+            print("    * Materia Stock:")
+            for v in d['stock']['materia']:
+                if v[0] != 255: # empty slot
+                    print("      * %s (%d AP)" % (MATERIA_DB[v[0]], v[1]))
+            print("    * Unknown 4: %d bytes" % len(d['unknown4']))
+            print("    * Unknown 5: %s" % d['unknown5'])
+            print("    * Unknown 6: %d" % d['unknown6'])
+            print("    * Unknown 7: %d" % d['unknown7'])
+            print("    * Unknown 8: %d" % d['unknown8'])
+            print("    * Unknown 9: %s" % d['unknown9'])
     except BrokenPipeError:
         stderr.close()
