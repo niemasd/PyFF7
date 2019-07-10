@@ -66,6 +66,13 @@ START = {
     'SLOT_LOVE-YUFFIE':       0x0BA9, # Save Slot: Love Points: Yuffie
     'SLOT_LOVE-BARRET':       0x0BAA, # Save Slot: Love Points: Barret
     'SLOT_UNKNOWN9':          0x0BAB, # Save Slot: Unknown 9
+    'SLOT_GAMETIME-HOUR':     0x0BB4, # Save Slot: Game Timer: Hours
+    'SLOT_GAMETIME-MINUTE':   0x0BB5, # Save Slot: Game Timer: Minutes
+    'SLOT_GAMETIME-SECOND':   0x0BB6, # Save Slot: Game Timer: Seconds
+    'SLOT_GAMETIME-TENTH':    0x0BB7, # Save Slot: Game Timer: Tenths
+    'SLOT_UNKNOWN10':         0x0BB8, # Save Slot: Unknown 10
+    'SLOT_NUM-BATTLES':       0x0BBC, # Save Slot: Number of Battles
+    'SLOT_NUM-ESCAPES':       0x0BBE, # Save Slot: Number of Escapes
 
     # Character Record
     'RECORD_SEPHIROTH-FLAG':     0x00, # Character Record: Vincent -> Sephiroth Flag
@@ -129,8 +136,14 @@ SIZE = {
     'SLOT_CHECKSUM':             2, # Save Slot: Checksum
     'SLOT_CURR-LOCATION':        2, # Save Slot: Current Location
     'SLOT_CURR-MAP':             2, # Save Slot: Current Map
+    'SLOT_GAMETIME-HOUR':        1, # Save Slot: Game Timer: Hours
+    'SLOT_GAMETIME-MINUTE':      1, # Save Slot: Game Timer: Minutes
+    'SLOT_GAMETIME-SECOND':      1, # Save Slot: Game Timer: Seconds
+    'SLOT_GAMETIME-TENTH':       1, # Save Slot: Game Timer: Tenths
     'SLOT_GIL':                  4, # Save Slot: Total Gil
     'SLOT_LOVE':                 1, # Save Slot: Love Points
+    'SLOT_NUM-BATTLES':          2, # Save Slot: Number of Battles
+    'SLOT_NUM-ESCAPES':          2, # Save Slot: Number of Escapes
     'SLOT_PLAYTIME':             4, # Save Slot: Total Playtime
     'SLOT_PLOT-PROGRESS':        2, # Save Slot: Plot Progression Variable
     'SLOT_PORTRAIT':             1, # Save Slot: Portrait
@@ -155,7 +168,8 @@ SIZE = {
     'SLOT_UNKNOWN6':             2, # Save Slot: Unknown 6
     'SLOT_UNKNOWN7':             4, # Save Slot: Unknown 7
     'SLOT_UNKNOWN8':             1, # Save Slot: Unknown 8
-    'SLOT_UNKNOWN9':             5, # Save Slot: Unknown 9
+    'SLOT_UNKNOWN9':             9, # Save Slot: Unknown 9
+    'SLOT_UNKNOWN10':            4, # Save Slot: Unknown 10
     'SLOT_WINDOW-COLOR':         3, # Save Slot: Window Color (RGB)
     'SLOT_WORLD-MAP-LOC':        2, # Save Slot: World Map Location Coordinate
 
@@ -548,6 +562,10 @@ def unpack_slot_data(data):
     out['unknown8'] = unpack('B', data[START['SLOT_UNKNOWN8']:START['SLOT_UNKNOWN8']+SIZE['SLOT_UNKNOWN8']])[0]
     out['love'] = {k.lower():unpack('B', data[START['SLOT_LOVE-%s'%k]:START['SLOT_LOVE-%s'%k]+SIZE['SLOT_LOVE']])[0] for k in ['AERITH','TIFA','YUFFIE','BARRET']}
     out['unknown9'] = data[START['SLOT_UNKNOWN9']:START['SLOT_UNKNOWN9']+SIZE['SLOT_UNKNOWN9']]
+    out['gametime'] = [unpack('B', data[START['SLOT_GAMETIME-%s'%k]:START['SLOT_GAMETIME-%s'%k]+SIZE['SLOT_GAMETIME-%s'%k]])[0] for k in ['HOUR','MINUTE','SECOND','TENTH']]
+    out['unknown10'] = unpack('I', data[START['SLOT_UNKNOWN10']:START['SLOT_UNKNOWN10']+SIZE['SLOT_UNKNOWN10']])[0]
+    out['num_battles'] = unpack('H', data[START['SLOT_NUM-BATTLES']:START['SLOT_NUM-BATTLES']+SIZE['SLOT_NUM-BATTLES']])[0]
+    out['num_escapes'] = unpack('H', data[START['SLOT_NUM-ESCAPES']:START['SLOT_NUM-ESCAPES']+SIZE['SLOT_NUM-ESCAPES']])[0]
     return out
 
 def pack_slot_data(slot):
@@ -598,6 +616,11 @@ def pack_slot_data(slot):
     for ch in ['aerith','tifa','yuffie','barret']:
         out += pack('B', d['love'][ch])
     out += d['unknown9']
+    for v in d['gametime']:
+        out += pack('B', v)
+    out += pack('I', d['unknown10'])
+    out += pack('H', d['num_battles'])
+    out += pack('H', d['num_escapes'])
     #out += slot['footer'] # TODO UNCOMMENT WHEN FINISHED PACKING SAVE SLOT DATA
     return out
 

@@ -35,9 +35,11 @@ if __name__ == "__main__":
             print("      * Save Location: %s" % d['preview']['location'])
             print("    * Party: %s" % ', '.join([PORTRAIT_TO_NAME[v] for v in d['party'] if v != 255]))
             print("    * Total Gil: %d" % d['gil'])
-            print("    * Playtime (seconds): %d" % d['playtime'])
+            print("    * Play Time (seconds): %d" % d['playtime'])
+            print("    * Game Time (HHH:MM:SS.TTT): %s:%s:%s.%s" % (str(d['gametime'][0]).zfill(3), str(d['gametime'][1]).zfill(2), str(d['gametime'][2]).zfill(2), str(d['gametime'][3]).zfill(3)))
             print("    * Save Location: Map = %d, Location = %d, World Map Location = %s" % (d['curr_map'], d['curr_location'], str(tuple(d['world_map_location'])).replace(' ','')))
             print("    * Plot Progression Variable: %d" % d['plot_progress'])
+            print("    * Number of Battles: Fought %d, Escaped %d" % (d['num_battles'], d['num_escapes']))
             print("    * Love Points:")
             for ch in ['aerith','tifa','yuffie','barret']:
                 print("      * %s: %d" % (ch.capitalize(), d['love'][ch]))
@@ -86,5 +88,6 @@ if __name__ == "__main__":
             print("    * Unknown 7: %d" % d['unknown7'])
             print("    * Unknown 8: %d" % d['unknown8'])
             print("    * Unknown 9: %s" % d['unknown9'])
+            print("    * Unknown 10: %d" % d['unknown10'])
     except BrokenPipeError:
         stderr.close()
