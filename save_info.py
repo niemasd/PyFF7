@@ -81,7 +81,11 @@ if __name__ == "__main__":
             for v in d['stock']['materia']:
                 if v[0] != 255: # empty slot
                     print("      * %s (%d AP)" % (MATERIA_DB[v[0]], v[1]))
-            print("    * Unknown 4: %d bytes" % len(d['unknown4']))
+            print("    * Materia Stolen by Yuffie:")
+            for v in d['stolen_materia']:
+                if v[0] != 255: # empty slot
+                    print("      * %s (%d AP)" % (MATERIA_DB[v[0]], v[1]))
+            print("    * Unknown 4: %s" % d['unknown4'])
             print("    * Unknown 5: %s" % d['unknown5'])
             print("    * Unknown 6: %d" % d['unknown6'])
             print("    * Unknown 7: %d" % d['unknown7'])

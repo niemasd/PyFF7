@@ -11,6 +11,7 @@ from struct import pack,unpack
 SAVE_SLOT_SIZE = 4340
 CAPACITY_STOCK_ITEM = 320
 CAPACITY_STOCK_MATERIA = 200
+CAPACITY_STOLEN_MATERIA = 48
 
 # start offsets of various items in a save file (in bytes, with respect to start of slot data)
 START = {
@@ -47,7 +48,8 @@ START = {
     'SLOT_BLANK1':            0x04FB, # Save Slot: Blank 1 (0xFF)
     'SLOT_STOCK-ITEM':        0x04FC, # Save Slot: Party Item Stock (2 bytes/slot, 320 slots)
     'SLOT_STOCK-MATERIA':     0x077C, # Save Slot: Party Materia Stock (4 bytes/slot, 200 slots)
-    'SLOT_UNKNOWN4':          0x0A9C, # Save Slot: Unknown 4
+    'SLOT_STOLEN-MATERIA':    0x0A9C, # Save Slot: Materia Stolen by Yuffie (4 bytes/slot, 48 slots)
+    'SLOT_UNKNOWN4':          0x0B5C, # Save Slot: Unknown 4
     'SLOT_GIL':               0x0B7C, # Save Slot: Total Gil
     'SLOT_PLAYTIME':          0x0B80, # Save Slot: Total Playtime
     'SLOT_UNKNOWN5':          0x0B84, # Save Slot: Unknown 5
@@ -164,7 +166,8 @@ SIZE = {
     'SLOT_STOCK-ITEM-SINGLE':    2, # Save Slot: Party Item Stock: Single Item
     'SLOT_STOCK-MATERIA':      800, # Save Slot: Party Materia Stock (4 bytes/slot, 200 slots)
     'SLOT_STOCK-MATERIA-SINGLE': 4, # Save Slot: Party Materia Stock: Single Item
-    'SLOT_UNKNOWN4':           224, # Save Slot: Unknown 4
+    'SLOT_STOLEN-MATERIA':     192, # Save Slot: Materia Stolen by Yuffie (4 bytes/slot, 48 slots)
+    'SLOT_UNKNOWN4':            32, # Save Slot: Unknown 4
     'SLOT_UNKNOWN5':            16, # Save Slot: Unknown 5
     'SLOT_UNKNOWN6':             2, # Save Slot: Unknown 6
     'SLOT_UNKNOWN7':             4, # Save Slot: Unknown 7
@@ -518,7 +521,7 @@ def unpack_stock_materia(data):
     Returns:
         ``list`` of `tuple``: The parsed materia stock as (materia ID, AP) tuples
     '''
-    if len(data) != SIZE['SLOT_STOCK-MATERIA']:
+    if len(data) != SIZE['SLOT_STOCK-MATERIA'] and len(data) != SIZE['SLOT_STOLEN-MATERIA']:
         raise ValueError("Invalid materia stock size: %d" % len(data))
     return [(data[i], unpack('I', data[i+1:i+SIZE['SLOT_STOCK-MATERIA-SINGLE']]+NULL_BYTE)[0]) for i in range(0, len(data), SIZE['SLOT_STOCK-MATERIA-SINGLE'])]
 
@@ -531,7 +534,7 @@ def pack_stock_materia(materia):
     Returns:
         ``bytes``: The resulting packed data
     '''
-    if len(materia) != CAPACITY_STOCK_MATERIA:
+    if len(materia) != CAPACITY_STOCK_MATERIA and len(materia) != CAPACITY_STOLEN_MATERIA:
         raise ValueError("Invalid materia stock length: %d" % len(materia))
     out = bytearray()
     for ID,AP in materia:
@@ -573,6 +576,7 @@ def unpack_slot_data(data):
     out['stock'] = dict()
     out['stock']['item'] = unpack_stock_item(data[START['SLOT_STOCK-ITEM']:START['SLOT_STOCK-ITEM']+SIZE['SLOT_STOCK-ITEM']])
     out['stock']['materia'] = unpack_stock_materia(data[START['SLOT_STOCK-MATERIA']:START['SLOT_STOCK-MATERIA']+SIZE['SLOT_STOCK-MATERIA']])
+    out['stolen_materia'] = unpack_stock_materia(data[START['SLOT_STOLEN-MATERIA']:START['SLOT_STOLEN-MATERIA']+SIZE['SLOT_STOLEN-MATERIA']])
     out['unknown4'] = data[START['SLOT_UNKNOWN4']:START['SLOT_UNKNOWN4']+SIZE['SLOT_UNKNOWN4']]
     out['gil'] = unpack('I', data[START['SLOT_GIL']:START['SLOT_GIL']+SIZE['SLOT_GIL']])[0]
     out['playtime'] = unpack('I', data[START['SLOT_PLAYTIME']:START['SLOT_PLAYTIME']+SIZE['SLOT_PLAYTIME']])[0]
@@ -626,6 +630,7 @@ def pack_slot_data(slot):
     out += b'\xFF'
     out += pack_stock_item(d['stock']['item'])
     out += pack_stock_materia(d['stock']['materia'])
+    out += pack_stock_materia(d['stolen_materia'])
     out += d['unknown4']
     out += pack('I', d['gil'])
     out += pack('I', d['playtime'])
