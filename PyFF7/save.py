@@ -58,9 +58,9 @@ START = {
     'SLOT_CURR-MODULE':       0x0B90, # Save Slot: Current Module
     'SLOT_CURR-LOCATION':     0x0B96, # Save Slot: Current Location
     'SLOT_BLANK2':            0x0B98, # Save Slot: Blank 2 (0xFFFF)
-    'SLOT_WORLD-MAP-LOC-X':   0x0B9A, # Save Slot: World Map Location: X-Coordinate (signed)
-    'SLOT_WORLD-MAP-LOC-Y':   0x0B9C, # Save Slot: World Map Location: Y-Coordinate (signed)
-    'SLOT_WORLD-MAP-LOC-T':   0x0B9E, # Save Slot: World Map Location: Triangle ID
+    'SLOT_MAP-LOC-X':         0x0B9A, # Save Slot: Map Location: X-Coordinate (signed)
+    'SLOT_MAP-LOC-Y':         0x0B9C, # Save Slot: Map Location: Y-Coordinate (signed)
+    'SLOT_MAP-LOC-T':         0x0B9E, # Save Slot: Map Location: Triangle ID
     'SLOT_UNKNOWN7':          0x0BA0, # Save Slot: Unknown 7
     'SLOT_PLOT-PROGRESS':     0x0BA4, # Save Slot: Plot Progression Variable
     'SLOT_UNKNOWN8':          0x0BA6, # Save Slot: Unknown 8
@@ -151,6 +151,7 @@ SIZE = {
     'SLOT_GIL':                  4, # Save Slot: Total Gil
     'SLOT_KEY-ITEMS':            8, # Save Slot: Key Items
     'SLOT_LOVE':                 1, # Save Slot: Love Points
+    'SLOT_MAP-LOC':              2, # Save Slot: Map Location Coordinate
     'SLOT_NUM-BATTLES':          2, # Save Slot: Number of Battles
     'SLOT_NUM-ESCAPES':          2, # Save Slot: Number of Escapes
     'SLOT_PLAYTIME':             4, # Save Slot: Total Playtime (seconds)
@@ -180,7 +181,6 @@ SIZE = {
     'SLOT_UNKNOWN10':            4, # Save Slot: Unknown 10
     'SLOT_UNKNOWN11':           57, # Save Slot: Unknown 11
     'SLOT_WINDOW-COLOR':         3, # Save Slot: Window Color (RGB)
-    'SLOT_WORLD-MAP-LOC':        2, # Save Slot: World Map Location Coordinate
 
     # Character Record
     'RECORD_ACCESSORY':          1, # Character Record: Accessory
@@ -597,7 +597,7 @@ def unpack_slot_data(data):
     out['curr_module'] = data[START['SLOT_CURR-MODULE']:START['SLOT_CURR-MODULE']+SIZE['SLOT_CURR-MODULE']]
     out['curr_location'] = unpack('H', data[START['SLOT_CURR-LOCATION']:START['SLOT_CURR-LOCATION']+SIZE['SLOT_CURR-LOCATION']])[0]
     out['blank2'] = unpack('H', data[START['SLOT_BLANK2']:START['SLOT_BLANK2']+SIZE['SLOT_BLANK2']])[0]
-    out['world_map_location'] = [unpack({'X':'h','Y':'h','T':'H'}[k], data[START['SLOT_WORLD-MAP-LOC-%s'%k]:START['SLOT_WORLD-MAP-LOC-%s'%k]+SIZE['SLOT_WORLD-MAP-LOC']])[0] for k in ['X','Y','T']]
+    out['map_location'] = [unpack({'X':'h','Y':'h','T':'H'}[k], data[START['SLOT_MAP-LOC-%s'%k]:START['SLOT_MAP-LOC-%s'%k]+SIZE['SLOT_MAP-LOC']])[0] for k in ['X','Y','T']]
     out['unknown7'] = unpack('I', data[START['SLOT_UNKNOWN7']:START['SLOT_UNKNOWN7']+SIZE['SLOT_UNKNOWN7']])[0]
     out['plot_progress'] = unpack('H', data[START['SLOT_PLOT-PROGRESS']:START['SLOT_PLOT-PROGRESS']+SIZE['SLOT_PLOT-PROGRESS']])[0]
     out['unknown8'] = unpack('B', data[START['SLOT_UNKNOWN8']:START['SLOT_UNKNOWN8']+SIZE['SLOT_UNKNOWN8']])[0]
@@ -653,7 +653,7 @@ def pack_slot_data(slot):
     out += d['curr_module']
     out += pack('H', d['curr_location'])
     out += pack('H', d['blank2'])
-    for i,v in enumerate(d['world_map_location']):
+    for i,v in enumerate(d['map_location']):
         out += pack(['h','h','H'][i], v)
     out += pack('I', d['unknown7'])
     out += pack('H', d['plot_progress'])
