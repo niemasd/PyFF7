@@ -4,7 +4,7 @@ Read the information of a save file
 Niema Moshiri 2019
 '''
 from PyFF7 import ITEM_DB,MATERIA_DB
-from PyFF7.save import PORTRAIT_TO_NAME,PROP,Save,SAVE_MODULE
+from PyFF7.save import CHAR_FLAG_TO_NAME,CHAR_ORDER_TO_NAME,PORTRAIT_TO_NAME,PROP,Save,SAVE_MODULE
 from sys import argv,stderr
 USAGE = "USAGE: %s <input_save_file>" % argv[0]
 
@@ -68,7 +68,8 @@ if __name__ == "__main__":
                 for k in ['weapon','armor']:
                     print("      * %s: %d" % (k.capitalize(), rec[k]))
                     print("        * Equipped Materia: %s" % [v for v in rec['materia'][k] if v != 255])
-                print("      * Character Flags: %s" % ' '.join(bin(e).lstrip('0b').zfill(8) for e in rec['flags']))
+                print("      * Character Flags: %s" % CHAR_FLAG_TO_NAME[rec['flags']])
+                print("      * Character Order: %s" % CHAR_ORDER_TO_NAME[rec['order']])
                 print("      * Learned Limit Skills: %s" % ' '.join(bin(e).lstrip('0b').zfill(8) for e in rec['limit_skills']))
                 print("      * Number of Kills: %d" % rec['num_kills'])
                 print("      * Number of Limit Uses:")

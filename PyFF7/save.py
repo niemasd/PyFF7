@@ -103,7 +103,9 @@ START = {
     'RECORD_WEAPON':             0x1C, # Character Record: Equipped Weapon
     'RECORD_ARMOR':              0x1D, # Character Record: Equipped Armor
     'RECORD_ACCESSORY':          0x1E, # Character Record: Equipped Accessory
-    'RECORD_FLAGS':              0x1F, # Character Record: Character Flags
+    'RECORD_FLAGS':              0x1F, # Character Record: Character Flags (0x10 = Sadness, 0x20 = Fury)
+    'RECORD_ORDER':              0x20, # Character Record: Character Order (0xFF = Normal, 0xFE = Back)
+    'RECORD_LEVEL-PROGRESS':     0x21, # Character Record: Level Progress (0-63; <4 hidden by game)
     'RECORD_LIMIT-SKILLS':       0x22, # Character Record: Learned Limit Skills
     'RECORD_NUM-KILLS':          0x24, # Character Record: Number of Kills
     'RECORD_NUM-LIMIT-USES-1-1': 0x26, # Character Record: Number of Limit 1-1 Uses
@@ -194,11 +196,12 @@ SIZE = {
     'RECORD_BONUS':              1, # Character Record: Bonus
     'RECORD_EXP_CURR':           4, # Character Record: Current Experience
     'RECORD_EXP_NEXT':           4, # Character Record: Next Level Experience
-    'RECORD_FLAGS':              3, # Character Record: Character Flags
+    'RECORD_FLAGS':              1, # Character Record: Character Flags (0x10 = Sadness, 0x20 = Fury)
     'RECORD_HP-BASE':            2, # Character Record: Base HP (before materia)
     'RECORD_HP-CURR':            2, # Character Record: Current HP
     'RECORD_HP-MAX':             2, # Character Record: Maximum HP (after materia)
     'RECORD_LEVEL':              1, # Character Record: Level (0-99)
+    'RECORD_LEVEL-PROGRESS':     1, # Character Record: Level Progress (0-63; <4 hidden by game)
     'RECORD_LIMIT-BAR':          1, # Character Record: Current Limit Bar (0 = Empty, 255 = Limit Break)
     'RECORD_LIMIT-LEVEL':        1, # Character Record: Current Limit Level (1-4)
     'RECORD_LIMIT-SKILLS':       2, # Character Record: Learned Limit Skills
@@ -209,6 +212,7 @@ SIZE = {
     'RECORD_NAME':              12, # Character Record: Name
     'RECORD_NUM-KILLS':          2, # Character Record: Number of Kills
     'RECORD_NUM-LIMIT-USES':     2, # Character Record: Number of Limit Uses
+    'RECORD_ORDER':              1, # Character Record: Character Order (0xFF = Normal, 0xFE = Back)
     'RECORD_SEPHIROTH-FLAG':     1, # Character Record: Vincent -> Sephiroth Flag
     'RECORD_STAT':               1, # Character Record: Status
     'RECORD_UNKNOWN2':           4, # Character Record: Unknown 2
@@ -237,6 +241,19 @@ PORTRAIT_TO_NAME = {
 SAVE_MODULE = {
     b'\x00\x00\x00\x00\x01\x00': 'Field',
     b'\x02\x00\x00\x00\x03\x00': 'World Map',
+}
+
+# translate character flag to name
+CHAR_FLAG_TO_NAME = {
+    0x00: 'None',
+    0x10: 'Sadness',
+    0x20: 'Fury',
+}
+
+# translate character order to name
+CHAR_ORDER_TO_NAME = {
+    0xFE: 'Back',
+    0xFF: 'Normal',
 }
 
 # format-dependant properties
@@ -362,30 +379,6 @@ def pack_color(c):
     '''
     return pack('B',c[0]) + pack('B',c[1]) + pack('B',c[2])
 
-def unpack_char_flags(data):
-    '''Parse the bytes of Character Flags (in Character Record)
-
-    Args:
-        ``data`` (``bytes``): The input character flags bytes
-
-    Returns:
-        TODO: The resulting character flags
-    '''
-    if len(data) != SIZE['RECORD_FLAGS']:
-        raise ValueError("Invalid character flags data length: %d" % len(data))
-    return data # TODO ACTUALLY PARSE
-
-def pack_char_flags(flags):
-    '''Pack Character Flags (in Character Record) into bytes
-
-    Args:
-        ``flags`` (TODO): The input character flags
-
-    Returns:
-        ``bytes``: The resulting packed data
-    '''
-    return flags # TODO ACTUALLY PACK ONCE I'VE IMPLEMENTED unpack_char_flags
-
 def unpack_char_limit_skills(data):
     '''Parse the bytes of Learned Limit Skills
 
@@ -436,7 +429,9 @@ def unpack_char_record(data):
     out['weapon'] = unpack('B', data[START['RECORD_WEAPON']:START['RECORD_WEAPON']+SIZE['RECORD_WEAPON']])[0]
     out['armor'] = unpack('B', data[START['RECORD_ARMOR']:START['RECORD_ARMOR']+SIZE['RECORD_ARMOR']])[0]
     out['accessory'] = unpack('B', data[START['RECORD_ACCESSORY']:START['RECORD_ACCESSORY']+SIZE['RECORD_ACCESSORY']])[0]
-    out['flags'] = unpack_char_flags(data[START['RECORD_FLAGS']:START['RECORD_FLAGS']+SIZE['RECORD_FLAGS']])
+    out['flags'] = unpack('B', data[START['RECORD_FLAGS']:START['RECORD_FLAGS']+SIZE['RECORD_FLAGS']])[0]
+    out['order'] = unpack('B', data[START['RECORD_ORDER']:START['RECORD_ORDER']+SIZE['RECORD_ORDER']])[0]
+    out['level_progress'] = unpack('B', data[START['RECORD_LEVEL-PROGRESS']:START['RECORD_LEVEL-PROGRESS']+SIZE['RECORD_LEVEL-PROGRESS']])[0]
     out['limit_skills'] = unpack_char_limit_skills(data[START['RECORD_LIMIT-SKILLS']:START['RECORD_LIMIT-SKILLS']+SIZE['RECORD_LIMIT-SKILLS']])
     out['num_kills'] = unpack('H', data[START['RECORD_NUM-KILLS']:START['RECORD_NUM-KILLS']+SIZE['RECORD_NUM-KILLS']])[0]
     for i in [1,2,3]:
@@ -478,7 +473,9 @@ def pack_char_record(rec):
     tmp = encode_text(rec['name']); out += tmp; out += NULL_BYTE*(SIZE['RECORD_NAME']-len(tmp))
     for k in ['weapon', 'armor', 'accessory']:
         out += pack('B', rec[k])
-    out += pack_char_flags(rec['flags'])
+    out += pack('B', rec['flags'])
+    out += pack('B', rec['order'])
+    out += pack('B', rec['level_progress'])
     out += pack_char_limit_skills(rec['limit_skills'])
     out += pack('H', rec['num_kills'])
     for i in [1,2,3]:
