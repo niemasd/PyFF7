@@ -12,6 +12,8 @@ SAVE_SLOT_SIZE = 4340
 CAPACITY_STOCK_ITEM = 320
 CAPACITY_STOCK_MATERIA = 200
 CAPACITY_STOLEN_MATERIA = 48
+CAPACITY_WEAPON_MATERIA = 8
+CAPACITY_ARMOR_MATERIA = 8
 NUM_LIMIT_LEVELS = 4
 LIMIT_LIST = ["1-1", "1-2", None, "2-1", "2-2", None, "3-1", "3-2", None, "4"]
 
@@ -121,23 +123,8 @@ START = {
     'RECORD_HP-MAX':             0x38, # Character Record: Maximum HP (after materia)
     'RECORD_MP-MAX':             0x3A, # Character Record: Maximum MP (after materia)
     'RECORD_EXP_CURR':           0x3C, # Character Record: Current Experience
-    'RECORD_MATERIA-WEAPON-1':   0x40, # Character Record: Weapon Materia Slot 1
-    'RECORD_MATERIA-WEAPON-2':   0x41, # Character Record: Weapon Materia Slot 2
-    'RECORD_MATERIA-WEAPON-3':   0x42, # Character Record: Weapon Materia Slot 3
-    'RECORD_MATERIA-WEAPON-4':   0x43, # Character Record: Weapon Materia Slot 4
-    'RECORD_MATERIA-WEAPON-5':   0x44, # Character Record: Weapon Materia Slot 5
-    'RECORD_MATERIA-WEAPON-6':   0x45, # Character Record: Weapon Materia Slot 6
-    'RECORD_MATERIA-WEAPON-7':   0x46, # Character Record: Weapon Materia Slot 7
-    'RECORD_MATERIA-WEAPON-8':   0x47, # Character Record: Weapon Materia Slot 8
-    'RECORD_MATERIA-ARMOR-1':    0x48, # Character Record: Armor Materia Slot 1
-    'RECORD_MATERIA-ARMOR-2':    0x49, # Character Record: Armor Materia Slot 2
-    'RECORD_MATERIA-ARMOR-3':    0x4A, # Character Record: Armor Materia Slot 3
-    'RECORD_MATERIA-ARMOR-4':    0x4B, # Character Record: Armor Materia Slot 4
-    'RECORD_MATERIA-ARMOR-5':    0x4C, # Character Record: Armor Materia Slot 5
-    'RECORD_MATERIA-ARMOR-6':    0x4D, # Character Record: Armor Materia Slot 6
-    'RECORD_MATERIA-ARMOR-7':    0x4E, # Character Record: Armor Materia Slot 7
-    'RECORD_MATERIA-ARMOR-8':    0x4F, # Character Record: Armor Materia Slot 8
-    'RECORD_UNKNOWN3':           0x50, # Character Record: Unknown 3
+    'RECORD_MATERIA-WEAPON':     0x40, # Character Record: Weapon Materia (4 bytes/slot, 8 slots)
+    'RECORD_MATERIA-ARMOR':      0x60, # Character Record: Armor Materia (4 bytes/slot, 8 slots)
     'RECORD_EXP_NEXT':           0x80, # Character Record: Next Level Experience
 }
 
@@ -207,7 +194,8 @@ SIZE = {
     'RECORD_LIMIT-BAR':          1, # Character Record: Current Limit Bar (0 = Empty, 255 = Limit Break)
     'RECORD_LIMIT-LEVEL':        1, # Character Record: Current Limit Level (1-4)
     'RECORD_LIMIT-SKILLS':       2, # Character Record: Learned Limit Skills
-    'RECORD_MATERIA':            1, # Character Record: Weapon/Armor Materia
+    'RECORD_MATERIA-ARMOR':     32, # Character Record: Armor Materia (4 bytes/slot, 8 slots)
+    'RECORD_MATERIA-WEAPON':    32, # Character Record: Weapon Materia (4 bytes/slot, 8 slots)
     'RECORD_MP-BASE':            2, # Character Record: Base MP (before materia)
     'RECORD_MP-CURR':            2, # Character Record: Current MP
     'RECORD_MP-MAX':             2, # Character Record: Maximum MP (after materia)
@@ -218,7 +206,6 @@ SIZE = {
     'RECORD_SEPHIROTH-FLAG':     1, # Character Record: Vincent -> Sephiroth Flag
     'RECORD_STAT':               1, # Character Record: Status
     'RECORD_UNKNOWN2':           4, # Character Record: Unknown 2
-    'RECORD_UNKNOWN3':          48, # Character Record: Unknown 3
     'RECORD_WEAPON':             1, # Character Record: Equipped Weapon
 }
 
@@ -454,11 +441,7 @@ def unpack_char_record(data):
     out['max_hp'] = unpack('H', data[START['RECORD_HP-MAX']:START['RECORD_HP-MAX']+SIZE['RECORD_HP-MAX']])[0]
     out['max_mp'] = unpack('H', data[START['RECORD_MP-MAX']:START['RECORD_MP-MAX']+SIZE['RECORD_MP-MAX']])[0]
     out['exp_curr'] = unpack('I', data[START['RECORD_EXP_CURR']:START['RECORD_EXP_CURR']+SIZE['RECORD_EXP_CURR']])[0]
-    out['materia'] = {'weapon':list(),'armor':list()}
-    for k in ['WEAPON','ARMOR']:
-        for i in range(1,9): # 1 through 8
-            out['materia'][k.lower()].append(unpack('B', data[START['RECORD_MATERIA-%s-%d'%(k,i)]:START['RECORD_MATERIA-%s-%d'%(k,i)]+SIZE['RECORD_MATERIA']])[0])
-    out['unknown3'] = data[START['RECORD_UNKNOWN3']:START['RECORD_UNKNOWN3']+SIZE['RECORD_UNKNOWN3']]
+    out['materia'] = {k.lower():unpack_stock_materia(data[START['RECORD_MATERIA-%s'%k]:START['RECORD_MATERIA-%s'%k]+SIZE['RECORD_MATERIA-%s'%k]]) for k in ['WEAPON','ARMOR']}
     out['exp_next'] = unpack('I', data[START['RECORD_EXP_NEXT']:START['RECORD_EXP_NEXT']+SIZE['RECORD_EXP_NEXT']])[0]
     return out
 
@@ -497,9 +480,7 @@ def pack_char_record(rec):
         out += pack('H', rec[k])
     out += pack('I', rec['exp_curr'])
     for k in ['weapon', 'armor']:
-        for v in rec['materia'][k]:
-            out += pack('B', v)
-    out += rec['unknown3']
+        out += pack_stock_materia(rec['materia'][k])
     out += pack('I', rec['exp_next'])
     return out
 
@@ -544,7 +525,7 @@ def unpack_stock_materia(data):
     Returns:
         ``list`` of `tuple``: The parsed materia stock as (materia ID, AP) tuples
     '''
-    if len(data) != SIZE['SLOT_STOCK-MATERIA'] and len(data) != SIZE['SLOT_STOLEN-MATERIA']:
+    if len(data) not in {SIZE['SLOT_STOCK-MATERIA'], SIZE['SLOT_STOLEN-MATERIA'], SIZE['RECORD_MATERIA-WEAPON'], SIZE['RECORD_MATERIA-ARMOR']}:
         raise ValueError("Invalid materia stock size: %d" % len(data))
     return [(data[i], unpack('I', data[i+1:i+SIZE['SLOT_STOCK-MATERIA-SINGLE']]+NULL_BYTE)[0]) for i in range(0, len(data), SIZE['SLOT_STOCK-MATERIA-SINGLE'])]
 
@@ -557,7 +538,7 @@ def pack_stock_materia(materia):
     Returns:
         ``bytes``: The resulting packed data
     '''
-    if len(materia) != CAPACITY_STOCK_MATERIA and len(materia) != CAPACITY_STOLEN_MATERIA:
+    if len(materia) not in {CAPACITY_STOCK_MATERIA, CAPACITY_STOLEN_MATERIA, CAPACITY_WEAPON_MATERIA, CAPACITY_ARMOR_MATERIA}:
         raise ValueError("Invalid materia stock length: %d" % len(materia))
     out = bytearray()
     for ID,AP in materia:

@@ -357,7 +357,7 @@ MATERIA_DB = {
     0x29: "Deathblow",
     0x2A: "Manipulate",
     0x2B: "Mime",
-    0x2C: "Enemy Skill * (See note below)",
+    0x2C: "Enemy Skill",
     0x30: "Master Command",
     0x31: "Fire",
     0x32: "Ice",

@@ -67,7 +67,7 @@ if __name__ == "__main__":
                 print("      * Limit Bar: %d%%" % int(100.*rec['limit_bar']/255.))
                 for k in ['weapon','armor']:
                     print("      * %s: %d" % (k.capitalize(), rec[k]))
-                    print("        * Equipped Materia: %s" % [v for v in rec['materia'][k] if v != 255])
+                    print("        * Equipped Materia: %s" % ', '.join(['%s (%d AP)' % (MATERIA_DB[v[0]], v[1]) for v in rec['materia'][k] if v[0] != 255]))
                 print("      * Character Flags: %s" % CHAR_FLAG_TO_NAME[rec['flags']])
                 print("      * Character Order: %s" % CHAR_ORDER_TO_NAME[rec['order']])
                 print("      * Learned Limit Skills: %s" % ', '.join(sorted(rec['limit_skills'])))
@@ -76,7 +76,6 @@ if __name__ == "__main__":
                 for j in [1,2,3]:
                     print("        * Limit %d-1: %d" % (j,rec['num_limit_uses_%d_1'%j]))
                 print("      * Unknown 2: %d" % rec['unknown2'])
-                print("      * Unknown 3: %s" % ''.join('%X'%v for v in rec['unknown3']))
             print("    * Item Stock:")
             for v in d['stock']['item']:
                 if v[0] != (255, 1): # empty slot
