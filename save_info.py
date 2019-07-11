@@ -70,7 +70,7 @@ if __name__ == "__main__":
                     print("        * Equipped Materia: %s" % [v for v in rec['materia'][k] if v != 255])
                 print("      * Character Flags: %s" % CHAR_FLAG_TO_NAME[rec['flags']])
                 print("      * Character Order: %s" % CHAR_ORDER_TO_NAME[rec['order']])
-                print("      * Learned Limit Skills: %s" % ' '.join(bin(e).lstrip('0b').zfill(8) for e in rec['limit_skills']))
+                print("      * Learned Limit Skills: %s" % ', '.join(sorted(rec['limit_skills'])))
                 print("      * Number of Kills: %d" % rec['num_kills'])
                 print("      * Number of Limit Uses:")
                 for j in [1,2,3]:

@@ -12,6 +12,8 @@ SAVE_SLOT_SIZE = 4340
 CAPACITY_STOCK_ITEM = 320
 CAPACITY_STOCK_MATERIA = 200
 CAPACITY_STOLEN_MATERIA = 48
+NUM_LIMIT_LEVELS = 4
+LIMIT_LIST = ["1-1", "1-2", None, "2-1", "2-2", None, "3-1", "3-2", None, "4"]
 
 # start offsets of various items in a save file (in bytes, with respect to start of slot data)
 START = {
@@ -386,22 +388,30 @@ def unpack_char_limit_skills(data):
         ``data`` (``bytes``): The input Learned Limit Skills bytes
 
     Returns:
-        TODO: The resulting Learned Limit Skills
+        ``set`` of ``str``: The resulting Learned Limit Skills ("1-1", "1-2", "2-1", "2-2", "3-1", "3-2", "4")
     '''
     if len(data) != SIZE['RECORD_LIMIT-SKILLS']:
         raise ValueError("Invalid learned limit skills data length: %d" % len(data))
-    return data
+    num = unpack('H', data)[0]; out = set()
+    for skill in LIMIT_LIST:
+        if skill is not None and bool(num & 1):
+            out.add(skill)
+        num >>= 1
+    return out
 
 def pack_char_limit_skills(skills):
     '''Pack Learned Limit Skills into bytes
 
     Args:
-        ``skills`` (TODO): The input Learned Limit Skills
+        ``set`` of ``str``: The input Learned Limit Skills ("1-1", "1-2", "2-1", "2-2", "3-1", "3-2", "4")
 
     Returns:
         ``bytes``: The resulting packed data
     '''
-    return skills # TODO ACTUALLY PACK ONCE I'VE IMPLEMENTED unpack_char_limit_skills
+    num = 0
+    for skill in LIMIT_LIST[::-1]:
+        num <<= 1; num |= int(skill in skills)
+    return pack('H', num)
 
 def unpack_char_record(data):
     '''Parse the bytes of a character record
