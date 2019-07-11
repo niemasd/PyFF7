@@ -36,7 +36,7 @@ if __name__ == "__main__":
             print("    * Total Gil: %d" % d['gil'])
             print("    * Play Time (seconds): %d.%s" % (d['playtime'][0], str(d['playtime'][1]).lstrip('0.')))
             print("    * Game Time (HHH:MM:SS.TTT): %s:%s:%s.%s" % (str(d['gametime'][0]).zfill(3), str(d['gametime'][1]).zfill(2), str(d['gametime'][2]).zfill(2), str(d['gametime'][3]).zfill(3)))
-            print("    * Save Location: Module = %s, Location = %d, World Map Location = %s" % (SAVE_MODULE[d['curr_module']], d['curr_location'], str(tuple(d['world_map_location'])).replace(' ','')))
+            print("    * Save Location: Module = %s, Location = %d, World Map Location (X,Y,Triangle) = %s" % (SAVE_MODULE[d['curr_module']], d['curr_location'], str(tuple(d['world_map_location'])).replace(' ','')))
             print("    * Plot Progression Variable: %d" % d['plot_progress'])
             print("    * Number of Battles: Fought %d, Escaped %d" % (d['num_battles'], d['num_escapes']))
             print("    * Countdown Timer (seconds) %d.%s" % (d['countdown'][0], str(d['countdown'][1]).lstrip('0.')))
