@@ -66,7 +66,7 @@ START = {
     'SLOT_ENCOUNTER-OFFSET':  0x0BA2, # Save Slot: Encounter Timer: Offset
     'SLOT_BLANK3':            0x0BA3, # Save Slot: Blank 3 (0xFF)
     'SLOT_PLOT-PROGRESS':     0x0BA4, # Save Slot: Plot Progression Variable
-    'SLOT_UNKNOWN8':          0x0BA6, # Save Slot: Unknown 8
+    'SLOT_YUFFIE-INIT-LVL':   0x0BA6, # Save Slot: Yuffie's Initial Level (must be 0 before joining)
     'SLOT_LOVE-AERITH':       0x0BA7, # Save Slot: Love Points: Aerith
     'SLOT_LOVE-TIFA':         0x0BA8, # Save Slot: Love Points: Tifa
     'SLOT_LOVE-YUFFIE':       0x0BA9, # Save Slot: Love Points: Yuffie
@@ -182,7 +182,7 @@ SIZE = {
     'SLOT_STOCK-MATERIA-SINGLE': 4, # Save Slot: Party Materia Stock: Single Item
     'SLOT_STOLEN-MATERIA':     192, # Save Slot: Materia Stolen by Yuffie (4 bytes/slot, 48 slots)
     'SLOT_UNKNOWN4':            32, # Save Slot: Unknown 4
-    'SLOT_UNKNOWN8':             1, # Save Slot: Unknown 8
+    'SLOT_YUFFIE-INIT-LVL':      1, # Save Slot: Yuffie's Initial Level (must be 0 before joining)
     'SLOT_UNKNOWN9':             9, # Save Slot: Unknown 9
     'SLOT_UNKNOWN10':            4, # Save Slot: Unknown 10
     'SLOT_UNKNOWN11':           57, # Save Slot: Unknown 11
@@ -609,7 +609,7 @@ def unpack_slot_data(data):
     out['encounter_timer'] = {k.lower():unpack('B', data[START['SLOT_ENCOUNTER-%s'%k]:START['SLOT_ENCOUNTER-%s'%k]+SIZE['SLOT_ENCOUNTER-%s'%k]])[0] for k in ['SEED','OFFSET']}
     out['blank3'] = data[START['SLOT_BLANK3']:START['SLOT_BLANK3']+SIZE['SLOT_BLANK3']]
     out['plot_progress'] = unpack('H', data[START['SLOT_PLOT-PROGRESS']:START['SLOT_PLOT-PROGRESS']+SIZE['SLOT_PLOT-PROGRESS']])[0]
-    out['unknown8'] = unpack('B', data[START['SLOT_UNKNOWN8']:START['SLOT_UNKNOWN8']+SIZE['SLOT_UNKNOWN8']])[0]
+    out['yuffie_init_lvl'] = unpack('B', data[START['SLOT_YUFFIE-INIT-LVL']:START['SLOT_YUFFIE-INIT-LVL']+SIZE['SLOT_YUFFIE-INIT-LVL']])[0]
     out['love'] = {k.lower():unpack('B', data[START['SLOT_LOVE-%s'%k]:START['SLOT_LOVE-%s'%k]+SIZE['SLOT_LOVE']])[0] for k in ['AERITH','TIFA','YUFFIE','BARRET']}
     out['unknown9'] = data[START['SLOT_UNKNOWN9']:START['SLOT_UNKNOWN9']+SIZE['SLOT_UNKNOWN9']]
     out['gametime'] = [unpack('B', data[START['SLOT_GAMETIME-%s'%k]:START['SLOT_GAMETIME-%s'%k]+SIZE['SLOT_GAMETIME-%s'%k]])[0] for k in ['HOUR','MINUTE','SECOND','TENTH']]
@@ -669,7 +669,7 @@ def pack_slot_data(slot):
         out += pack('B', d['encounter_timer'][k])
     out += d['blank3']
     out += pack('H', d['plot_progress'])
-    out += pack('B', d['unknown8'])
+    out += pack('B', d['yuffie_init_lvl'])
     for ch in ['aerith','tifa','yuffie','barret']:
         out += pack('B', d['love'][ch])
     out += d['unknown9']
