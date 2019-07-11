@@ -53,8 +53,9 @@ START = {
     'SLOT_GIL':               0x0B7C, # Save Slot: Total Gil
     'SLOT_PLAYTIME':          0x0B80, # Save Slot: Total Playtime (seconds)
     'SLOT_COUNTDOWN':         0x0B84, # Save Slot: Countdown Timer (seconds)
-    'SLOT_UNKNOWN5':          0x0B88, # Save Slot: Unknown 5
-    'SLOT_CURR-MODULE':       0x0B90, # Save Slot: Current Module (1 = field, 3 = world map)
+    'SLOT_PLAYTIME-FRAC':     0x0B88, # Save Slot: Total Playtime Second Fraction (x/65535)
+    'SLOT_COUNTDOWN-FRAC':    0x0B8C, # Save Slot: Countdown Timer Second Fraction (x/65535)
+    'SLOT_CURR-MODULE':       0x0B90, # Save Slot: Current Module
     'SLOT_CURR-LOCATION':     0x0B96, # Save Slot: Current Location
     'SLOT_BLANK2':            0x0B98, # Save Slot: Blank 2 (0xFFFF)
     'SLOT_WORLD-MAP-LOC-X':   0x0B9A, # Save Slot: World Map Location: X-Coordinate
@@ -140,6 +141,7 @@ SIZE = {
     'SLOT_BLANK2':               2, # Save Slot: Blank 2 (0xFFFF)
     'SLOT_CHECKSUM':             4, # Save Slot: Checksum
     'SLOT_COUNTDOWN':            4, # Save Slot: Countdown Timer (seconds)
+    'SLOT_COUNTDOWN-FRAC':       4, # Save Slot: Countdown Timer Second Fraction (x/65535)
     'SLOT_CURR-LOCATION':        2, # Save Slot: Current Location
     'SLOT_CURR-MODULE':          6, # Save Slot: Current Module
     'SLOT_GAMETIME-HOUR':        1, # Save Slot: Game Timer: Hours
@@ -152,6 +154,7 @@ SIZE = {
     'SLOT_NUM-BATTLES':          2, # Save Slot: Number of Battles
     'SLOT_NUM-ESCAPES':          2, # Save Slot: Number of Escapes
     'SLOT_PLAYTIME':             4, # Save Slot: Total Playtime (seconds)
+    'SLOT_PLAYTIME-FRAC':        4, # Save Slot: Total Playtime Second Fraction (x/65535)
     'SLOT_PLOT-PROGRESS':        2, # Save Slot: Plot Progression Variable
     'SLOT_PORTRAIT':             1, # Save Slot: Portrait
     'SLOT_PREVIEW-GIL':          4, # Save Slot: Preview: Amount of Gil
@@ -171,7 +174,6 @@ SIZE = {
     'SLOT_STOCK-MATERIA-SINGLE': 4, # Save Slot: Party Materia Stock: Single Item
     'SLOT_STOLEN-MATERIA':     192, # Save Slot: Materia Stolen by Yuffie (4 bytes/slot, 48 slots)
     'SLOT_UNKNOWN4':            32, # Save Slot: Unknown 4
-    'SLOT_UNKNOWN5':             8, # Save Slot: Unknown 5
     'SLOT_UNKNOWN7':             4, # Save Slot: Unknown 7
     'SLOT_UNKNOWN8':             1, # Save Slot: Unknown 8
     'SLOT_UNKNOWN9':             9, # Save Slot: Unknown 9
@@ -587,9 +589,11 @@ def unpack_slot_data(data):
     out['stolen_materia'] = unpack_stock_materia(data[START['SLOT_STOLEN-MATERIA']:START['SLOT_STOLEN-MATERIA']+SIZE['SLOT_STOLEN-MATERIA']])
     out['unknown4'] = data[START['SLOT_UNKNOWN4']:START['SLOT_UNKNOWN4']+SIZE['SLOT_UNKNOWN4']]
     out['gil'] = unpack('I', data[START['SLOT_GIL']:START['SLOT_GIL']+SIZE['SLOT_GIL']])[0]
-    out['playtime'] = unpack('I', data[START['SLOT_PLAYTIME']:START['SLOT_PLAYTIME']+SIZE['SLOT_PLAYTIME']])[0]
-    out['countdown'] = unpack('I', data[START['SLOT_COUNTDOWN']:START['SLOT_COUNTDOWN']+SIZE['SLOT_COUNTDOWN']])[0]
-    out['unknown5'] = data[START['SLOT_UNKNOWN5']:START['SLOT_UNKNOWN5']+SIZE['SLOT_UNKNOWN5']]
+    out['playtime'] = list(); out['countdown'] = list()
+    out['playtime'].append(unpack('I', data[START['SLOT_PLAYTIME']:START['SLOT_PLAYTIME']+SIZE['SLOT_PLAYTIME']])[0])
+    out['countdown'].append(unpack('I', data[START['SLOT_COUNTDOWN']:START['SLOT_COUNTDOWN']+SIZE['SLOT_COUNTDOWN']])[0])
+    out['playtime'].append(unpack('I', data[START['SLOT_PLAYTIME-FRAC']:START['SLOT_PLAYTIME-FRAC']+SIZE['SLOT_PLAYTIME-FRAC']])[0])
+    out['countdown'].append(unpack('I', data[START['SLOT_COUNTDOWN-FRAC']:START['SLOT_COUNTDOWN-FRAC']+SIZE['SLOT_COUNTDOWN-FRAC']])[0])
     out['curr_module'] = data[START['SLOT_CURR-MODULE']:START['SLOT_CURR-MODULE']+SIZE['SLOT_CURR-MODULE']]
     out['curr_location'] = unpack('H', data[START['SLOT_CURR-LOCATION']:START['SLOT_CURR-LOCATION']+SIZE['SLOT_CURR-LOCATION']])[0]
     out['blank2'] = unpack('H', data[START['SLOT_BLANK2']:START['SLOT_BLANK2']+SIZE['SLOT_BLANK2']])[0]
@@ -642,9 +646,10 @@ def pack_slot_data(slot):
     out += pack_stock_materia(d['stolen_materia'])
     out += d['unknown4']
     out += pack('I', d['gil'])
-    out += pack('I', d['playtime'])
-    out += pack('I', d['countdown'])
-    out += d['unknown5']
+    out += pack('I', d['playtime'][0])
+    out += pack('I', d['countdown'][0])
+    out += pack('I', d['playtime'][1])
+    out += pack('I', d['countdown'][1])
     out += d['curr_module']
     out += pack('H', d['curr_location'])
     out += pack('H', d['blank2'])
