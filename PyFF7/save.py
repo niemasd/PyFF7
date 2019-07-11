@@ -54,9 +54,9 @@ START = {
     'SLOT_PLAYTIME':          0x0B80, # Save Slot: Total Playtime (seconds)
     'SLOT_COUNTDOWN':         0x0B84, # Save Slot: Countdown Timer (seconds)
     'SLOT_UNKNOWN5':          0x0B88, # Save Slot: Unknown 5
-    'SLOT_CURR-MODULE':       0x0B94, # Save Slot: Current Module (1 = field, 3 = world map)
+    'SLOT_CURR-MODULE':       0x0B90, # Save Slot: Current Module (1 = field, 3 = world map)
     'SLOT_CURR-LOCATION':     0x0B96, # Save Slot: Current Location
-    'SLOT_BLANK2':            0x0B98, # Save Slot: Blank 2 (0xFF 0xFF)
+    'SLOT_BLANK2':            0x0B98, # Save Slot: Blank 2 (0xFFFF)
     'SLOT_WORLD-MAP-LOC-X':   0x0B9A, # Save Slot: World Map Location: X-Coordinate
     'SLOT_WORLD-MAP-LOC-Y':   0x0B9C, # Save Slot: World Map Location: Y-Coordinate
     'SLOT_WORLD-MAP-LOC-Z':   0x0B9E, # Save Slot: World Map Location: Z-Coordinate
@@ -137,10 +137,11 @@ START = {
 SIZE = {
     # Final Fantasy VII Save Slot
     'SLOT_BLANK1':               1, # Save Slot: Blank 1 (0xFF)
+    'SLOT_BLANK2':               2, # Save Slot: Blank 2 (0xFFFF)
     'SLOT_CHECKSUM':             4, # Save Slot: Checksum
     'SLOT_COUNTDOWN':            4, # Save Slot: Countdown Timer (seconds)
     'SLOT_CURR-LOCATION':        2, # Save Slot: Current Location
-    'SLOT_CURR-MODULE':             2, # Save Slot: Current Map
+    'SLOT_CURR-MODULE':          6, # Save Slot: Current Module
     'SLOT_GAMETIME-HOUR':        1, # Save Slot: Game Timer: Hours
     'SLOT_GAMETIME-MINUTE':      1, # Save Slot: Game Timer: Minutes
     'SLOT_GAMETIME-SECOND':      1, # Save Slot: Game Timer: Seconds
@@ -170,8 +171,7 @@ SIZE = {
     'SLOT_STOCK-MATERIA-SINGLE': 4, # Save Slot: Party Materia Stock: Single Item
     'SLOT_STOLEN-MATERIA':     192, # Save Slot: Materia Stolen by Yuffie (4 bytes/slot, 48 slots)
     'SLOT_UNKNOWN4':            32, # Save Slot: Unknown 4
-    'SLOT_UNKNOWN5':            12, # Save Slot: Unknown 5
-    'SLOT_BLANK2':             2, # Save Slot: Unknown 6
+    'SLOT_UNKNOWN5':             8, # Save Slot: Unknown 5
     'SLOT_UNKNOWN7':             4, # Save Slot: Unknown 7
     'SLOT_UNKNOWN8':             1, # Save Slot: Unknown 8
     'SLOT_UNKNOWN9':             9, # Save Slot: Unknown 9
@@ -227,8 +227,8 @@ PORTRAIT_TO_NAME = {
 
 # translate save location module
 SAVE_MODULE = {
-    1: 'Field',
-    3: 'World Map',
+    b'\x00\x00\x00\x00\x01\x00': 'Field',
+    b'\x02\x00\x00\x00\x03\x00': 'World Map',
 }
 
 # format-dependant properties
@@ -590,7 +590,7 @@ def unpack_slot_data(data):
     out['playtime'] = unpack('I', data[START['SLOT_PLAYTIME']:START['SLOT_PLAYTIME']+SIZE['SLOT_PLAYTIME']])[0]
     out['countdown'] = unpack('I', data[START['SLOT_COUNTDOWN']:START['SLOT_COUNTDOWN']+SIZE['SLOT_COUNTDOWN']])[0]
     out['unknown5'] = data[START['SLOT_UNKNOWN5']:START['SLOT_UNKNOWN5']+SIZE['SLOT_UNKNOWN5']]
-    out['curr_module'] = unpack('H', data[START['SLOT_CURR-MODULE']:START['SLOT_CURR-MODULE']+SIZE['SLOT_CURR-MODULE']])[0]
+    out['curr_module'] = data[START['SLOT_CURR-MODULE']:START['SLOT_CURR-MODULE']+SIZE['SLOT_CURR-MODULE']]
     out['curr_location'] = unpack('H', data[START['SLOT_CURR-LOCATION']:START['SLOT_CURR-LOCATION']+SIZE['SLOT_CURR-LOCATION']])[0]
     out['blank2'] = unpack('H', data[START['SLOT_BLANK2']:START['SLOT_BLANK2']+SIZE['SLOT_BLANK2']])[0]
     out['world_map_location'] = [unpack('H', data[START['SLOT_WORLD-MAP-LOC-%s'%k]:START['SLOT_WORLD-MAP-LOC-%s'%k]+SIZE['SLOT_WORLD-MAP-LOC']])[0] for k in ['X','Y','Z']]
@@ -645,7 +645,7 @@ def pack_slot_data(slot):
     out += pack('I', d['playtime'])
     out += pack('I', d['countdown'])
     out += d['unknown5']
-    out += pack('H', d['curr_module'])
+    out += d['curr_module']
     out += pack('H', d['curr_location'])
     out += pack('H', d['blank2'])
     for v in d['world_map_location']:
