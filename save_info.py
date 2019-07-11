@@ -36,7 +36,7 @@ if __name__ == "__main__":
             print("    * Total Gil: %d" % d['gil'])
             print("    * Play Time (seconds): %d.%s" % (d['playtime'][0], str(d['playtime'][1]).lstrip('0.')))
             print("    * Game Time (HHH:MM:SS.TTT): %s:%s:%s.%s" % (str(d['gametime'][0]).zfill(3), str(d['gametime'][1]).zfill(2), str(d['gametime'][2]).zfill(2), str(d['gametime'][3]).zfill(3)))
-            print("    * Save Location: Module = %s, Location = %d, Map Location (X,Y,Triangle) = %s" % (SAVE_MODULE[d['curr_module']], d['curr_location'], str(tuple(d['map_location'])).replace(' ','')))
+            print("    * Save Location: Module = %s, Location = %d, Map Location (X,Y,Triangle) = %s, Map Direction = %d" % (SAVE_MODULE[d['curr_module']], d['curr_location'], str(tuple(d['map_location'])).replace(' ',''), d['map_direction']))
             print("    * Plot Progression Variable: %d" % d['plot_progress'])
             print("    * Number of Battles: Fought %d, Escaped %d" % (d['num_battles'], d['num_escapes']))
             print("    * Countdown Timer (seconds) %d.%s" % (d['countdown'][0], str(d['countdown'][1]).lstrip('0.')))
@@ -87,7 +87,7 @@ if __name__ == "__main__":
                 if v[0] != 255: # empty slot
                     print("      * %s (%d AP)" % (MATERIA_DB[v[0]], v[1]))
             print("    * Unknown 4: %s" % d['unknown4'])
-            print("    * Unknown 7: %d" % d['unknown7'])
+            print("    * Unknown 7: %s" % d['unknown7'])
             print("    * Unknown 8: %d" % d['unknown8'])
             print("    * Unknown 9: %s" % d['unknown9'])
             print("    * Unknown 10: %d" % d['unknown10'])

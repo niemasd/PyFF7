@@ -61,7 +61,8 @@ START = {
     'SLOT_MAP-LOC-X':         0x0B9A, # Save Slot: Map Location: X-Coordinate (signed)
     'SLOT_MAP-LOC-Y':         0x0B9C, # Save Slot: Map Location: Y-Coordinate (signed)
     'SLOT_MAP-LOC-T':         0x0B9E, # Save Slot: Map Location: Triangle ID
-    'SLOT_UNKNOWN7':          0x0BA0, # Save Slot: Unknown 7
+    'SLOT_MAP-DIRECTION':     0x0BA0, # Save Slot: Direction of Player Model on Map
+    'SLOT_UNKNOWN7':          0x0BA1, # Save Slot: Unknown 7
     'SLOT_PLOT-PROGRESS':     0x0BA4, # Save Slot: Plot Progression Variable
     'SLOT_UNKNOWN8':          0x0BA6, # Save Slot: Unknown 8
     'SLOT_LOVE-AERITH':       0x0BA7, # Save Slot: Love Points: Aerith
@@ -151,6 +152,7 @@ SIZE = {
     'SLOT_GIL':                  4, # Save Slot: Total Gil
     'SLOT_KEY-ITEMS':            8, # Save Slot: Key Items
     'SLOT_LOVE':                 1, # Save Slot: Love Points
+    'SLOT_MAP-DIRECTION':        1, # Save Slot: Direction of Player Model on Map
     'SLOT_MAP-LOC':              2, # Save Slot: Map Location Coordinate
     'SLOT_NUM-BATTLES':          2, # Save Slot: Number of Battles
     'SLOT_NUM-ESCAPES':          2, # Save Slot: Number of Escapes
@@ -175,7 +177,7 @@ SIZE = {
     'SLOT_STOCK-MATERIA-SINGLE': 4, # Save Slot: Party Materia Stock: Single Item
     'SLOT_STOLEN-MATERIA':     192, # Save Slot: Materia Stolen by Yuffie (4 bytes/slot, 48 slots)
     'SLOT_UNKNOWN4':            32, # Save Slot: Unknown 4
-    'SLOT_UNKNOWN7':             4, # Save Slot: Unknown 7
+    'SLOT_UNKNOWN7':             3, # Save Slot: Unknown 7
     'SLOT_UNKNOWN8':             1, # Save Slot: Unknown 8
     'SLOT_UNKNOWN9':             9, # Save Slot: Unknown 9
     'SLOT_UNKNOWN10':            4, # Save Slot: Unknown 10
@@ -598,7 +600,8 @@ def unpack_slot_data(data):
     out['curr_location'] = unpack('H', data[START['SLOT_CURR-LOCATION']:START['SLOT_CURR-LOCATION']+SIZE['SLOT_CURR-LOCATION']])[0]
     out['blank2'] = unpack('H', data[START['SLOT_BLANK2']:START['SLOT_BLANK2']+SIZE['SLOT_BLANK2']])[0]
     out['map_location'] = [unpack({'X':'h','Y':'h','T':'H'}[k], data[START['SLOT_MAP-LOC-%s'%k]:START['SLOT_MAP-LOC-%s'%k]+SIZE['SLOT_MAP-LOC']])[0] for k in ['X','Y','T']]
-    out['unknown7'] = unpack('I', data[START['SLOT_UNKNOWN7']:START['SLOT_UNKNOWN7']+SIZE['SLOT_UNKNOWN7']])[0]
+    out['map_direction'] = unpack('B', data[START['SLOT_MAP-DIRECTION']:START['SLOT_MAP-DIRECTION']+SIZE['SLOT_MAP-DIRECTION']])[0]
+    out['unknown7'] = data[START['SLOT_UNKNOWN7']:START['SLOT_UNKNOWN7']+SIZE['SLOT_UNKNOWN7']]
     out['plot_progress'] = unpack('H', data[START['SLOT_PLOT-PROGRESS']:START['SLOT_PLOT-PROGRESS']+SIZE['SLOT_PLOT-PROGRESS']])[0]
     out['unknown8'] = unpack('B', data[START['SLOT_UNKNOWN8']:START['SLOT_UNKNOWN8']+SIZE['SLOT_UNKNOWN8']])[0]
     out['love'] = {k.lower():unpack('B', data[START['SLOT_LOVE-%s'%k]:START['SLOT_LOVE-%s'%k]+SIZE['SLOT_LOVE']])[0] for k in ['AERITH','TIFA','YUFFIE','BARRET']}
@@ -655,7 +658,8 @@ def pack_slot_data(slot):
     out += pack('H', d['blank2'])
     for i,v in enumerate(d['map_location']):
         out += pack(['h','h','H'][i], v)
-    out += pack('I', d['unknown7'])
+    out += pack('B', d['map_direction'])
+    out += d['unknown7']
     out += pack('H', d['plot_progress'])
     out += pack('B', d['unknown8'])
     for ch in ['aerith','tifa','yuffie','barret']:
