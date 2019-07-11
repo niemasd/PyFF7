@@ -16,7 +16,6 @@ CAPACITY_STOCK_MATERIA = 200
 START = {
     # Final Fantasy VII Save Slot
     'SLOT_CHECKSUM':          0x0000, # Save Slot: Checksum
-    'SLOT_UNKNOWN1':          0x0002, # Save Slot: Unknown 1
     'SLOT_PREVIEW-LEVEL':     0x0004, # Save Slot: Preview: Lead Character's Level
     'SLOT_PREVIEW-PORTRAIT1': 0x0005, # Save Slot: Preview: Portrait 1
     'SLOT_PREVIEW-PORTRAIT2': 0x0006, # Save Slot: Preview: Portrait 2
@@ -73,6 +72,8 @@ START = {
     'SLOT_UNKNOWN10':         0x0BB8, # Save Slot: Unknown 10
     'SLOT_NUM-BATTLES':       0x0BBC, # Save Slot: Number of Battles
     'SLOT_NUM-ESCAPES':       0x0BBE, # Save Slot: Number of Escapes
+    'SLOT_UNKNOWN11':         0x0BC0, # Save Slot: Unknown 11
+    'SLOT_KEY-ITEMS':         0x0BE4, # Save Slot: Key Items
 
     # Character Record
     'RECORD_SEPHIROTH-FLAG':     0x00, # Character Record: Vincent -> Sephiroth Flag
@@ -133,7 +134,7 @@ START = {
 SIZE = {
     # Final Fantasy VII Save Slot
     'SLOT_BLANK1':               1, # Save Slot: Blank 1 (0xFF)
-    'SLOT_CHECKSUM':             2, # Save Slot: Checksum
+    'SLOT_CHECKSUM':             4, # Save Slot: Checksum
     'SLOT_CURR-LOCATION':        2, # Save Slot: Current Location
     'SLOT_CURR-MAP':             2, # Save Slot: Current Map
     'SLOT_GAMETIME-HOUR':        1, # Save Slot: Game Timer: Hours
@@ -141,6 +142,7 @@ SIZE = {
     'SLOT_GAMETIME-SECOND':      1, # Save Slot: Game Timer: Seconds
     'SLOT_GAMETIME-TENTH':       1, # Save Slot: Game Timer: Tenths
     'SLOT_GIL':                  4, # Save Slot: Total Gil
+    'SLOT_KEY-ITEMS':            8, # Save Slot: Key Items
     'SLOT_LOVE':                 1, # Save Slot: Love Points
     'SLOT_NUM-BATTLES':          2, # Save Slot: Number of Battles
     'SLOT_NUM-ESCAPES':          2, # Save Slot: Number of Escapes
@@ -162,7 +164,6 @@ SIZE = {
     'SLOT_STOCK-ITEM-SINGLE':    2, # Save Slot: Party Item Stock: Single Item
     'SLOT_STOCK-MATERIA':      800, # Save Slot: Party Materia Stock (4 bytes/slot, 200 slots)
     'SLOT_STOCK-MATERIA-SINGLE': 4, # Save Slot: Party Materia Stock: Single Item
-    'SLOT_UNKNOWN1':             2, # Save Slot: Unknown 1
     'SLOT_UNKNOWN4':           224, # Save Slot: Unknown 4
     'SLOT_UNKNOWN5':            16, # Save Slot: Unknown 5
     'SLOT_UNKNOWN6':             2, # Save Slot: Unknown 6
@@ -170,6 +171,7 @@ SIZE = {
     'SLOT_UNKNOWN8':             1, # Save Slot: Unknown 8
     'SLOT_UNKNOWN9':             9, # Save Slot: Unknown 9
     'SLOT_UNKNOWN10':            4, # Save Slot: Unknown 10
+    'SLOT_UNKNOWN11':           57, # Save Slot: Unknown 11
     'SLOT_WINDOW-COLOR':         3, # Save Slot: Window Color (RGB)
     'SLOT_WORLD-MAP-LOC':        2, # Save Slot: World Map Location Coordinate
 
@@ -294,7 +296,28 @@ FILESIZE_TO_FORMAT = {PROP[k]['file_size']:k for k in PROP}
 # other defaults
 
 # error messages
+ERROR_INVALID_CHECKSUM = "Invalid save slot checksum"
 ERROR_INVALID_SAVE_FILE = "Invalid save file"
+
+def compute_checksum(slot_data):
+    '''Compute the checksum of a given save slot
+
+    Args:
+        ``slot_data`` (``bytes``): The input save slot's packed data (everything after the original checksum)
+
+    Returns:
+        ``int``: The checksum of ``slot_data``
+    '''
+    r = 0xFFFF; pbit = 0x8000
+    for t in slot_data:
+        r ^= (t << 8)
+        for _ in range(8):
+            if r & pbit:
+                r = (r << 1) ^ 0x1021
+            else:
+                r <<= 1
+        r &= 0xFFFF
+    return (r ^ 0xFFFF) & 0xFFFF
 
 def unpack_color(data):
     '''Parse the bytes of an RGB color
@@ -530,8 +553,9 @@ def unpack_slot_data(data):
     if len(data) != SAVE_SLOT_SIZE:
         raise ValueError(ERROR_INVALID_SAVE_FILE)
     out = dict()
-    out['checksum'] = unpack('H', data[START['SLOT_CHECKSUM']:START['SLOT_CHECKSUM']+SIZE['SLOT_CHECKSUM']])[0]
-    out['unknown1'] = unpack('H', data[START['SLOT_UNKNOWN1']:START['SLOT_UNKNOWN1']+SIZE['SLOT_UNKNOWN1']])[0]
+    out['checksum'] = unpack('I', data[START['SLOT_CHECKSUM']:START['SLOT_CHECKSUM']+SIZE['SLOT_CHECKSUM']])[0] # TODO REMOVE WHEN I FINISH PARSING SAVE SLOT
+    if out['checksum'] != compute_checksum(data[START['SLOT_CHECKSUM']+SIZE['SLOT_CHECKSUM']:]):
+        raise ValueError(ERROR_INVALID_CHECKSUM)
     out['preview'] = dict()
     out['preview']['level'] = unpack('B', data[START['SLOT_PREVIEW-LEVEL']:START['SLOT_PREVIEW-LEVEL']+SIZE['SLOT_PREVIEW-LEVEL']])[0]
     out['preview']['party'] = [unpack('B', data[START['SLOT_PREVIEW-PORTRAIT%d'%i]:START['SLOT_PREVIEW-PORTRAIT%d'%i]+SIZE['SLOT_PREVIEW-PORTRAIT']])[0] for i in [1,2,3]]
@@ -566,6 +590,7 @@ def unpack_slot_data(data):
     out['unknown10'] = unpack('I', data[START['SLOT_UNKNOWN10']:START['SLOT_UNKNOWN10']+SIZE['SLOT_UNKNOWN10']])[0]
     out['num_battles'] = unpack('H', data[START['SLOT_NUM-BATTLES']:START['SLOT_NUM-BATTLES']+SIZE['SLOT_NUM-BATTLES']])[0]
     out['num_escapes'] = unpack('H', data[START['SLOT_NUM-ESCAPES']:START['SLOT_NUM-ESCAPES']+SIZE['SLOT_NUM-ESCAPES']])[0]
+    out['unknown11'] = data[START['SLOT_UNKNOWN11']:START['SLOT_UNKNOWN11']+SIZE['SLOT_UNKNOWN11']]
     return out
 
 def pack_slot_data(slot):
@@ -579,8 +604,8 @@ def pack_slot_data(slot):
     '''
     out = bytearray(); d = slot['data']
     out += slot['header']
-    out += pack('H', d['checksum']) # TODO maybe just recompute right now
-    out += pack('H', d['unknown1'])
+    #out += pack('I', compute_checksum(slot)) # recompute checksum in case any modifications were made
+    out += pack('I', d['checksum']) # TODO remove when checksum computing is fixed
     out += pack('B', d['preview']['level'])
     for ch in d['preview']['party']:
         out += pack('B', ch)
@@ -621,6 +646,7 @@ def pack_slot_data(slot):
     out += pack('I', d['unknown10'])
     out += pack('H', d['num_battles'])
     out += pack('H', d['num_escapes'])
+    out += d['unknown11']
     #out += slot['footer'] # TODO UNCOMMENT WHEN FINISHED PACKING SAVE SLOT DATA
     return out
 

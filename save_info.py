@@ -23,7 +23,6 @@ if __name__ == "__main__":
             else:
                 print("  * Save Slot %d:" % (i+1))
             print("    * Checksum: 0x%04X" % d['checksum'])
-            print("    * Unknown 1: %d" % d['unknown1'])
             print("    * Preview:")
             print("      * Lead Character's Level: %d" % d['preview']['level'])
             print("      * Party: %s" % ', '.join([PORTRAIT_TO_NAME[v] for v in d['preview']['party'] if v != 255]))
@@ -89,5 +88,6 @@ if __name__ == "__main__":
             print("    * Unknown 8: %d" % d['unknown8'])
             print("    * Unknown 9: %s" % d['unknown9'])
             print("    * Unknown 10: %d" % d['unknown10'])
+            print("    * Unknown 11: %s" % d['unknown11'])
     except BrokenPipeError:
         stderr.close()
