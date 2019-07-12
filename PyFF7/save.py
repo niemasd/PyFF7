@@ -7,6 +7,8 @@ from . import BYTES_TO_FORMAT,NULL_BYTE
 from .text import decode_field_text,encode_text
 from struct import pack,unpack
 
+binary = lambda x: '{0:b}'.format(x)
+
 # constants
 SAVE_SLOT_SIZE = 4340
 CAPACITY_STOCK_ITEM = 320
@@ -16,6 +18,7 @@ CAPACITY_WEAPON_MATERIA = 8
 CAPACITY_ARMOR_MATERIA = 8
 NUM_LIMIT_LEVELS = 4
 LIMIT_LIST = ["1-1", "1-2", None, "2-1", "2-2", None, "3-1", "3-2", None, "4"]
+MENU_LIST = ["Item", "Magic", "Materia", "Equip", "Status", "Order", "Limit", "Config", "PHS", "Save"]
 
 # start offsets of various items in a save file (in bytes, with respect to start of slot data)
 START = {
@@ -89,8 +92,9 @@ START = {
     'SLOT_COUNTTIME-FRAME':   0x0BBB, # Save Slot: Countdown Timer: Frames (0-30)
     'SLOT_NUM-BATTLES':       0x0BBC, # Save Slot: Number of Battles
     'SLOT_NUM-ESCAPES':       0x0BBE, # Save Slot: Number of Escapes
-    'SLOT_UNKNOWN11':         0x0BC0, # Save Slot: Unknown 11
-    'SLOT_KEY-ITEMS':         0x0BE4, # Save Slot: Key Items
+    'SLOT_MENU-VISIBLE':      0x0BC0, # Save Slot: Menu Visibility
+    'SLOT_MENU-LOCKED':       0x0BC2, # Save Slot: Menu Locked (1 = locked, 0 = unlocked)
+    #'SLOT_KEY-ITEMS':         0x0BE4, # Save Slot: Key Items
 
     # Character Record
     'RECORD_SEPHIROTH-FLAG':     0x00, # Character Record: Vincent -> Sephiroth Flag
@@ -156,10 +160,12 @@ SIZE = {
     'SLOT_GAMETIME-SECOND':      1, # Save Slot: Game Timer: Seconds (0-60)
     'SLOT_GAMETIME-FRAME':       1, # Save Slot: Game Timer: Frames (0-30)
     'SLOT_GIL':                  4, # Save Slot: Total Gil
-    'SLOT_KEY-ITEMS':            8, # Save Slot: Key Items
+    #'SLOT_KEY-ITEMS':            8, # Save Slot: Key Items
     'SLOT_LOVE':                 1, # Save Slot: Love Points
     'SLOT_MAP-DIRECTION':        1, # Save Slot: Direction of Player Model on Map
     'SLOT_MAP-LOC':              2, # Save Slot: Map Location Coordinate
+    'SLOT_MENU-VISIBLE':         2, # Save Slot: Menu Visibility
+    'SLOT_MENU-LOCKED':          2, # Save Slot: Menu Locked (1 = locked, 0 = unlocked)
     'SLOT_NUM-BATTLES':          2, # Save Slot: Number of Battles
     'SLOT_NUM-ESCAPES':          2, # Save Slot: Number of Escapes
     'SLOT_PLAYTIME':             4, # Save Slot: Total Playtime (seconds)
@@ -186,7 +192,6 @@ SIZE = {
     'SLOT_UNKNOWN4':            32, # Save Slot: Unknown 4
     'SLOT_YUFFIE-INIT-LVL':      1, # Save Slot: Yuffie's Initial Level (must be 0 before joining)
     'SLOT_UNKNOWN9':             6, # Save Slot: Unknown 9
-    'SLOT_UNKNOWN11':           57, # Save Slot: Unknown 11
     'SLOT_WINDOW-COLOR':         3, # Save Slot: Window Color (RGB)
 
     # Character Record
@@ -558,6 +563,40 @@ def pack_stock_materia(materia):
             out += pack('B', ID); out += pack('I', AP)[:SIZE['SLOT_STOCK-MATERIA-SINGLE']-1]
     return out
 
+def unpack_menu(data):
+    '''Parse the bytes of Menu Visible flags
+
+    Args:
+        ``data`` (``bytes``): The input Menu Visible flags data
+
+    Returns:
+        ``set``: The visible menus
+    '''
+    if len(data) not in {SIZE['SLOT_MENU-VISIBLE'], SIZE['SLOT_MENU-LOCKED']}:
+        raise ValueError("Invalid menu visible length: %d" % len(data))
+    num = unpack('H', data)[0]; out = set()
+    for k in MENU_LIST:
+        if bool(num & 1):
+            out.add(k)
+        num >>= 1
+    return out
+
+def pack_menu(menu):
+    '''Pack the Menu Visible flags into bytes
+
+    Args:
+        ``menus`` (``set``): The input visible menus
+
+    Returns:
+        ``bytes``: The packed data
+    '''
+    out = 0
+    for k in MENU_LIST[::-1]:
+        out <<= 1
+        if k in menu:
+            out |= 1
+    return pack('H', out)
+
 def unpack_slot_data(data):
     '''Parse the bytes of a save slot
 
@@ -615,7 +654,8 @@ def unpack_slot_data(data):
         out[k1.lower()] = [unpack('B', data[START['SLOT_%s-%s'%(k1,k2)]:START['SLOT_%s-%s'%(k1,k2)]+SIZE['SLOT_%s-%s'%(k1,k2)]])[0] for k2 in ['HOUR','MINUTE','SECOND','FRAME']]
     out['num_battles'] = unpack('H', data[START['SLOT_NUM-BATTLES']:START['SLOT_NUM-BATTLES']+SIZE['SLOT_NUM-BATTLES']])[0]
     out['num_escapes'] = unpack('H', data[START['SLOT_NUM-ESCAPES']:START['SLOT_NUM-ESCAPES']+SIZE['SLOT_NUM-ESCAPES']])[0]
-    out['unknown11'] = data[START['SLOT_UNKNOWN11']:START['SLOT_UNKNOWN11']+SIZE['SLOT_UNKNOWN11']]
+    out['menu_visible'] = unpack_menu(data[START['SLOT_MENU-VISIBLE']:START['SLOT_MENU-VISIBLE']+SIZE['SLOT_MENU-VISIBLE']])
+    out['menu_locked'] = unpack_menu(data[START['SLOT_MENU-LOCKED']:START['SLOT_MENU-LOCKED']+SIZE['SLOT_MENU-LOCKED']])
     return out
 
 def pack_slot_data(slot):
@@ -679,7 +719,8 @@ def pack_slot_data(slot):
             out += pack('B', v)
     out += pack('H', d['num_battles'])
     out += pack('H', d['num_escapes'])
-    out += d['unknown11']
+    out += pack_menu(d['menu_visible'])
+    out += pack_menu(d['menu_locked'])
     #out += slot['footer'] # TODO UNCOMMENT WHEN FINISHED PACKING SAVE SLOT DATA
     return out
 
@@ -744,6 +785,9 @@ class Save:
                         data_bytes[k] = 0
                     elif data_bytes[k] == 255:
                         null = True
+
+            # fix menu visible unseen bytes
+            data_bytes[len(self.header) + i*(prop['slot_header_size']+SAVE_SLOT_SIZE+prop['slot_footer_size']) + START['SLOT_MENU-VISIBLE']+1] &= 0b00000011
         assert self_bytes == data_bytes[:len(self_bytes)]
 
     def get_bytes(self):
