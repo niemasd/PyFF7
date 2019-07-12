@@ -83,7 +83,10 @@ START = {
     'SLOT_GAMETIME-MINUTE':   0x0BB5, # Save Slot: Game Timer: Minutes (0-60)
     'SLOT_GAMETIME-SECOND':   0x0BB6, # Save Slot: Game Timer: Seconds (0-60)
     'SLOT_GAMETIME-FRAME':    0x0BB7, # Save Slot: Game Timer: Frames (0-30)
-    'SLOT_UNKNOWN10':         0x0BB8, # Save Slot: Unknown 10
+    'SLOT_COUNTTIME-HOUR':    0x0BB8, # Save Slot: Countdown Timer: Hours (0-255)
+    'SLOT_COUNTTIME-MINUTE':  0x0BB9, # Save Slot: Countdown Timer: Minutes (0-60)
+    'SLOT_COUNTTIME-SECOND':  0x0BBA, # Save Slot: Countdown Timer: Seconds (0-60)
+    'SLOT_COUNTTIME-FRAME':   0x0BBB, # Save Slot: Countdown Timer: Frames (0-30)
     'SLOT_NUM-BATTLES':       0x0BBC, # Save Slot: Number of Battles
     'SLOT_NUM-ESCAPES':       0x0BBE, # Save Slot: Number of Escapes
     'SLOT_UNKNOWN11':         0x0BC0, # Save Slot: Unknown 11
@@ -140,6 +143,10 @@ SIZE = {
     'SLOT_CHECKSUM':             4, # Save Slot: Checksum
     'SLOT_COUNTDOWN':            4, # Save Slot: Countdown Timer (seconds)
     'SLOT_COUNTDOWN-FRAC':       4, # Save Slot: Countdown Timer Second Fraction (x/65535)
+    'SLOT_COUNTTIME-HOUR':       1, # Save Slot: Countdown Timer: Hours (0-255)
+    'SLOT_COUNTTIME-MINUTE':     1, # Save Slot: Countdown Timer: Minutes (0-60)
+    'SLOT_COUNTTIME-SECOND':     1, # Save Slot: Countdown Timer: Seconds (0-60)
+    'SLOT_COUNTTIME-FRAME':      1, # Save Slot: Countdown Timer: Frames (0-30)
     'SLOT_CURR-LOCATION':        2, # Save Slot: Current Location
     'SLOT_CURR-MODULE':          6, # Save Slot: Current Module
     'SLOT_ENCOUNTER-SEED':       1, # Save Slot: Encounter Timer: Step ID / Seed
@@ -179,7 +186,6 @@ SIZE = {
     'SLOT_UNKNOWN4':            32, # Save Slot: Unknown 4
     'SLOT_YUFFIE-INIT-LVL':      1, # Save Slot: Yuffie's Initial Level (must be 0 before joining)
     'SLOT_UNKNOWN9':             6, # Save Slot: Unknown 9
-    'SLOT_UNKNOWN10':            4, # Save Slot: Unknown 10
     'SLOT_UNKNOWN11':           57, # Save Slot: Unknown 11
     'SLOT_WINDOW-COLOR':         3, # Save Slot: Window Color (RGB)
 
@@ -605,8 +611,8 @@ def unpack_slot_data(data):
     out['love'] = {k.lower():unpack('B', data[START['SLOT_LOVE-%s'%k]:START['SLOT_LOVE-%s'%k]+SIZE['SLOT_LOVE']])[0] for k in ['AERITH','TIFA','YUFFIE','BARRET']}
     out['temp_party'] = [unpack('B', data[START['SLOT_TEMP-PARTY-CHAR%d'%i]:START['SLOT_TEMP-PARTY-CHAR%d'%i]+SIZE['SLOT_TEMP-PARTY-CHAR']])[0] for i in [1,2,3]]
     out['unknown9'] = data[START['SLOT_UNKNOWN9']:START['SLOT_UNKNOWN9']+SIZE['SLOT_UNKNOWN9']]
-    out['gametime'] = [unpack('B', data[START['SLOT_GAMETIME-%s'%k]:START['SLOT_GAMETIME-%s'%k]+SIZE['SLOT_GAMETIME-%s'%k]])[0] for k in ['HOUR','MINUTE','SECOND','FRAME']]
-    out['unknown10'] = unpack('I', data[START['SLOT_UNKNOWN10']:START['SLOT_UNKNOWN10']+SIZE['SLOT_UNKNOWN10']])[0]
+    for k1 in ['GAMETIME','COUNTTIME']:
+        out[k1.lower()] = [unpack('B', data[START['SLOT_%s-%s'%(k1,k2)]:START['SLOT_%s-%s'%(k1,k2)]+SIZE['SLOT_%s-%s'%(k1,k2)]])[0] for k2 in ['HOUR','MINUTE','SECOND','FRAME']]
     out['num_battles'] = unpack('H', data[START['SLOT_NUM-BATTLES']:START['SLOT_NUM-BATTLES']+SIZE['SLOT_NUM-BATTLES']])[0]
     out['num_escapes'] = unpack('H', data[START['SLOT_NUM-ESCAPES']:START['SLOT_NUM-ESCAPES']+SIZE['SLOT_NUM-ESCAPES']])[0]
     out['unknown11'] = data[START['SLOT_UNKNOWN11']:START['SLOT_UNKNOWN11']+SIZE['SLOT_UNKNOWN11']]
@@ -668,9 +674,9 @@ def pack_slot_data(slot):
     for ch in d['temp_party']:
         out += pack('B', ch)
     out += d['unknown9']
-    for v in d['gametime']:
-        out += pack('B', v)
-    out += pack('I', d['unknown10'])
+    for k in ['gametime','counttime']:
+        for v in d[k]:
+            out += pack('B', v)
     out += pack('H', d['num_battles'])
     out += pack('H', d['num_escapes'])
     out += d['unknown11']
