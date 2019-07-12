@@ -75,11 +75,14 @@ START = {
     'SLOT_LOVE-TIFA':         0x0BA8, # Save Slot: Love Points: Tifa
     'SLOT_LOVE-YUFFIE':       0x0BA9, # Save Slot: Love Points: Yuffie
     'SLOT_LOVE-BARRET':       0x0BAA, # Save Slot: Love Points: Barret
-    'SLOT_UNKNOWN9':          0x0BAB, # Save Slot: Unknown 9
-    'SLOT_GAMETIME-HOUR':     0x0BB4, # Save Slot: Game Timer: Hours
-    'SLOT_GAMETIME-MINUTE':   0x0BB5, # Save Slot: Game Timer: Minutes
-    'SLOT_GAMETIME-SECOND':   0x0BB6, # Save Slot: Game Timer: Seconds
-    'SLOT_GAMETIME-TENTH':    0x0BB7, # Save Slot: Game Timer: Tenths
+    'SLOT_TEMP-PARTY-CHAR1':  0x0BAB, # Save Slot: Temporary Party Placeholder: Character 1
+    'SLOT_TEMP-PARTY-CHAR2':  0x0BAC, # Save Slot: Temporary Party Placeholder: Character 2
+    'SLOT_TEMP-PARTY-CHAR3':  0x0BAD, # Save Slot: Temporary Party Placeholder: Character 3
+    'SLOT_UNKNOWN9':          0x0BAE, # Save Slot: Unknown 9
+    'SLOT_GAMETIME-HOUR':     0x0BB4, # Save Slot: Game Timer: Hours (0-255)
+    'SLOT_GAMETIME-MINUTE':   0x0BB5, # Save Slot: Game Timer: Minutes (0-60)
+    'SLOT_GAMETIME-SECOND':   0x0BB6, # Save Slot: Game Timer: Seconds (0-60)
+    'SLOT_GAMETIME-FRAME':    0x0BB7, # Save Slot: Game Timer: Frames (0-30)
     'SLOT_UNKNOWN10':         0x0BB8, # Save Slot: Unknown 10
     'SLOT_NUM-BATTLES':       0x0BBC, # Save Slot: Number of Battles
     'SLOT_NUM-ESCAPES':       0x0BBE, # Save Slot: Number of Escapes
@@ -141,10 +144,10 @@ SIZE = {
     'SLOT_CURR-MODULE':          6, # Save Slot: Current Module
     'SLOT_ENCOUNTER-SEED':       1, # Save Slot: Encounter Timer: Step ID / Seed
     'SLOT_ENCOUNTER-OFFSET':     1, # Save Slot: Encounter Timer: Offset
-    'SLOT_GAMETIME-HOUR':        1, # Save Slot: Game Timer: Hours
-    'SLOT_GAMETIME-MINUTE':      1, # Save Slot: Game Timer: Minutes
-    'SLOT_GAMETIME-SECOND':      1, # Save Slot: Game Timer: Seconds
-    'SLOT_GAMETIME-TENTH':       1, # Save Slot: Game Timer: Tenths
+    'SLOT_GAMETIME-HOUR':        1, # Save Slot: Game Timer: Hours (0-255)
+    'SLOT_GAMETIME-MINUTE':      1, # Save Slot: Game Timer: Minutes (0-60)
+    'SLOT_GAMETIME-SECOND':      1, # Save Slot: Game Timer: Seconds (0-60)
+    'SLOT_GAMETIME-FRAME':       1, # Save Slot: Game Timer: Frames (0-30)
     'SLOT_GIL':                  4, # Save Slot: Total Gil
     'SLOT_KEY-ITEMS':            8, # Save Slot: Key Items
     'SLOT_LOVE':                 1, # Save Slot: Love Points
@@ -172,9 +175,10 @@ SIZE = {
     'SLOT_STOCK-MATERIA':      800, # Save Slot: Party Materia Stock (4 bytes/slot, 200 slots)
     'SLOT_STOCK-MATERIA-SINGLE': 4, # Save Slot: Party Materia Stock: Single Item
     'SLOT_STOLEN-MATERIA':     192, # Save Slot: Materia Stolen by Yuffie (4 bytes/slot, 48 slots)
+    'SLOT_TEMP-PARTY-CHAR':      1, # Save Slot: Temporary Party Placeholder: Character
     'SLOT_UNKNOWN4':            32, # Save Slot: Unknown 4
     'SLOT_YUFFIE-INIT-LVL':      1, # Save Slot: Yuffie's Initial Level (must be 0 before joining)
-    'SLOT_UNKNOWN9':             9, # Save Slot: Unknown 9
+    'SLOT_UNKNOWN9':             6, # Save Slot: Unknown 9
     'SLOT_UNKNOWN10':            4, # Save Slot: Unknown 10
     'SLOT_UNKNOWN11':           57, # Save Slot: Unknown 11
     'SLOT_WINDOW-COLOR':         3, # Save Slot: Window Color (RGB)
@@ -599,8 +603,9 @@ def unpack_slot_data(data):
     out['plot_progress'] = unpack('H', data[START['SLOT_PLOT-PROGRESS']:START['SLOT_PLOT-PROGRESS']+SIZE['SLOT_PLOT-PROGRESS']])[0]
     out['yuffie_init_lvl'] = unpack('B', data[START['SLOT_YUFFIE-INIT-LVL']:START['SLOT_YUFFIE-INIT-LVL']+SIZE['SLOT_YUFFIE-INIT-LVL']])[0]
     out['love'] = {k.lower():unpack('B', data[START['SLOT_LOVE-%s'%k]:START['SLOT_LOVE-%s'%k]+SIZE['SLOT_LOVE']])[0] for k in ['AERITH','TIFA','YUFFIE','BARRET']}
+    out['temp_party'] = [unpack('B', data[START['SLOT_TEMP-PARTY-CHAR%d'%i]:START['SLOT_TEMP-PARTY-CHAR%d'%i]+SIZE['SLOT_TEMP-PARTY-CHAR']])[0] for i in [1,2,3]]
     out['unknown9'] = data[START['SLOT_UNKNOWN9']:START['SLOT_UNKNOWN9']+SIZE['SLOT_UNKNOWN9']]
-    out['gametime'] = [unpack('B', data[START['SLOT_GAMETIME-%s'%k]:START['SLOT_GAMETIME-%s'%k]+SIZE['SLOT_GAMETIME-%s'%k]])[0] for k in ['HOUR','MINUTE','SECOND','TENTH']]
+    out['gametime'] = [unpack('B', data[START['SLOT_GAMETIME-%s'%k]:START['SLOT_GAMETIME-%s'%k]+SIZE['SLOT_GAMETIME-%s'%k]])[0] for k in ['HOUR','MINUTE','SECOND','FRAME']]
     out['unknown10'] = unpack('I', data[START['SLOT_UNKNOWN10']:START['SLOT_UNKNOWN10']+SIZE['SLOT_UNKNOWN10']])[0]
     out['num_battles'] = unpack('H', data[START['SLOT_NUM-BATTLES']:START['SLOT_NUM-BATTLES']+SIZE['SLOT_NUM-BATTLES']])[0]
     out['num_escapes'] = unpack('H', data[START['SLOT_NUM-ESCAPES']:START['SLOT_NUM-ESCAPES']+SIZE['SLOT_NUM-ESCAPES']])[0]
@@ -660,6 +665,8 @@ def pack_slot_data(slot):
     out += pack('B', d['yuffie_init_lvl'])
     for ch in ['aerith','tifa','yuffie','barret']:
         out += pack('B', d['love'][ch])
+    for ch in d['temp_party']:
+        out += pack('B', ch)
     out += d['unknown9']
     for v in d['gametime']:
         out += pack('B', v)
