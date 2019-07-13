@@ -92,6 +92,9 @@ if __name__ == "__main__":
             for v in d['stolen_materia']:
                 if v[0] != 255: # empty slot
                     print("      * %s (%d AP)" % (MATERIA_DB[v[0]], v[1]))
+            print("    * Picked Up Field Items:")
+            for k in sorted(d['field_items'].keys()):
+                print("      * %s: %s" % (k.replace('_',' ').title(), {True:'None',False:', '.join(d['field_items'][k])}[len(d['field_items'][k]) == 0]))
             print("    * Unknown 4: %s" % d['unknown4'])
             print("    * Unknown 9: %s" % d['unknown9'])
             print("    * Unknown 10: %s" % d['unknown10'])

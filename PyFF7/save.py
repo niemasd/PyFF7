@@ -21,84 +21,87 @@ LIMIT_LIST = ["1-1", "1-2", None, "2-1", "2-2", None, "3-1", "3-2", None, "4"]
 MENU_LIST = ["Item", "Magic", "Materia", "Equip", "Status", "Order", "Limit", "Config", "PHS", "Save"]
 FIELD_ITEMS = {
     'train_graveyard': ["Hi-Potion (Barrel 1)", "Echo Screen (Barrel 2)", "Potion (Floor 2)", "Ether (Floor 3)", "Hi-Potion (Roof Train 1)", "Potion (Inside Train 2)", "Potion (Floor 1)", "Hi-Potion (Roof Train 2)"],
+    'great_glacier': ["Elixir (hyou8_2/tr00/s1)", "Potion (hyou5_1/tr00/s1)", "Safety Bit (hyou5_3/trbox/s1)", "Mind Source (hyou2/trbox/s1)", "Sneak Glove (mkt_w/event/s1)", "Premium Heart (mkt_ia/event/s3, mkt_ia/line00/s4)"],
 }
+FIELD_ITEMS_ORDER = ['train_graveyard', 'great_glacier']
 
 # start offsets of various items in a save file (in bytes, with respect to start of slot data)
 START = {
     # Final Fantasy VII Save Slot
-    'SLOT_CHECKSUM':          0x0000, # Save Slot: Checksum
-    'SLOT_PREVIEW-LEVEL':     0x0004, # Save Slot: Preview: Lead Character's Level
-    'SLOT_PREVIEW-PORTRAIT1': 0x0005, # Save Slot: Preview: Portrait 1
-    'SLOT_PREVIEW-PORTRAIT2': 0x0006, # Save Slot: Preview: Portrait 2
-    'SLOT_PREVIEW-PORTRAIT3': 0x0007, # Save Slot: Preview: Portrait 3
-    'SLOT_PREVIEW-NAME':      0x0008, # Save Slot: Preview: Lead Character's Name
-    'SLOT_PREVIEW-HP-CURR':   0x0018, # Save Slot: Preview: Lead Character's Current HP
-    'SLOT_PREVIEW-HP-MAX':    0x001A, # Save Slot: Preview: Lead Character's Maximum HP
-    'SLOT_PREVIEW-MP-CURR':   0x001C, # Save Slot: Preview: Lead Character's Current MP
-    'SLOT_PREVIEW-MP-MAX':    0x001E, # Save Slot: Preview: Lead Character's Maximum MP
-    'SLOT_PREVIEW-GIL':       0x0020, # Save Slot: Preview: Total Gil
-    'SLOT_PREVIEW-PLAYTIME':  0x0024, # Save Slot: Preview: Total Playtime
-    'SLOT_PREVIEW-LOCATION':  0x0028, # Save Slot: Preview: Save Location
-    'SLOT_WINDOW-COLOR-UL':   0x0048, # Save Slot: Window Color, Upper-Left Corner (RGB)
-    'SLOT_WINDOW-COLOR-UR':   0x004B, # Save Slot: Window Color, Upper-Right Corner (RGB)
-    'SLOT_WINDOW-COLOR-LL':   0x004E, # Save Slot: Window Color, Lower-Left Corner (RGB)
-    'SLOT_WINDOW-COLOR-LR':   0x0051, # Save Slot: Window Color, Lower-Right Corner (RGB)
-    'SLOT_RECORD-CLOUD':      0x0054, # Save Slot: Character Record: Cloud
-    'SLOT_RECORD-BARRET':     0x00D8, # Save Slot: Character Record: Barret
-    'SLOT_RECORD-TIFA':       0x015C, # Save Slot: Character Record: Tifa
-    'SLOT_RECORD-AERITH':     0x01E0, # Save Slot: Character Record: Aerith
-    'SLOT_RECORD-REDXIII':    0x0264, # Save Slot: Character Record: Red XIII
-    'SLOT_RECORD-YUFFIE':     0x02E8, # Save Slot: Character Record: Yuffie
-    'SLOT_RECORD-CAITSITH':   0x036C, # Save Slot: Character Record: Cait Sith
-    'SLOT_RECORD-VINCENT':    0x03F0, # Save Slot: Character Record: Vincent
-    'SLOT_RECORD-CID':        0x0474, # Save Slot: Character Record: Cid
-    'SLOT_PORTRAIT1':         0x04F8, # Save Slot: Portrait 1
-    'SLOT_PORTRAIT2':         0x04F9, # Save Slot: Portrait 2
-    'SLOT_PORTRAIT3':         0x04FA, # Save Slot: Portrait 3
-    'SLOT_BLANK1':            0x04FB, # Save Slot: Blank 1 (0xFF)
-    'SLOT_STOCK-ITEM':        0x04FC, # Save Slot: Party Item Stock (2 bytes/slot, 320 slots)
-    'SLOT_STOCK-MATERIA':     0x077C, # Save Slot: Party Materia Stock (4 bytes/slot, 200 slots)
-    'SLOT_STOLEN-MATERIA':    0x0A9C, # Save Slot: Materia Stolen by Yuffie (4 bytes/slot, 48 slots)
-    'SLOT_UNKNOWN4':          0x0B5C, # Save Slot: Unknown 4
-    'SLOT_GIL':               0x0B7C, # Save Slot: Total Gil
-    'SLOT_PLAYTIME':          0x0B80, # Save Slot: Total Playtime (seconds)
-    'SLOT_COUNTDOWN':         0x0B84, # Save Slot: Countdown Timer (seconds)
-    'SLOT_PLAYTIME-FRAC':     0x0B88, # Save Slot: Total Playtime Second Fraction (x/65535)
-    'SLOT_COUNTDOWN-FRAC':    0x0B8C, # Save Slot: Countdown Timer Second Fraction (x/65535)
-    'SLOT_CURR-MODULE':       0x0B90, # Save Slot: Current Module
-    'SLOT_CURR-LOCATION':     0x0B96, # Save Slot: Current Location
-    'SLOT_BLANK2':            0x0B98, # Save Slot: Blank 2 (0xFFFF)
-    'SLOT_MAP-LOC-X':         0x0B9A, # Save Slot: Map Location: X-Coordinate (signed)
-    'SLOT_MAP-LOC-Y':         0x0B9C, # Save Slot: Map Location: Y-Coordinate (signed)
-    'SLOT_MAP-LOC-T':         0x0B9E, # Save Slot: Map Location: Triangle ID
-    'SLOT_MAP-DIRECTION':     0x0BA0, # Save Slot: Direction of Player Model on Map
-    'SLOT_ENCOUNTER-SEED':    0x0BA1, # Save Slot: Encounter Timer: Step ID / Seed
-    'SLOT_ENCOUNTER-OFFSET':  0x0BA2, # Save Slot: Encounter Timer: Offset
-    'SLOT_BLANK3':            0x0BA3, # Save Slot: Blank 3 (0xFF)
-    'SLOT_PLOT-PROGRESS':     0x0BA4, # Save Slot: Plot Progression Variable
-    'SLOT_YUFFIE-INIT-LVL':   0x0BA6, # Save Slot: Yuffie's Initial Level (must be 0 before joining)
-    'SLOT_LOVE-AERITH':       0x0BA7, # Save Slot: Love Points: Aerith
-    'SLOT_LOVE-TIFA':         0x0BA8, # Save Slot: Love Points: Tifa
-    'SLOT_LOVE-YUFFIE':       0x0BA9, # Save Slot: Love Points: Yuffie
-    'SLOT_LOVE-BARRET':       0x0BAA, # Save Slot: Love Points: Barret
-    'SLOT_TEMP-PARTY-CHAR1':  0x0BAB, # Save Slot: Temporary Party Placeholder: Character 1
-    'SLOT_TEMP-PARTY-CHAR2':  0x0BAC, # Save Slot: Temporary Party Placeholder: Character 2
-    'SLOT_TEMP-PARTY-CHAR3':  0x0BAD, # Save Slot: Temporary Party Placeholder: Character 3
-    'SLOT_UNKNOWN9':          0x0BAE, # Save Slot: Unknown 9
-    'SLOT_GAMETIME-HOUR':     0x0BB4, # Save Slot: Game Timer: Hours (0-255)
-    'SLOT_GAMETIME-MINUTE':   0x0BB5, # Save Slot: Game Timer: Minutes (0-60)
-    'SLOT_GAMETIME-SECOND':   0x0BB6, # Save Slot: Game Timer: Seconds (0-60)
-    'SLOT_GAMETIME-FRAME':    0x0BB7, # Save Slot: Game Timer: Frames (0-30)
-    'SLOT_COUNTTIME-HOUR':    0x0BB8, # Save Slot: Countdown Timer: Hours (0-255)
-    'SLOT_COUNTTIME-MINUTE':  0x0BB9, # Save Slot: Countdown Timer: Minutes (0-60)
-    'SLOT_COUNTTIME-SECOND':  0x0BBA, # Save Slot: Countdown Timer: Seconds (0-60)
-    'SLOT_COUNTTIME-FRAME':   0x0BBB, # Save Slot: Countdown Timer: Frames (0-30)
-    'SLOT_NUM-BATTLES':       0x0BBC, # Save Slot: Number of Battles
-    'SLOT_NUM-ESCAPES':       0x0BBE, # Save Slot: Number of Escapes
-    'SLOT_MENU-VISIBLE':      0x0BC0, # Save Slot: Menu Visibility
-    'SLOT_MENU-LOCKED':       0x0BC2, # Save Slot: Menu Locked (1 = locked, 0 = unlocked)
-    'SLOT_UNKNOWN10':         0x0BC4, # Save Slot: Unknown 10
-    'SLOT_FIELD-ITEMS-TRAIN': 0x0BC8, # Save Slot: Field Items: Sector 7 Train Graveyard
+    'SLOT_CHECKSUM':            0x0000, # Save Slot: Checksum
+    'SLOT_PREVIEW-LEVEL':       0x0004, # Save Slot: Preview: Lead Character's Level
+    'SLOT_PREVIEW-PORTRAIT1':   0x0005, # Save Slot: Preview: Portrait 1
+    'SLOT_PREVIEW-PORTRAIT2':   0x0006, # Save Slot: Preview: Portrait 2
+    'SLOT_PREVIEW-PORTRAIT3':   0x0007, # Save Slot: Preview: Portrait 3
+    'SLOT_PREVIEW-NAME':        0x0008, # Save Slot: Preview: Lead Character's Name
+    'SLOT_PREVIEW-HP-CURR':     0x0018, # Save Slot: Preview: Lead Character's Current HP
+    'SLOT_PREVIEW-HP-MAX':      0x001A, # Save Slot: Preview: Lead Character's Maximum HP
+    'SLOT_PREVIEW-MP-CURR':     0x001C, # Save Slot: Preview: Lead Character's Current MP
+    'SLOT_PREVIEW-MP-MAX':      0x001E, # Save Slot: Preview: Lead Character's Maximum MP
+    'SLOT_PREVIEW-GIL':         0x0020, # Save Slot: Preview: Total Gil
+    'SLOT_PREVIEW-PLAYTIME':    0x0024, # Save Slot: Preview: Total Playtime
+    'SLOT_PREVIEW-LOCATION':    0x0028, # Save Slot: Preview: Save Location
+    'SLOT_WINDOW-COLOR-UL':     0x0048, # Save Slot: Window Color, Upper-Left Corner (RGB)
+    'SLOT_WINDOW-COLOR-UR':     0x004B, # Save Slot: Window Color, Upper-Right Corner (RGB)
+    'SLOT_WINDOW-COLOR-LL':     0x004E, # Save Slot: Window Color, Lower-Left Corner (RGB)
+    'SLOT_WINDOW-COLOR-LR':     0x0051, # Save Slot: Window Color, Lower-Right Corner (RGB)
+    'SLOT_RECORD-CLOUD':        0x0054, # Save Slot: Character Record: Cloud
+    'SLOT_RECORD-BARRET':       0x00D8, # Save Slot: Character Record: Barret
+    'SLOT_RECORD-TIFA':         0x015C, # Save Slot: Character Record: Tifa
+    'SLOT_RECORD-AERITH':       0x01E0, # Save Slot: Character Record: Aerith
+    'SLOT_RECORD-REDXIII':      0x0264, # Save Slot: Character Record: Red XIII
+    'SLOT_RECORD-YUFFIE':       0x02E8, # Save Slot: Character Record: Yuffie
+    'SLOT_RECORD-CAITSITH':     0x036C, # Save Slot: Character Record: Cait Sith
+    'SLOT_RECORD-VINCENT':      0x03F0, # Save Slot: Character Record: Vincent
+    'SLOT_RECORD-CID':          0x0474, # Save Slot: Character Record: Cid
+    'SLOT_PORTRAIT1':           0x04F8, # Save Slot: Portrait 1
+    'SLOT_PORTRAIT2':           0x04F9, # Save Slot: Portrait 2
+    'SLOT_PORTRAIT3':           0x04FA, # Save Slot: Portrait 3
+    'SLOT_BLANK1':              0x04FB, # Save Slot: Blank 1 (0xFF)
+    'SLOT_STOCK-ITEM':          0x04FC, # Save Slot: Party Item Stock (2 bytes/slot, 320 slots)
+    'SLOT_STOCK-MATERIA':       0x077C, # Save Slot: Party Materia Stock (4 bytes/slot, 200 slots)
+    'SLOT_STOLEN-MATERIA':      0x0A9C, # Save Slot: Materia Stolen by Yuffie (4 bytes/slot, 48 slots)
+    'SLOT_UNKNOWN4':            0x0B5C, # Save Slot: Unknown 4
+    'SLOT_GIL':                 0x0B7C, # Save Slot: Total Gil
+    'SLOT_PLAYTIME':            0x0B80, # Save Slot: Total Playtime (seconds)
+    'SLOT_COUNTDOWN':           0x0B84, # Save Slot: Countdown Timer (seconds)
+    'SLOT_PLAYTIME-FRAC':       0x0B88, # Save Slot: Total Playtime Second Fraction (x/65535)
+    'SLOT_COUNTDOWN-FRAC':      0x0B8C, # Save Slot: Countdown Timer Second Fraction (x/65535)
+    'SLOT_CURR-MODULE':         0x0B90, # Save Slot: Current Module
+    'SLOT_CURR-LOCATION':       0x0B96, # Save Slot: Current Location
+    'SLOT_BLANK2':              0x0B98, # Save Slot: Blank 2 (0xFFFF)
+    'SLOT_MAP-LOC-X':           0x0B9A, # Save Slot: Map Location: X-Coordinate (signed)
+    'SLOT_MAP-LOC-Y':           0x0B9C, # Save Slot: Map Location: Y-Coordinate (signed)
+    'SLOT_MAP-LOC-T':           0x0B9E, # Save Slot: Map Location: Triangle ID
+    'SLOT_MAP-DIRECTION':       0x0BA0, # Save Slot: Direction of Player Model on Map
+    'SLOT_ENCOUNTER-SEED':      0x0BA1, # Save Slot: Encounter Timer: Step ID / Seed
+    'SLOT_ENCOUNTER-OFFSET':    0x0BA2, # Save Slot: Encounter Timer: Offset
+    'SLOT_BLANK3':              0x0BA3, # Save Slot: Blank 3 (0xFF)
+    'SLOT_PLOT-PROGRESS':       0x0BA4, # Save Slot: Plot Progression Variable
+    'SLOT_YUFFIE-INIT-LVL':     0x0BA6, # Save Slot: Yuffie's Initial Level (must be 0 before joining)
+    'SLOT_LOVE-AERITH':         0x0BA7, # Save Slot: Love Points: Aerith
+    'SLOT_LOVE-TIFA':           0x0BA8, # Save Slot: Love Points: Tifa
+    'SLOT_LOVE-YUFFIE':         0x0BA9, # Save Slot: Love Points: Yuffie
+    'SLOT_LOVE-BARRET':         0x0BAA, # Save Slot: Love Points: Barret
+    'SLOT_TEMP-PARTY-CHAR1':    0x0BAB, # Save Slot: Temporary Party Placeholder: Character 1
+    'SLOT_TEMP-PARTY-CHAR2':    0x0BAC, # Save Slot: Temporary Party Placeholder: Character 2
+    'SLOT_TEMP-PARTY-CHAR3':    0x0BAD, # Save Slot: Temporary Party Placeholder: Character 3
+    'SLOT_UNKNOWN9':            0x0BAE, # Save Slot: Unknown 9
+    'SLOT_GAMETIME-HOUR':       0x0BB4, # Save Slot: Game Timer: Hours (0-255)
+    'SLOT_GAMETIME-MINUTE':     0x0BB5, # Save Slot: Game Timer: Minutes (0-60)
+    'SLOT_GAMETIME-SECOND':     0x0BB6, # Save Slot: Game Timer: Seconds (0-60)
+    'SLOT_GAMETIME-FRAME':      0x0BB7, # Save Slot: Game Timer: Frames (0-30)
+    'SLOT_COUNTTIME-HOUR':      0x0BB8, # Save Slot: Countdown Timer: Hours (0-255)
+    'SLOT_COUNTTIME-MINUTE':    0x0BB9, # Save Slot: Countdown Timer: Minutes (0-60)
+    'SLOT_COUNTTIME-SECOND':    0x0BBA, # Save Slot: Countdown Timer: Seconds (0-60)
+    'SLOT_COUNTTIME-FRAME':     0x0BBB, # Save Slot: Countdown Timer: Frames (0-30)
+    'SLOT_NUM-BATTLES':         0x0BBC, # Save Slot: Number of Battles
+    'SLOT_NUM-ESCAPES':         0x0BBE, # Save Slot: Number of Escapes
+    'SLOT_MENU-VISIBLE':        0x0BC0, # Save Slot: Menu Visibility
+    'SLOT_MENU-LOCKED':         0x0BC2, # Save Slot: Menu Locked (1 = locked, 0 = unlocked)
+    'SLOT_UNKNOWN10':           0x0BC4, # Save Slot: Unknown 10
+    'SLOT_FIELD-ITEMS-TRAIN':   0x0BC8, # Save Slot: Field Items: Sector 7 Train Graveyard
+    'SLOT_FIELD-ITEMS-GLACIER': 0x0BC9, # Save Slot: Field Items: Great Glacier
     #'SLOT_KEY-ITEMS':         0x0BE4, # Save Slot: Key Items
 
     # Character Record
@@ -706,7 +709,9 @@ def unpack_slot_data(data):
     out['menu_visible'] = unpack_menu(data[START['SLOT_MENU-VISIBLE']:START['SLOT_MENU-VISIBLE']+SIZE['SLOT_MENU-VISIBLE']])
     out['menu_locked'] = unpack_menu(data[START['SLOT_MENU-LOCKED']:START['SLOT_MENU-LOCKED']+SIZE['SLOT_MENU-LOCKED']])
     out['unknown10'] = unpack('I', data[START['SLOT_UNKNOWN10']:START['SLOT_UNKNOWN10']+SIZE['SLOT_UNKNOWN10']])[0]
-    out['field_items'] = {k:unpack_field_items(data[START['SLOT_FIELD-ITEMS-TRAIN']:START['SLOT_FIELD-ITEMS-TRAIN']+SIZE['SLOT_FIELD-ITEMS']], k) for k in ['train_graveyard']}
+    out['field_items'] = dict()
+    out['field_items']['train_graveyard'] = unpack_field_items(data[START['SLOT_FIELD-ITEMS-TRAIN']:START['SLOT_FIELD-ITEMS-TRAIN']+SIZE['SLOT_FIELD-ITEMS']], 'train_graveyard')
+    out['field_items']['great_glacier'] = unpack_field_items(data[START['SLOT_FIELD-ITEMS-GLACIER']:START['SLOT_FIELD-ITEMS-GLACIER']+SIZE['SLOT_FIELD-ITEMS']], 'great_glacier')
     return out
 
 def pack_slot_data(slot):
@@ -773,7 +778,7 @@ def pack_slot_data(slot):
     out += pack_menu(d['menu_visible'])
     out += pack_menu(d['menu_locked'])
     out += pack('I', d['unknown10'])
-    for k in ['train_graveyard']:
+    for k in FIELD_ITEMS_ORDER:
         out += pack_field_items(d['field_items'][k], k)
     #out += slot['footer'] # TODO UNCOMMENT WHEN FINISHED PACKING SAVE SLOT DATA
     return out
