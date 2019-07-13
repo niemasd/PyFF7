@@ -19,6 +19,9 @@ CAPACITY_ARMOR_MATERIA = 8
 NUM_LIMIT_LEVELS = 4
 LIMIT_LIST = ["1-1", "1-2", None, "2-1", "2-2", None, "3-1", "3-2", None, "4"]
 MENU_LIST = ["Item", "Magic", "Materia", "Equip", "Status", "Order", "Limit", "Config", "PHS", "Save"]
+FIELD_ITEMS = {
+    'train_graveyard': ["Hi-Potion (Barrel 1)", "Echo Screen (Barrel 2)", "Potion (Floor 2)", "Ether (Floor 3)", "Hi-Potion (Roof Train 1)", "Potion (Inside Train 2)", "Potion (Floor 1)", "Hi-Potion (Roof Train 2)"],
+}
 
 # start offsets of various items in a save file (in bytes, with respect to start of slot data)
 START = {
@@ -94,6 +97,8 @@ START = {
     'SLOT_NUM-ESCAPES':       0x0BBE, # Save Slot: Number of Escapes
     'SLOT_MENU-VISIBLE':      0x0BC0, # Save Slot: Menu Visibility
     'SLOT_MENU-LOCKED':       0x0BC2, # Save Slot: Menu Locked (1 = locked, 0 = unlocked)
+    'SLOT_UNKNOWN10':         0x0BC4, # Save Slot: Unknown 10
+    'SLOT_FIELD-ITEMS-TRAIN': 0x0BC8, # Save Slot: Field Items: Sector 7 Train Graveyard
     #'SLOT_KEY-ITEMS':         0x0BE4, # Save Slot: Key Items
 
     # Character Record
@@ -155,6 +160,7 @@ SIZE = {
     'SLOT_CURR-MODULE':          6, # Save Slot: Current Module
     'SLOT_ENCOUNTER-SEED':       1, # Save Slot: Encounter Timer: Step ID / Seed
     'SLOT_ENCOUNTER-OFFSET':     1, # Save Slot: Encounter Timer: Offset
+    'SLOT_FIELD-ITEMS':          1, # Save Slot: Field Items
     'SLOT_GAMETIME-HOUR':        1, # Save Slot: Game Timer: Hours (0-255)
     'SLOT_GAMETIME-MINUTE':      1, # Save Slot: Game Timer: Minutes (0-60)
     'SLOT_GAMETIME-SECOND':      1, # Save Slot: Game Timer: Seconds (0-60)
@@ -192,6 +198,7 @@ SIZE = {
     'SLOT_UNKNOWN4':            32, # Save Slot: Unknown 4
     'SLOT_YUFFIE-INIT-LVL':      1, # Save Slot: Yuffie's Initial Level (must be 0 before joining)
     'SLOT_UNKNOWN9':             6, # Save Slot: Unknown 9
+    'SLOT_UNKNOWN10':            4, # Save Slot: Unknown 10
     'SLOT_WINDOW-COLOR':         3, # Save Slot: Window Color (RGB)
 
     # Character Record
@@ -597,6 +604,48 @@ def pack_menu(menu):
             out |= 1
     return pack('H', out)
 
+def unpack_field_items(data, location):
+    '''Parse the bytes of Field Items
+
+    Args:
+        ``data`` (``bytes``): The input Field Items data
+
+        ``location`` (``str``): The location of the field items
+
+    Returns:
+        ``set``: Field items that have been picked up
+    '''
+    if len(data) != SIZE['SLOT_FIELD-ITEMS']:
+        raise ValueError("Invalid field items size: %d" % len(data))
+    if location not in FIELD_ITEMS:
+        raise ValueError("Invalid field items location: %s" % location)
+    num = unpack('B', data)[0]; out = set()
+    for k in FIELD_ITEMS[location]:
+        if bool(num & 1):
+            out.add(k)
+        num >>= 1
+    return out
+
+def pack_field_items(items, location):
+    '''Pack the Field Items picked up items into bytes
+
+    Args:
+        ``items`` (``set``): Field items that have been picked up
+
+        ``location`` (``str``): The location of the field items
+
+    Returns:
+        ``bytes``: The packed data
+    '''
+    if location not in FIELD_ITEMS:
+        raise ValueError("Invalid field items location: %s" % location)
+    out = 0
+    for k in FIELD_ITEMS[location][::-1]:
+        out <<= 1
+        if k in items:
+            out |= 1
+    return pack('B', out)
+
 def unpack_slot_data(data):
     '''Parse the bytes of a save slot
 
@@ -656,6 +705,8 @@ def unpack_slot_data(data):
     out['num_escapes'] = unpack('H', data[START['SLOT_NUM-ESCAPES']:START['SLOT_NUM-ESCAPES']+SIZE['SLOT_NUM-ESCAPES']])[0]
     out['menu_visible'] = unpack_menu(data[START['SLOT_MENU-VISIBLE']:START['SLOT_MENU-VISIBLE']+SIZE['SLOT_MENU-VISIBLE']])
     out['menu_locked'] = unpack_menu(data[START['SLOT_MENU-LOCKED']:START['SLOT_MENU-LOCKED']+SIZE['SLOT_MENU-LOCKED']])
+    out['unknown10'] = unpack('I', data[START['SLOT_UNKNOWN10']:START['SLOT_UNKNOWN10']+SIZE['SLOT_UNKNOWN10']])[0]
+    out['field_items'] = {k:unpack_field_items(data[START['SLOT_FIELD-ITEMS-TRAIN']:START['SLOT_FIELD-ITEMS-TRAIN']+SIZE['SLOT_FIELD-ITEMS']], k) for k in ['train_graveyard']}
     return out
 
 def pack_slot_data(slot):
@@ -721,6 +772,9 @@ def pack_slot_data(slot):
     out += pack('H', d['num_escapes'])
     out += pack_menu(d['menu_visible'])
     out += pack_menu(d['menu_locked'])
+    out += pack('I', d['unknown10'])
+    for k in ['train_graveyard']:
+        out += pack_field_items(d['field_items'][k], k)
     #out += slot['footer'] # TODO UNCOMMENT WHEN FINISHED PACKING SAVE SLOT DATA
     return out
 

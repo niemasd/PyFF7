@@ -94,5 +94,6 @@ if __name__ == "__main__":
                     print("      * %s (%d AP)" % (MATERIA_DB[v[0]], v[1]))
             print("    * Unknown 4: %s" % d['unknown4'])
             print("    * Unknown 9: %s" % d['unknown9'])
+            print("    * Unknown 10: %s" % d['unknown10'])
     except BrokenPipeError:
         stderr.close()
