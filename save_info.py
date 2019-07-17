@@ -98,5 +98,6 @@ if __name__ == "__main__":
             print("    * Unknown 4: %s" % d['unknown4'])
             print("    * Unknown 9: %s" % d['unknown9'])
             print("    * Unknown 10: %s" % d['unknown10'])
+            print("    * Unknown 11: %s" % d['unknown11'])
     except BrokenPipeError:
         stderr.close()

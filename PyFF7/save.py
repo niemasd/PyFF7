@@ -23,7 +23,6 @@ FIELD_ITEMS = {
     'train_graveyard': ["Hi-Potion (Barrel 1)", "Echo Screen (Barrel 2)", "Potion (Floor 2)", "Ether (Floor 3)", "Hi-Potion (Roof Train 1)", "Potion (Inside Train 2)", "Potion (Floor 1)", "Hi-Potion (Roof Train 2)"],
     'great_glacier': ["Elixir (hyou8_2/tr00/s1)", "Potion (hyou5_1/tr00/s1)", "Safety Bit (hyou5_3/trbox/s1)", "Mind Source (hyou2/trbox/s1)", "Sneak Glove (mkt_w/event/s1)", "Premium Heart (mkt_ia/event/s3, mkt_ia/line00/s4)"],
 }
-FIELD_ITEMS_ORDER = ['train_graveyard', 'great_glacier']
 
 # start offsets of various items in a save file (in bytes, with respect to start of slot data)
 START = {
@@ -102,6 +101,7 @@ START = {
     'SLOT_UNKNOWN10':           0x0BC4, # Save Slot: Unknown 10
     'SLOT_FIELD-ITEMS-TRAIN':   0x0BC8, # Save Slot: Field Items: Sector 7 Train Graveyard
     'SLOT_FIELD-ITEMS-GLACIER': 0x0BC9, # Save Slot: Field Items: Great Glacier
+    'SLOT_UNKNOWN11':           0x0BCA, # Save Slot: Unknown 11
     #'SLOT_KEY-ITEMS':         0x0BE4, # Save Slot: Key Items
 
     # Character Record
@@ -202,6 +202,7 @@ SIZE = {
     'SLOT_YUFFIE-INIT-LVL':      1, # Save Slot: Yuffie's Initial Level (must be 0 before joining)
     'SLOT_UNKNOWN9':             6, # Save Slot: Unknown 9
     'SLOT_UNKNOWN10':            4, # Save Slot: Unknown 10
+    'SLOT_UNKNOWN11':           10, # Save Slot: Unknown 11
     'SLOT_WINDOW-COLOR':         3, # Save Slot: Window Color (RGB)
 
     # Character Record
@@ -712,6 +713,7 @@ def unpack_slot_data(data):
     out['field_items'] = dict()
     out['field_items']['train_graveyard'] = unpack_field_items(data[START['SLOT_FIELD-ITEMS-TRAIN']:START['SLOT_FIELD-ITEMS-TRAIN']+SIZE['SLOT_FIELD-ITEMS']], 'train_graveyard')
     out['field_items']['great_glacier'] = unpack_field_items(data[START['SLOT_FIELD-ITEMS-GLACIER']:START['SLOT_FIELD-ITEMS-GLACIER']+SIZE['SLOT_FIELD-ITEMS']], 'great_glacier')
+    out['unknown11'] = data[START['SLOT_UNKNOWN11']:START['SLOT_UNKNOWN11']+SIZE['SLOT_UNKNOWN11']]
     return out
 
 def pack_slot_data(slot):
@@ -778,8 +780,9 @@ def pack_slot_data(slot):
     out += pack_menu(d['menu_visible'])
     out += pack_menu(d['menu_locked'])
     out += pack('I', d['unknown10'])
-    for k in FIELD_ITEMS_ORDER:
+    for k in ['train_graveyard', 'great_glacier']:
         out += pack_field_items(d['field_items'][k], k)
+    out += d['unknown11']
     #out += slot['footer'] # TODO UNCOMMENT WHEN FINISHED PACKING SAVE SLOT DATA
     return out
 
