@@ -19,10 +19,13 @@ CAPACITY_ARMOR_MATERIA = 8
 NUM_LIMIT_LEVELS = 4
 LIMIT_LIST = ["1-1", "1-2", None, "2-1", "2-2", None, "3-1", "3-2", None, "4"]
 MENU_LIST = ["Item", "Magic", "Materia", "Equip", "Status", "Order", "Limit", "Config", "PHS", "Save"]
-FIELD_ITEMS = {
-    'train_graveyard': ["Hi-Potion (Barrel 1)", "Echo Screen (Barrel 2)", "Potion (Floor 2)", "Ether (Floor 3)", "Hi-Potion (Roof Train 1)", "Potion (Inside Train 2)", "Potion (Floor 1)", "Hi-Potion (Roof Train 2)"],
-    'great_glacier': ["Elixir (hyou8_2/tr00/s1)", "Potion (hyou5_1/tr00/s1)", "Safety Bit (hyou5_3/trbox/s1)", "Mind Source (hyou2/trbox/s1)", "Sneak Glove (mkt_w/event/s1)", "Premium Heart (mkt_ia/event/s3, mkt_ia/line00/s4)"],
-}
+FIELD_ITEMS = [
+    # Field Items 1: Train Graveyard
+    ["Hi-Potion (mds7st1/Barrel 1)", "Echo Screen (mds7st1/Barrel 2)", "Potion (mds7st2/Floor 2)", "Ether (mds7st2/Floor 3)", "Hi-Potion (mds7st1/Roof Train 1)", "Potion (mds7st1/Inside Train 2)", "Potion (mds7st1/Floor 1)", "Hi-Potion (mds7st2/Roof Train 2)"],
+    
+    # Field Items 2: Great Glacier
+    ["Elixir (hyou8_2/tr00/s1)", "Potion (hyou5_1/tr00/s1)", "Safety Bit (hyou5_3/trbox/s1)", "Mind Source (hyou2/trbox/s1)", "Sneak Glove (mkt_w/event/s1)", "Premium Heart (mkt_ia/event/s3, mkt_ia/line00/s4)"],
+]
 
 # start offsets of various items in a save file (in bytes, with respect to start of slot data)
 START = {
@@ -99,8 +102,8 @@ START = {
     'SLOT_MENU-VISIBLE':        0x0BC0, # Save Slot: Menu Visibility
     'SLOT_MENU-LOCKED':         0x0BC2, # Save Slot: Menu Locked (1 = locked, 0 = unlocked)
     'SLOT_UNKNOWN10':           0x0BC4, # Save Slot: Unknown 10
-    'SLOT_FIELD-ITEMS-TRAIN':   0x0BC8, # Save Slot: Field Items: Sector 7 Train Graveyard
-    'SLOT_FIELD-ITEMS-GLACIER': 0x0BC9, # Save Slot: Field Items: Great Glacier
+    'SLOT_FIELD-ITEMS-1':       0x0BC8, # Save Slot: Field Items 1: Sector 7 Train Graveyard
+    'SLOT_FIELD-ITEMS-2':       0x0BC9, # Save Slot: Field Items 2: Great Glacier
     'SLOT_UNKNOWN11':           0x0BCA, # Save Slot: Unknown 11
     #'SLOT_KEY-ITEMS':         0x0BE4, # Save Slot: Key Items
 
@@ -608,43 +611,43 @@ def pack_menu(menu):
             out |= 1
     return pack('H', out)
 
-def unpack_field_items(data, location):
+def unpack_field_items(data, field_items_num):
     '''Parse the bytes of Field Items
 
     Args:
         ``data`` (``bytes``): The input Field Items data
 
-        ``location`` (``str``): The location of the field items
+        ``field_items_num`` (``int``): The index (i.e., location) of the field items (1-based)
 
     Returns:
         ``set``: Field items that have been picked up
     '''
     if len(data) != SIZE['SLOT_FIELD-ITEMS']:
         raise ValueError("Invalid field items size: %d" % len(data))
-    if location not in FIELD_ITEMS:
-        raise ValueError("Invalid field items location: %s" % location)
+    if field_items_num <= 0 or field_items_num > len(FIELD_ITEMS):
+        raise ValueError("Invalid field items index (i.e., location): %s" % field_items_num)
     num = unpack('B', data)[0]; out = set()
-    for k in FIELD_ITEMS[location]:
+    for k in FIELD_ITEMS[field_items_num-1]: # change to 0-based indexing for list
         if bool(num & 1):
             out.add(k)
         num >>= 1
     return out
 
-def pack_field_items(items, location):
+def pack_field_items(items, field_items_num):
     '''Pack the Field Items picked up items into bytes
 
     Args:
         ``items`` (``set``): Field items that have been picked up
 
-        ``location`` (``str``): The location of the field items
+        ``field_items_num`` (``int``): The index (i.e., location) of the field items (1-based)
 
     Returns:
         ``bytes``: The packed data
     '''
-    if location not in FIELD_ITEMS:
-        raise ValueError("Invalid field items location: %s" % location)
+    if field_items_num <= 0 or field_items_num > len(FIELD_ITEMS):
+        raise ValueError("Invalid field items index (i.e., location): %s" % field_items_num)
     out = 0
-    for k in FIELD_ITEMS[location][::-1]:
+    for k in FIELD_ITEMS[field_items_num-1][::-1]: # change to 0-based indexing for list
         out <<= 1
         if k in items:
             out |= 1
@@ -710,9 +713,9 @@ def unpack_slot_data(data):
     out['menu_visible'] = unpack_menu(data[START['SLOT_MENU-VISIBLE']:START['SLOT_MENU-VISIBLE']+SIZE['SLOT_MENU-VISIBLE']])
     out['menu_locked'] = unpack_menu(data[START['SLOT_MENU-LOCKED']:START['SLOT_MENU-LOCKED']+SIZE['SLOT_MENU-LOCKED']])
     out['unknown10'] = unpack('I', data[START['SLOT_UNKNOWN10']:START['SLOT_UNKNOWN10']+SIZE['SLOT_UNKNOWN10']])[0]
-    out['field_items'] = dict()
-    out['field_items']['train_graveyard'] = unpack_field_items(data[START['SLOT_FIELD-ITEMS-TRAIN']:START['SLOT_FIELD-ITEMS-TRAIN']+SIZE['SLOT_FIELD-ITEMS']], 'train_graveyard')
-    out['field_items']['great_glacier'] = unpack_field_items(data[START['SLOT_FIELD-ITEMS-GLACIER']:START['SLOT_FIELD-ITEMS-GLACIER']+SIZE['SLOT_FIELD-ITEMS']], 'great_glacier')
+    out['field_items'] = list()
+    for i in range(1,3): # 1 and 2
+        out['field_items'].append(unpack_field_items(data[START['SLOT_FIELD-ITEMS-%d'%i]:START['SLOT_FIELD-ITEMS-%d'%i]+SIZE['SLOT_FIELD-ITEMS']], i))
     out['unknown11'] = data[START['SLOT_UNKNOWN11']:START['SLOT_UNKNOWN11']+SIZE['SLOT_UNKNOWN11']]
     return out
 
@@ -780,8 +783,8 @@ def pack_slot_data(slot):
     out += pack_menu(d['menu_visible'])
     out += pack_menu(d['menu_locked'])
     out += pack('I', d['unknown10'])
-    for k in ['train_graveyard', 'great_glacier']:
-        out += pack_field_items(d['field_items'][k], k)
+    for i in range(1,3): # 1 and 2
+        out += pack_field_items(d['field_items'][i-1], i)
     out += d['unknown11']
     #out += slot['footer'] # TODO UNCOMMENT WHEN FINISHED PACKING SAVE SLOT DATA
     return out
