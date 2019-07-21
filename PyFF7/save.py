@@ -25,6 +25,12 @@ FIELD_ITEMS = [
     
     # Field Items 2: Great Glacier
     ["Elixir (hyou8_2/tr00/s1)", "Potion (hyou5_1/tr00/s1)", "Safety Bit (hyou5_3/trbox/s1)", "Mind Source (hyou2/trbox/s1)", "Sneak Glove (mkt_w/event/s1)", "Premium Heart (mkt_ia/event/s3, mkt_ia/line00/s4)"],
+
+    # Field Items 3
+    ["Potion (md8_3/p/s1)", "Potion + Phoenix Down (ealin_2/zu/s1)", "Ether (eals_1/p/s1)", "Cover Materia (eals_1/mp/s1)", "Choco-Mog Summon (farm/dancer/s1)", "Sense Materia (mds6_22/mat/s1)", "Ramuh Summon (crcin_2/mat/s1)", "Mythril Key Item (zz1/m1/s1)"],
+
+    # Field Items 4: Materia Cave / Northern Cave
+    ["Mime Materia (zz5/l1,l2,l3,l4/s1)", "HP<->MP Materia (zz6/mat/s1)", "Quadra Magic Materia (zz7/l1,l2,l3,l4/s1)", "Knights of the Round Summon (zz8/l1,l2,l3,l4/s1)", "Elixir (las3_1/hako1/s1, las4_0/cid/s1)", "X-Potion (las3_1/hako2/s1)", "Turbo Ether (las3_2/hako1/s1, las4_0/tifa/s1, las4_0/cait/s1)", "Vaccine (las3_2/hako2/s1, las4_0/yufi/s1)"],
 ]
 
 # start offsets of various items in a save file (in bytes, with respect to start of slot data)
@@ -105,6 +111,9 @@ START = {
     'SLOT_FIELD-ITEMS-1':       0x0BC8, # Save Slot: Field Items 1: Sector 7 Train Graveyard
     'SLOT_FIELD-ITEMS-2':       0x0BC9, # Save Slot: Field Items 2: Great Glacier
     'SLOT_UNKNOWN11':           0x0BCA, # Save Slot: Unknown 11
+    'SLOT_FIELD-ITEMS-3':       0x0BD4, # Save Slot: Field Items 3
+    'SLOT_FIELD-ITEMS-4':       0x0BD5, # Save Slot: Field Items 4
+    'SLOT_UNKNOWN12':           0x0BD6, # Save Slot: Unknown 12
     #'SLOT_KEY-ITEMS':         0x0BE4, # Save Slot: Key Items
 
     # Character Record
@@ -206,6 +215,7 @@ SIZE = {
     'SLOT_UNKNOWN9':             6, # Save Slot: Unknown 9
     'SLOT_UNKNOWN10':            4, # Save Slot: Unknown 10
     'SLOT_UNKNOWN11':           10, # Save Slot: Unknown 11
+    'SLOT_UNKNOWN12':           14, # Save Slot: Unknown 12
     'SLOT_WINDOW-COLOR':         3, # Save Slot: Window Color (RGB)
 
     # Character Record
@@ -714,9 +724,12 @@ def unpack_slot_data(data):
     out['menu_locked'] = unpack_menu(data[START['SLOT_MENU-LOCKED']:START['SLOT_MENU-LOCKED']+SIZE['SLOT_MENU-LOCKED']])
     out['unknown10'] = unpack('I', data[START['SLOT_UNKNOWN10']:START['SLOT_UNKNOWN10']+SIZE['SLOT_UNKNOWN10']])[0]
     out['field_items'] = list()
-    for i in range(1,3): # 1 and 2
+    for i in range(1,3): # 1-2
         out['field_items'].append(unpack_field_items(data[START['SLOT_FIELD-ITEMS-%d'%i]:START['SLOT_FIELD-ITEMS-%d'%i]+SIZE['SLOT_FIELD-ITEMS']], i))
     out['unknown11'] = data[START['SLOT_UNKNOWN11']:START['SLOT_UNKNOWN11']+SIZE['SLOT_UNKNOWN11']]
+    for i in range(3,5): # 3-4
+        out['field_items'].append(unpack_field_items(data[START['SLOT_FIELD-ITEMS-%d'%i]:START['SLOT_FIELD-ITEMS-%d'%i]+SIZE['SLOT_FIELD-ITEMS']], i))
+    out['unknown12'] = data[START['SLOT_UNKNOWN12']:START['SLOT_UNKNOWN12']+SIZE['SLOT_UNKNOWN12']]
     return out
 
 def pack_slot_data(slot):
@@ -783,9 +796,12 @@ def pack_slot_data(slot):
     out += pack_menu(d['menu_visible'])
     out += pack_menu(d['menu_locked'])
     out += pack('I', d['unknown10'])
-    for i in range(1,3): # 1 and 2
+    for i in range(1,3): # 1-2
         out += pack_field_items(d['field_items'][i-1], i)
     out += d['unknown11']
+    for i in range(3,5): # 3-4
+        out += pack_field_items(d['field_items'][i-1], i)
+    out += d['unknown12']
     #out += slot['footer'] # TODO UNCOMMENT WHEN FINISHED PACKING SAVE SLOT DATA
     return out
 
