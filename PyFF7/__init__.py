@@ -3,6 +3,8 @@
 Global functions and classes
 Niema Moshiri 2019
 '''
+
+# constants
 BITS_PER_BYTE = 8
 BYTES_TO_FORMAT = {1:'B', 2:'H', 4:'I'}
 MAX_SIGNED_SHORT = 32767
@@ -10,6 +12,17 @@ MAX_UNSIGNED_SHORT = 65535
 MAX_UNSIGNED_INT = 4294967295
 NULL_BYTE = b'\x00'
 NULL_STR = NULL_BYTE.decode()
+
+# simple file selection prompt using Tkinter
+def file_prompt():
+    try:
+        from Tkinter import Tk
+        from tkFileDialog import askopenfilename
+    except:
+        from tkinter import Tk
+        from tkinter.filedialog import askopenfilename
+    Tk().withdraw()
+    return askopenfilename()
 
 # item database
 ITEM_DB = {
