@@ -4,6 +4,8 @@ Functions and classes for handling TEX files
 Niema Moshiri 2019
 '''
 from . import BYTES_TO_FORMAT,NULL_BYTE
+from .field import color_to_rgba as two_byte_color_to_rgba
+from .field import color_convert_bit
 from PIL import Image
 from struct import pack,unpack
 
@@ -144,10 +146,19 @@ class TEX:
         for y in range(height):
             for x in range(width):
                 if len(palette) == 0:
-                    cp = list()
-                    for _ in range(4): # BGRA format
-                        cp.append(unpack(BYTES_TO_FORMAT[bpp_over_4], data[ind:ind+bpp_over_4])[0]); ind += bpp_over_4
-                    self.images[0].putpixel((x,y), (cp[2],cp[1],cp[0],cp[3]))
+                    if bytes_per_pixel == 2:
+                        tmp = color_convert_bit(two_byte_color_to_rgba(unpack('H', data[ind:ind+2])[0]), 5, 8); ind += 2
+                        if tuple(tmp) == (0,0,0,0):
+                            alpha = 0
+                        else:
+                            alpha = 255 # [255,0][tmp[3]] # just forcing no transparency for now
+                        color = (tmp[0], tmp[1], tmp[2], alpha)
+                    else:
+                        cp = list()
+                        for _ in range(4): # BGRA format
+                            cp.append(unpack(BYTES_TO_FORMAT[bpp_over_4], data[ind:ind+bpp_over_4])[0]); ind += bpp_over_4
+                        color = (cp[2], cp[1], cp[0], cp[3])
+                    self.images[0].putpixel((x,y), color)
                 else:
                     val = unpack(BYTES_TO_FORMAT[bytes_per_pixel], data[ind:ind+bytes_per_pixel])[0]; ind += bytes_per_pixel
                     for pal_num in range(num_palettes):
