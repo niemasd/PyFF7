@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 '''
 Functions and classes for handling Final Fantasy VII text
 A lot of this is borrowed from FF7Tools V1.3 (https://github.com/cebix/ff7tools)
