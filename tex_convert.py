@@ -13,4 +13,10 @@ if __name__ == "__main__":
         print(USAGE); exit(1)
     if isdir(argv[2]) or isfile(argv[2]):
         raise ValueError("ERROR: Specified output file exists: %s" % argv[2])
-    TEX(argv[1]).get_image().save(argv[2])
+    images = TEX(argv[1]).get_images()
+    if len(images) == 1:
+        images[0].save(argv[2])
+    else: # multiple color palettes
+        pre = '.'.join(argv[2].split('.')[:-1]); suf = argv[2].split('.')[-1]; numlen = len(str(len(images)-1))
+        for i,img in enumerate(images):
+            img.save("%s.pal%s.%s" % (pre, str(i).zfill(numlen), suf))

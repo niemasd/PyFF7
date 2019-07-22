@@ -73,6 +73,7 @@ SIZE = {
     'HEADER-2_UNKNOWN8':                   4, # Header 2: Unknown 8
     'HEADER-2_UNKNOWN9':                   4, # Header 2: Unknown 9
     'HEADER-2_UNKNOWN10':                  4, # Header 2: Unknown 10
+    'HEADER-2_UNKNOWN11':                  4, # Header 2: Unknown 11 (TEX version 2 only)
 
     # Palette Entry (BGRA)
     'PALETTE-ENTRY_BLUE':                  1, # Palette Entry: Blue
@@ -99,7 +100,7 @@ class TEX:
         # if data is a PIL Image, just create TEX
         typestr = str(type(data)).lstrip("<class '").rstrip("'>")
         if typestr.startswith('PIL.') and 'Image' in typestr:
-            self.image = data.convert('RGBA'); return
+            self.images = [data.convert('RGBA')]; return
 
         # if data is filename, load actual bytes
         if isinstance(data,str): # if filename instead of bytes, read bytes
@@ -108,8 +109,10 @@ class TEX:
 
         # parse header
         version = unpack('I', data[0:0+SIZE['HEADER_VERSION']])[0]
-        if version != DEFAULT_VERSION:
-            raise ValueError(ERROR_INVALID_TEX_FILE)
+        if version not in {1,2}:
+            raise ValueError("Invalid version number: %d" % version)
+        num_palettes = unpack('I', data[48:48+SIZE['HEADER_NUM-PALETTES']])[0]
+        num_colors_per_palette = unpack('I', data[52:52+SIZE['HEADER_NUM-COLORS-PER-PALETTE']])[0]
         width = unpack('I', data[60:60+SIZE['HEADER_IMAGE-WIDTH']])[0]
         height = unpack('I', data[64:64+SIZE['HEADER_IMAGE-HEIGHT']])[0]
         palette_flag = unpack('I', data[76:76+SIZE['HEADER_PALETTE-FLAG']])[0]
@@ -117,17 +120,26 @@ class TEX:
         bytes_per_pixel = unpack('I', data[104:104+SIZE['HEADER_BYTES-PER-PIXEL']])[0]
 
         # read palette data
-        ind = 236; palette = list()
+        palette = list()
+        if version == 1:
+            ind = 236
+        else: # version 2 (e.g. FF8)
+            ind = 240
         if palette_flag == 1:
-            for _ in range(palette_size):
-                curr_blue = unpack('B', data[ind:ind+SIZE['PALETTE-ENTRY_BLUE']])[0]; ind += SIZE['PALETTE-ENTRY_BLUE']
-                curr_green = unpack('B', data[ind:ind+SIZE['PALETTE-ENTRY_GREEN']])[0]; ind += SIZE['PALETTE-ENTRY_GREEN']
-                curr_red = unpack('B', data[ind:ind+SIZE['PALETTE-ENTRY_RED']])[0]; ind += SIZE['PALETTE-ENTRY_RED']
-                curr_alpha = unpack('B', data[ind:ind+SIZE['PALETTE-ENTRY_ALPHA']])[0]; ind += SIZE['PALETTE-ENTRY_ALPHA']
-                palette.append(tuple([curr_red, curr_green, curr_blue, curr_alpha])) # I read them as BGRA, but I like saving them as RGBA
+            for _ in range(num_palettes):
+                palette.append(list())
+                for __ in range(num_colors_per_palette):
+                    curr_blue = unpack('B', data[ind:ind+SIZE['PALETTE-ENTRY_BLUE']])[0]; ind += SIZE['PALETTE-ENTRY_BLUE']
+                    curr_green = unpack('B', data[ind:ind+SIZE['PALETTE-ENTRY_GREEN']])[0]; ind += SIZE['PALETTE-ENTRY_GREEN']
+                    curr_red = unpack('B', data[ind:ind+SIZE['PALETTE-ENTRY_RED']])[0]; ind += SIZE['PALETTE-ENTRY_RED']
+                    curr_alpha = unpack('B', data[ind:ind+SIZE['PALETTE-ENTRY_ALPHA']])[0]; ind += SIZE['PALETTE-ENTRY_ALPHA']
+                    palette[-1].append(tuple([curr_red, curr_green, curr_blue, curr_alpha])) # I read them as BGRA, but I like saving them as RGBA
 
         # read pixel data
-        self.image = Image.new('RGBA', (width,height))
+        if len(palette) == 0:
+            self.images = [Image.new('RGBA', (width,height))]
+        else:
+            self.images = [Image.new('RGBA', (width,height)) for _ in range(num_palettes)]
         bpp_over_4 = int(bytes_per_pixel/4) # for use with Pixel Format Specification
         for y in range(height):
             for x in range(width):
@@ -135,25 +147,34 @@ class TEX:
                     cp = list()
                     for _ in range(4): # BGRA format
                         cp.append(unpack(BYTES_TO_FORMAT[bpp_over_4], data[ind:ind+bpp_over_4])[0]); ind += bpp_over_4
-                    color = (cp[2], cp[1], cp[0], cp[3])
+                    self.images[0].putpixel((x,y), (cp[2],cp[1],cp[0],cp[3]))
                 else:
-                    color = palette[unpack(BYTES_TO_FORMAT[bytes_per_pixel], data[ind:ind+bytes_per_pixel])[0]]; ind += bytes_per_pixel
-                self.image.putpixel((x,y), color)
+                    val = unpack(BYTES_TO_FORMAT[bytes_per_pixel], data[ind:ind+bytes_per_pixel])[0]; ind += bytes_per_pixel
+                    for pal_num in range(num_palettes):
+                        self.images[pal_num].putpixel((x,y), palette[pal_num][val])
 
-    def get_bytes(self, bmp_mode=False):
+    def get_bytes(self, bmp_mode=False, version=DEFAULT_VERSION):
         '''Return the bytes encoding this TEX file
 
         Args:
             ``bmp_mode`` (``bool``): Use the BMP mode of encoding the image. File sizes will be (much) larger, but transparency will always work. Try it if transparency is messed up in a game of interest
 
+            ``version`` (``int``): 1 for Final Fantasy VII, but some Final Fantasy VIII TEX files have 2
+
         Returns:
             ``bytes``: The data encoding this TEX file
         '''
         out = bytearray()
+
+        # check TEX version
+        if version not in {1,2}:
+            raise ValueError("Invalid TEX version: %d" % version)
+
+        # BMP mode (larger sizes, but works for all transparency)
         if bmp_mode:
             bytes_per_pixel = 4; num_pal = 0; pal_len = 0; pal_flag = 0; bits_per_index = 0
         else:
-            pal = list(set(self.image.getdata())); num_pal = 1; pal_len = len(pal); pal_flag = 1
+            pal = list(set(self.images[0].getdata())); num_pal = 1; pal_len = len(pal); pal_flag = 1
             col_to_ind = {c:i for i,c in enumerate(pal)}
             if pal_len <= 256:
                 bytes_per_pixel = 1; pal_index_format = 'B'
@@ -224,12 +245,14 @@ class TEX:
         out += pack('I', 480)                # unknown 8
         out += pack('I', 320)                # unknown 9
         out += pack('I', 512)                # unknown 10
+        if version == 2:
+            out += pack('I', 0)              # unknown 11
 
         # image data (BMP Mode)
         if bmp_mode:
             for y in range(self.get_height()):
                 for x in range(self.get_width()):
-                    r,g,b,a = self.image.getpixel((x,y))
+                    r,g,b,a = self.images[0].getpixel((x,y))
                     for v in [b,g,r,a]:
                         out += pack('B', v)
 
@@ -245,14 +268,14 @@ class TEX:
             # add pixels
             for y in range(self.get_height()):
                 for x in range(self.get_width()):
-                    out += pack(pal_index_format, col_to_ind[self.image.getpixel((x,y))])
+                    out += pack(pal_index_format, col_to_ind[self.images[0].getpixel((x,y))])
             
         return out
     
     def __iter__(self):
         '''Iterate over this image's colors'''
-        for c in self.image.getdata():
-            yield c
+        for img in self.images:
+            yield img
 
     def get_height(self):
         '''Get the image height of this TEX file
@@ -260,7 +283,7 @@ class TEX:
         Returns:
             ``int``: The image height of this TEX file
         '''
-        return self.image.size[1]
+        return self.images[0].size[1]
 
     def get_width(self):
         '''Get the image width of this TEX file
@@ -268,29 +291,20 @@ class TEX:
         Returns:
             ``int``: The image width of this TEX file
         '''
-        return self.image.size[0]
+        return self.images[0].size[0]
 
-    def get_image(self):
+    def get_images(self):
         '''Get a Pillow image object from this TEX file
 
         Returns:
-            ``Image``: A Pillow image object
+            ``list`` of ``Image``: Pillow image object(s)
         '''
-        return self.image
+        return self.images
 
     def show(self):
-        '''Show this TEX file's image'''
-        self.image.show()
-
-    def change_image(self, img):
-        '''Change this TEX file's image
-
-        Args:
-            ``img`` (``Image``): The image to set this TEX file to
-        '''
-        if isinstance(img,str):
-            img = Image.open(img)
-        self.image = img.convert('RGBA')
+        '''Show this TEX file's image(s)'''
+        for img in self.images:
+            img.show()
 
     def num_colors(self):
         '''Return the number of unique RGBA colors in this TEX file's image
@@ -298,7 +312,7 @@ class TEX:
         Returns:
             ``int``: The number of unique RGBA colors in this TEX file's image
         '''
-        return len(set(self.image.getdata()))
+        return len(self.unique_colors())
 
     def unique_colors(self):
         '''Return a set containing the unique RGBA colors in this TEX file's image
@@ -306,4 +320,7 @@ class TEX:
         Returns:
             ``set`` of ``tuple`` of ``int``: The unique RGBA colors in this TEX file's image
         '''
-        return set(self.image.getdata())
+        out = set()
+        for img in self.images:
+            out |= set(img.getdata())
+        return out
