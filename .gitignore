@@ -4,13 +4,18 @@ examples/*
 *.hrc
 *.ini
 *.lgp
+*.LGP
 *.lpk
+*.LPK
 *.npk
+*.NPK
 *.out
 *.p
 *.rsd
 *.tex
+*.TEX
 *.tmd
+*.TMD
 
 # images
 *.png
