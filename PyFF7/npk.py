@@ -70,19 +70,23 @@ def pack_npk(files, npk_filename):
             print("Compressing file %d of %d..." % (file_num+1, len(files)))
             with open(disk_path, 'rb') as curr_f:
                 curr_data = curr_f.read()
-            data_comp = compress_lzss(curr_data)[4:] # remove LZSS header
-            num_blocks = (len(data_comp) // 1016) + 1
-            for block_num in range(num_blocks):
-                block_start = block_num * 1016
-                block_end = min((block_num+1) * 1016, len(data_comp))
-                data_comp_block = data_comp[block_start : block_end]
-                curr_block = bytearray()
-                curr_block += pack('I', num_blocks - block_num) # number of remaining blocks (including this one)
-                curr_block += pack('H', START['BLOCK_DATA'] + len(data_comp_block)) # 'compressed size' includes the header (so header + compressed size)
-                curr_block += pack('H', 0) # TODO NOT SURE HOW TO CALCULATE 'uncompressed size' OF BLOCK
-                curr_block += data_comp_block
-                if len(curr_block) < 1024:
-                    curr_block += (b'\0'*(1024 - len(curr_block)))
-                if len(curr_block) != 1024:
-                    raise ValueError("Current block should be 1024 bytes, but it was: %s" % len(curr_block))
-                npk_f.write(curr_block)
+            lzss_chunks = compress_lzss(curr_data, include_header=False, merge_chunks=False)
+            npk_blocks = [list()] # list of blocks (each block is list of (uncomp_size, lzss_chunk) tuples)
+            for chunk_ind in range(len(lzss_chunks)):
+                uncomp_offset, comp_chunk = lzss_chunks[chunk_ind]
+                if chunk_ind == 0:
+                    uncomp_size = uncomp_offset
+                else:
+                    uncomp_size = uncomp_offset - lzss_chunks[chunk_ind-1][0]
+                if sum(len(lc) for us, lc in npk_blocks[-1]) + len(comp_chunk) > 1016:
+                    npk_blocks.append(list())
+                npk_blocks[-1].append((uncomp_size, comp_chunk))
+            for npk_block_ind, npk_block in enumerate(npk_blocks):
+                written = 0
+                written += npk_f.write(pack('I', len(npk_blocks)-npk_block_ind))
+                written += npk_f.write(pack('H', START['BLOCK_DATA'] + sum(len(lc) for us, lc in npk_block)))
+                written += npk_f.write(pack('H', sum(us for us, lc in npk_block)))
+                for us, lc in npk_block:
+                    written += npk_f.write(lc)
+                while written < 1024:
+                    written += npk_f.write(b'\00')

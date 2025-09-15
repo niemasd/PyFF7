@@ -68,11 +68,13 @@ def correct_offset(raw_offset, tail):
     '''
     return tail - ((tail - 18 - raw_offset) & WINDOW_MASK)
 
-def decompress_lzss(data):
+def decompress_lzss(data, includes_header=True):
     '''Decompress an LZSS file
 
     Args:
         ``data`` (``bytes``): The input LZSS-compressed file
+
+        ``includes_header`` (``bool``): ``True`` if ``data`` includes the 4-byte header (the compressed data size), otherwise ``False``
 
     Returns:
         ``bytes``: The resulting decompressed file
@@ -83,13 +85,16 @@ def decompress_lzss(data):
             data = f.read()
     elif not isinstance(data, bytes) and not isinstance(data, bytearray):
         raise TypeError(ERROR_NOT_FILENAME_OR_BYTES)
-    datasize = unpack('I', data[:SIZE['HEADER']])[0]
-    if len(data) - 4 != datasize:
-        raise ValueError("Size of compressed data (%d) does not match header size (%d)" % (len(data)-4, datasize))
+    if includes_header:
+        datasize = unpack('I', data[:SIZE['HEADER']])[0]
+        if len(data) - 4 != datasize:
+            raise ValueError("Size of compressed data (%d) does not match header size (%d)" % (len(data)-4, datasize))
+        inpos = SIZE['HEADER'] # already read the header
+    else:
+        inpos = 0
 
     # decompress file
     out = bytearray()
-    inpos = SIZE['HEADER'] # already read the header
     while inpos < len(data):
         flags = control_to_flags(data[inpos]); inpos += 1 # read control byte
         for flag in flags:
@@ -159,7 +164,20 @@ class Dictionary:
 
 
 # Compress an 8-bit string to LZSS format.
-def compress_lzss(data):
+def compress_lzss(data, include_header=True, merge_chunks=True):
+    '''
+    Compress binary data to LZSS format
+
+    Args:
+        ``data`` (``bytes``): The data to compress
+
+        ``include_header`` (``bool``): ``True`` to include the 4-byte header (the compressed data size), otherwise ``False``
+
+        ``merge_chunks`` (``bool``): ``True`` to merge the individul compressed chunks into a single ``bytes`` object, otherwise ``False`` to return a ``list`` of (uncompressed_offset_end, compressed_data) ``tuple`` objects
+
+    Returns:
+        ``bytes``: The LZSS-compressed data
+    '''
     if isinstance(data,str): # if filename instead of bytes, read bytes
         with open(data,'rb') as f:
             data = f.read()
@@ -172,7 +190,11 @@ def compress_lzss(data):
         dictionary.add(NULL_BYTE * (MAX_REF_LEN - i) + data[:i])
 
     # Output data
-    output = bytearray(); i = 0
+    if merge_chunks:
+        output = bytearray()
+    else:
+        output = list()
+    i = 0
     while i < len(data):
         chunk = bytearray(); flags = 0
         for bit in range(8):
@@ -190,6 +212,16 @@ def compress_lzss(data):
                 dictionary.add(data[i : i+MAX_REF_LEN])
                 i += 1
 
-        # Chunk complete, add to output
-        output += bytes([flags]) + chunk
-    return pack('I', len(output)) + output
+        # Chunk complete: add flags and add to output
+        chunk = bytes([flags]) + chunk
+        if merge_chunks:
+            output += chunk
+        else:
+            output.append((i, chunk))
+    if include_header:
+        header = pack('I', len(output))
+        if merge_chunks:
+            output = header + output
+        else:
+            output = [header] + output
+    return output
